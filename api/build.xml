@@ -1,0 +1,80 @@
+<project name="EMC ESU Java API" default="dist">
+	<!-- Build directory locations -->
+	<property name="src" value="src"/>
+    <property name="dist" value="dist"/>
+	<property name="classes" value="classes"/>
+	<property name="build" value="build"/>
+	<property name="doc" value="doc/javadoc" />
+	<property name="lib" value="lib" />
+	<property name="samples" value="samples" />
+	
+	<!-- Name of the JAR file -->
+	<property name="jarfile" value="emcesu.jar" />
+	
+	<!-- Classpath to compile with -->
+	<path id="classpath">
+		<fileset dir="${lib}">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+
+	<!-- Builds the distribution zip file -->
+	<target name="dist" depends="jar,doc">
+		<zip destfile="${dist}/esujava.zip">
+			<fileset dir=".">
+				<include name="${src}/**"/>
+				<include name="${build}/**" />
+				<include name="${doc}/**" />
+				<include name="${lib}/**" />
+				<include name="build.xml" />
+				<include name="readme.txt" />
+				
+				<!-- Exclude all subversion dirs -->
+				<exclude name="**/.svn/**"/>
+			</fileset>
+		</zip>
+	</target>
+
+	<!-- Builds the ESU API jar file -->
+	<target name="jar" depends="compile">
+		<jar destfile="${build}/${jarfile}">
+			<fileset dir="${classes}">
+			</fileset>
+		</jar>
+	</target>
+	
+	<!-- Compiles the java files -->
+	<target name="compile" depends="prepare">
+		<javac source="1.5" destdir="${classes}" srcdir="${src}" target="1.5"
+			debug="true" classpathref="classpath">
+		</javac>
+	</target>
+	
+	<!-- Builds the javadoc from the source code -->
+	<target name="doc" depends="prepare">
+		<javadoc source="1.5" destdir="${doc}" classpathref="classpath">
+			<header>EMC Cloud Optimized Storage API for Java</header>
+			<bottom>Copyright (c) 2008 EMC</bottom>
+		    <fileset dir="${src}">
+		    	<include name="**/*.java"/>
+		    </fileset>
+		</javadoc>
+	</target>
+	
+	<!-- Removes the build directories -->
+	<target name="clean">
+        <delete dir="${dist}" />
+        <delete dir="${classes}" />
+        <delete dir="${build}" />
+        <delete dir="${doc}" />
+	</target>
+	
+	<!-- Creates the build directories -->
+	<target name="prepare">
+        <mkdir dir="${dist}"/>
+        <mkdir dir="${classes}"/>
+        <mkdir dir="${build}"/>
+        <mkdir dir="${doc}"/>
+	</target>
+	
+</project>

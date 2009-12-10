@@ -1,0 +1,92 @@
+<project name="EMC ESU Java Testcases" default="dist">
+	<!-- Build directory locations -->
+	<property name="src" value="src"/>
+    <property name="dist" value="dist"/>
+	<property name="classes" value="classes"/>
+	<property name="build" value="build"/>
+	<property name="doc" value="doc/javadoc" />
+	<property name="lib" value="lib" />
+	<property name="samples" value="samples" />
+	
+	<!-- Classpath to compile with -->
+	<path id="classpath">
+		<fileset dir="${lib}">
+			<include name="*.jar"/>
+		</fileset>
+		<fileset dir="../api/build">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+
+	<!-- Builds the distribution zip file -->
+	<target name="dist" depends="doc">
+		<zip destfile="${dist}/esujava_testcases.zip">
+			<fileset dir=".">
+				<include name="${src}/**"/>
+				<include name="${build}/**" />
+				<include name="${doc}/**" />
+				<include name="${lib}/**" />
+				<include name="build.xml" />
+				<include name="readme.txt" />
+				
+				<!-- Exclude all subversion dirs -->
+				<exclude name="**/.svn/**"/>
+			</fileset>
+		</zip>
+	</target>
+
+	<!-- Compiles the java files -->
+	<target name="compile" depends="prepare">
+		<javac source="1.5" destdir="${classes}" srcdir="${src}" target="1.5"
+			debug="true" classpathref="classpath">
+		</javac>
+	</target>
+	
+	<!-- Builds the javadoc from the source code -->
+	<target name="doc" depends="prepare">
+		<javadoc source="1.5" destdir="${doc}" classpathref="classpath">
+			<header>EMC Cloud Optimized Storage API for Java</header>
+			<bottom>Copyright (c) 2008 EMC</bottom>
+		    <fileset dir="${src}">
+		    	<include name="**/*.java"/>
+		    </fileset>
+		</javadoc>
+	</target>
+	
+	<!-- Removes the build directories -->
+	<target name="clean">
+        <delete dir="${dist}" />
+        <delete dir="${classes}" />
+        <delete dir="${build}" />
+        <delete dir="${doc}" />
+	</target>
+	
+	<!-- Creates the build directories -->
+	<target name="prepare">
+        <mkdir dir="${dist}"/>
+        <mkdir dir="${classes}"/>
+        <mkdir dir="${build}"/>
+        <mkdir dir="${doc}"/>
+	</target>
+	
+	<!-- Runs the unit tests -->
+	<target name="test" depends="compile">
+		<junit fork="true" maxmemory="128M">
+			<classpath>
+                <pathelement location="${classes}"/>
+                <pathelement location="${src}"/>
+			    <fileset dir="${lib}">
+			    	<include name="*.jar"/>
+				</fileset>
+			</classpath>
+			<formatter type="plain" usefile="false"/>
+			<batchtest>
+				<fileset dir="${src}">
+					<include name="**/*Test.java"/>
+					<exclude name="**/CosApiTest.java" />
+				</fileset>
+		    </batchtest>
+		</junit>
+	</target>
+
+</project>
