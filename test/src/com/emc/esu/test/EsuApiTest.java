@@ -147,6 +147,18 @@ public class EsuApiTest {
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
     }
+    
+	public void testCreateObjectWithContentStream() throws Exception {
+		InputStream in = new ByteArrayInputStream( "hello".getBytes( "UTF-8" ) );
+        ObjectId id = this.esu.createObjectFromStream( null, null, in, 5, "text/plain" );
+        in.close();
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        // Read back the content
+        String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
+        Assert.assertEquals( "object content wrong", "hello", content );
+	}
 
     /**
      * Test creating an object with metadata but no content.
@@ -671,6 +683,23 @@ public class EsuApiTest {
         Assert.assertEquals( "object content wrong", "hullo", content );
     }
 
+	public void testUpdateObjectContentStream() throws Exception {
+        // Create an object
+        ObjectId id = this.esu.createObject( null, null, "hello".getBytes( "UTF-8" ), "text/plain" );
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        // Update part of the content
+        Extent extent = new Extent( 1,1 );
+        InputStream in = new ByteArrayInputStream( "u".getBytes( "UTF-8" ) );
+        this.esu.updateObjectFromStream( id, null, null, extent, in, 1, null ); 
+        in.close();
+
+        // Read back the content and check it
+        String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
+        Assert.assertEquals( "object content wrong", "hullo", content );
+	}
+
     /**
      * Test replacing an object's entire contents
      */
@@ -1063,6 +1092,28 @@ public class EsuApiTest {
             l4j.debug( "Error (expected): " + e );
         }
     }
+
+	public void testReadObjectStream() throws Exception {
+        ObjectId id = this.esu.createObject( null, null, "hello".getBytes( "UTF-8" ), "text/plain" );
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        // Read back the content
+        InputStream in = this.esu.readObjectStream( id, null );
+        BufferedReader br = new BufferedReader( new InputStreamReader( in, "UTF-8" ) );
+        String content = br.readLine();
+        br.close();
+        Assert.assertEquals( "object content wrong", "hello", content );
+
+        // Read back only 2 bytes
+        Extent extent = new Extent( 1, 2 );
+        in = this.esu.readObjectStream( id, extent );
+        br = new BufferedReader( new InputStreamReader( in, "UTF-8" ) );
+        content = br.readLine();
+        br.close();
+        Assert.assertEquals( "partial object content wrong", "el", content );               
+	}
+
 	
 	
 }

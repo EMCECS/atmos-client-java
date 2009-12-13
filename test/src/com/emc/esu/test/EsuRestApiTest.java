@@ -35,10 +35,12 @@ public class EsuRestApiTest extends TestCase {
      * UID to run tests with.  Change this value to your UID.
      */
     private String uid = "<put your UID here>";
+
     /**
      * Shared secret for UID.  Change this value to your UID's shared secret
      */
     private String secret = "<put your secret key here>";
+
     /**
      * Hostname or IP of ESU server.  Change this value to your server's
      * hostname or ip address.
@@ -98,6 +100,13 @@ public class EsuRestApiTest extends TestCase {
     public void testCreateObjectWithContent() throws Exception {
         test.testCreateObjectWithContent();
     }
+    
+    /**
+     * Test creating an object with content but without metadata
+     */
+    public void testCreateObjectWithContentStream() throws Exception {
+        test.testCreateObjectWithContentStream();
+    }
 
     /**
      * Test creating an object with metadata but no content.
@@ -148,6 +157,14 @@ public class EsuRestApiTest extends TestCase {
      */
     public void testReadObject() throws Exception {
         test.testReadObject();
+    }
+    
+    /**
+     * Test reading an object's content using a
+     * stream.
+     */
+    public void testReadObjectStream() throws Exception {
+        test.testReadObjectStream();
     }
 
     /**
@@ -243,6 +260,13 @@ public class EsuRestApiTest extends TestCase {
      */
     public void testUpdateObjectContent() throws Exception {
         test.testUpdateObjectContent();
+    }
+    
+    /**
+     * Tests updating an object's contents
+     */
+    public void testUpdateObjectContentStream() throws Exception {
+        test.testUpdateObjectContentStream();
     }
 
     /**
