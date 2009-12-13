@@ -24,6 +24,7 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.esu.api;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.util.Date;
 import java.util.List;
@@ -49,6 +50,26 @@ public interface EsuApi {
      */
     public ObjectId createObject( Acl acl, MetadataList metadata, 
             byte[] data, String mimeType );
+    
+    /**
+     * Creates a new object in the cloud.
+     * @param acl Access control list for the new object.  May be null
+     * to use a default ACL
+     * @param metadata Metadata for the new object.  May be null for
+     * no metadata.
+     * @param data The initial contents of the object.  May be appended
+     * to later.  The stream will NOT be closed at the end of the request.
+     * @param length The length of the stream in bytes.  If the stream
+     * is longer than the length, only length bytes will be written.  If
+     * the stream is shorter than the length, an error will occur.
+     * @param mimeType the MIME type of the content.  Optional, 
+     * may be null.  If data is non-null and mimeType is null, the MIME
+     * type will default to application/octet-stream.
+     * @return Identifier of the newly created object.
+     * @throws EsuException if the request fails.
+     */
+    public ObjectId createObjectFromStream( Acl acl, MetadataList metadata, 
+            InputStream data, int length, String mimeType );
     
     /**
      * Creates a new object in the cloud on the specified path.
@@ -126,6 +147,29 @@ public interface EsuApi {
      */
     public void updateObject( Identifier id, Acl acl, MetadataList metadata, 
             Extent extent, byte[] data, String mimeType );
+
+    /**
+     * Updates an object in the cloud.
+     * @param id The ID of the object to update
+     * @param acl Access control list for the new object. Optional, default
+     * is NULL to leave the ACL unchanged.
+     * @param metadata Metadata list for the new object.  Optional,
+     * default is NULL for no changes to the metadata.
+     * @param data The new contents of the object.  May be appended
+     * to later. Optional, default is NULL (no content changes).
+     * @param extent portion of the object to update.  May be null to indicate
+     * the whole object is to be replaced.  If not null, the extent size must
+     * match the data size.
+     * @param length The length of the stream in bytes.  If the stream
+     * is longer than the length, only length bytes will be written.  If
+     * the stream is shorter than the length, an error will occur.
+     * @param mimeType the MIME type of the content.  Optional, 
+     * may be null.  If data is non-null and mimeType is null, the MIME
+     * type will default to application/octet-stream.
+     * @throws EsuException if the request fails.
+     */
+    public void updateObjectFromStream( Identifier id, Acl acl, MetadataList metadata, 
+            Extent extent, InputStream data, int length, String mimeType );
     
     /**
      * Updates an object in the cloud using a portion of a buffer.
@@ -202,6 +246,18 @@ public interface EsuApi {
      * @return the object data read as a byte array.
      */
     public byte[] readObject( Identifier id, Extent extent, byte[] buffer );
+    
+    /**
+     * Reads an object's content and returns an InputStream to read the content.
+     * Since the input stream is linked to the HTTP connection, it is imperative
+     * that you close the input stream as soon as you are done with the stream
+     * to release the underlying connection.
+     * @param id the identifier of the object whose content to read.
+     * @param extent the portion of the object data to read.  Optional.
+     * Default is null to read the entire object.
+     * @return an InputStream to read the object data.
+     */
+    public InputStream readObjectStream( Identifier id, Extent extent );
     
     /**
      * Returns an object's ACL

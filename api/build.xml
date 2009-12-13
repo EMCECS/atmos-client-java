@@ -37,7 +37,7 @@
 
 	<!-- Builds the ESU API jar file -->
 	<target name="jar" depends="compile">
-		<jar destfile="${build}/${jarfile}">
+		<jar destfile="${build}/${jarfile}" manifest="src/MANIFEST.MF">
 			<fileset dir="${classes}">
 			</fileset>
 		</jar>

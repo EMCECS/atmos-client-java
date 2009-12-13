@@ -71,6 +71,7 @@ import com.emc.esu.api.DirectoryEntry;
 import com.emc.esu.api.Extent;
 import com.emc.esu.api.Grant;
 import com.emc.esu.api.Grantee;
+import com.emc.esu.api.HttpInputStreamWrapper;
 import com.emc.esu.api.Identifier;
 import com.emc.esu.api.Metadata;
 import com.emc.esu.api.MetadataList;
@@ -149,6 +150,122 @@ public class EsuRestApi implements EsuApi {
             byte[] data, String mimeType ) {
         return createObjectFromSegment( acl, metadata, 
                 data==null?null:new BufferSegment( data ), mimeType );
+    }
+    
+    /**
+     * Creates a new object in the cloud.
+     * @param acl Access control list for the new object.  May be null
+     * to use a default ACL
+     * @param metadata Metadata for the new object.  May be null for
+     * no metadata.
+     * @param data The initial contents of the object.  May be appended
+     * to later.  The stream will NOT be closed at the end of the request.
+     * @param length The length of the stream in bytes.  If the stream
+     * is longer than the length, only length bytes will be written.  If
+     * the stream is shorter than the length, an error will occur.
+     * @param mimeType the MIME type of the content.  Optional, 
+     * may be null.  If data is non-null and mimeType is null, the MIME
+     * type will default to application/octet-stream.
+     * @return Identifier of the newly created object.
+     * @throws EsuException if the request fails.
+     */
+    public ObjectId createObjectFromStream( Acl acl, MetadataList metadata, 
+            InputStream data, int length, String mimeType ) {
+        try {
+            String resource = context + "/objects";
+            URL u = buildUrl( resource );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+            
+            if( data == null ) {
+            	throw new IllegalArgumentException( "Input stream is required" );
+            }
+
+            // Build headers
+            Map<String,String> headers = new HashMap<String,String>();
+
+            // Figure out the mimetype
+            if( mimeType == null ) {
+                mimeType = "application/octet-stream";
+            }
+
+            headers.put( "Content-Type", mimeType );
+            headers.put( "x-emc-uid", uid );
+
+            // Process metadata
+            if( metadata != null ) {
+                processMetadata( metadata, headers );
+            }
+
+            l4j.debug( "meta " + headers.get( "x-emc-meta" ) );
+
+            // Add acl
+            if( acl != null ) {
+                processAcl( acl, headers );
+            }
+
+            con.setFixedLengthStreamingMode( length );
+            con.setDoOutput( true );
+
+
+            // Add date
+            TimeZone tz = TimeZone.getTimeZone( "GMT" );
+            l4j.debug( "TZ: " + tz );
+            HEADER_FORMAT.setTimeZone( tz );
+            String dateHeader = HEADER_FORMAT.format( new Date() );
+            l4j.debug( "Date: " + dateHeader );
+            headers.put( "Date", dateHeader );
+
+            // Sign request
+            signRequest( con, "POST", resource, headers );
+
+            con.connect();
+
+            // post data
+            OutputStream out = null;
+            byte[] buffer = new byte[128*1024];
+            int read = 0;
+            try {
+                out = con.getOutputStream();
+                while( read < length ) {
+                	int c = data.read( buffer );
+                	if( c == -1 ) {
+                		throw new EsuException( "EOF encountered reading data stream" );
+                	}
+                	out.write( buffer, 0, c );
+                	read += c;
+                }
+                out.close();
+            } catch( IOException e ) {
+                silentClose( out );
+                con.disconnect();
+                throw new EsuException( "Error posting data", e );
+            }
+
+            // Check response
+            if( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+
+            // The new object ID is returned in the location response header
+            String location = con.getHeaderField( "location" );
+            con.disconnect();
+
+            // Parse the value out of the URL
+            Matcher m = OBJECTID_EXTRACTOR.matcher( location );
+            if( m.find() ) {
+                String id = m.group( 1 );
+                l4j.debug( "Id: " + id );
+                return new ObjectId( id );
+            } else {
+                throw new EsuException( "Could not find ObjectId in " + location );
+            }
+        } catch( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch (IOException e) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch (GeneralSecurityException e) {
+            throw new EsuException( "Error computing request signature", e );
+        }    	
     }
     
     /**
@@ -1115,6 +1232,61 @@ public class EsuRestApi implements EsuApi {
 
     }
 
+    /**
+     * Reads an object's content and returns an InputStream to read the content.
+     * Since the input stream is linked to the HTTP connection, it is imperative
+     * that you close the input stream as soon as you are done with the stream
+     * to release the underlying connection.
+     * @param id the identifier of the object whose content to read.
+     * @param extent the portion of the object data to read.  Optional.
+     * Default is null to read the entire object.
+     * @return an InputStream to read the object data.
+     */
+	public InputStream readObjectStream(Identifier id, Extent extent) {
+        try {
+        	String resource = getResourcePath( context, id );
+            URL u = buildUrl( resource );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String,String> headers = new HashMap<String,String>();
+
+            headers.put( "x-emc-uid", uid );
+
+            // Add date
+            TimeZone tz = TimeZone.getTimeZone( "GMT" );
+            l4j.debug( "TZ: " + tz );
+            HEADER_FORMAT.setTimeZone( tz );
+            String dateHeader = HEADER_FORMAT.format( new Date() );
+            l4j.debug( "Date: " + dateHeader );
+            headers.put( "Date", dateHeader );
+
+             //Add extent if needed
+            if( extent != null && !extent.equals( Extent.ALL_CONTENT ) ) {
+                    long end = extent.getOffset() + (extent.getSize()-1);
+                    headers.put( "Range", "Bytes=" + extent.getOffset() + "-" + end ); 
+            }
+
+            // Sign request
+            signRequest( con, "GET", resource, headers );
+
+            con.connect();
+
+            // Check response
+            if( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+
+            return new HttpInputStreamWrapper( con.getInputStream(), con );
+
+        } catch( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch (IOException e) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch (GeneralSecurityException e) {
+            throw new EsuException( "Error computing request signature", e );
+        }
+	}
 
     /**
      * Updates an object in the cloud and optionally its metadata and ACL.
@@ -1241,6 +1413,117 @@ public class EsuRestApi implements EsuApi {
         }
 
     }
+    
+    /**
+     * Updates an object in the cloud.
+     * @param id The ID of the object to update
+     * @param acl Access control list for the new object. Optional, default
+     * is NULL to leave the ACL unchanged.
+     * @param metadata Metadata list for the new object.  Optional,
+     * default is NULL for no changes to the metadata.
+     * @param data The updated data to apply to the object.  Requred.  Note
+     * that the input stream is NOT closed at the end of the request.
+     * @param extent portion of the object to update.  May be null to indicate
+     * the whole object is to be replaced.  If not null, the extent size must
+     * match the data size.
+     * @param length The length of the stream in bytes.  If the stream
+     * is longer than the length, only length bytes will be written.  If
+     * the stream is shorter than the length, an error will occur.
+     * @param mimeType the MIME type of the content.  Optional, 
+     * may be null.  If data is non-null and mimeType is null, the MIME
+     * type will default to application/octet-stream.
+     * @throws EsuException if the request fails.
+     */
+    public void updateObjectFromStream( Identifier id, Acl acl, MetadataList metadata, 
+            Extent extent, InputStream data, int length, String mimeType ) {
+        try {
+        	String resource = getResourcePath( context, id );
+            URL u = buildUrl( resource );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String,String> headers = new HashMap<String,String>();
+
+            // Figure out the mimetype
+            if( mimeType == null ) {
+                mimeType = "application/octet-stream";
+            }
+
+            headers.put( "Content-Type", mimeType );
+            headers.put( "x-emc-uid", uid );
+
+            // Process metadata
+            if( metadata != null ) {
+                processMetadata( metadata, headers );
+            }
+
+            l4j.debug( "meta " + headers.get( "x-emc-meta" ) );
+
+            // Add acl
+            if( acl != null ) {
+                processAcl( acl, headers );
+            }
+
+            //Add extent if needed
+            if( extent != null && !extent.equals( Extent.ALL_CONTENT ) ) {
+                    long end = extent.getOffset() + (extent.getSize() - 1);
+                    headers.put( "Range", "Bytes=" + extent.getOffset() + "-" + end ); 
+            }
+
+            con.setFixedLengthStreamingMode( length );
+            con.setDoOutput( true );
+
+
+            // Add date
+            TimeZone tz = TimeZone.getTimeZone( "GMT" );
+            l4j.debug( "TZ: " + tz );
+            HEADER_FORMAT.setTimeZone( tz );
+            String dateHeader = HEADER_FORMAT.format( new Date() );
+            l4j.debug( "Date: " + dateHeader );
+            headers.put( "Date", dateHeader );
+
+            // Sign request
+            signRequest( con, "PUT", resource, headers );
+
+            con.connect();
+
+            // post data
+            OutputStream out = null;
+            byte[] buffer = new byte[128*1024];
+            int read = 0;
+            try {
+                out = con.getOutputStream();
+                while( read < length ) {
+                	int c = data.read( buffer );
+                	if( c == -1 ) {
+                		throw new EsuException( "EOF encountered reading data stream" );
+                	}
+                	out.write( buffer, 0, c );
+                	read += c;
+                }
+                out.close();
+            } catch( IOException e ) {
+                silentClose( out );
+                con.disconnect();
+                throw new EsuException( "Error posting data", e );
+            }
+
+            // Check response
+            if( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+            con.disconnect();
+        } catch( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch (IOException e) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch (GeneralSecurityException e) {
+            throw new EsuException( "Error computing request signature", e );
+        }
+    	
+    }
+
+    
     
     /**
      * Writes the metadata into the object. If the tag does not exist, it is 
@@ -2175,4 +2458,7 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Invalid URL format", e );
         }
     }
+
+
+
 }

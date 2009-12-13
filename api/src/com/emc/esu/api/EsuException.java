@@ -26,7 +26,8 @@ package com.emc.esu.api;
 
 /**
  * Base ESU exception class that is thrown from the API methods.  Contains an
- * error code that can be mapped to the standard ESU error codes.
+ * error code that can be mapped to the standard ESU error codes.  See the
+ * Atmos programmer's guide for a list of server error codes.
  */
 public class EsuException extends RuntimeException {
     private static final long serialVersionUID = -6765742140810819241L;

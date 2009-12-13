@@ -36,7 +36,7 @@ public class ObjectPath implements Identifier {
     /**
      * Regular expression used to validate identifiers.
      */
-    private static final Pattern PATH_FORMAT = Pattern.compile( "^/([a-zA-Z0-9 _\\.\\+\\-]+/?)*" );
+    private static final Pattern PATH_FORMAT = Pattern.compile( "^/([a-zA-Z0-9 _\\.\\+\\-%]+/?)*" );
     
     /**
      * Stores the string representation of the identifier
@@ -45,7 +45,7 @@ public class ObjectPath implements Identifier {
 
     /**
      * Constructs a new object identifier
-     * @param id the object ID as a string
+     * @param path the object ID as a string
      */
     public ObjectPath( String path ) {
         if( !PATH_FORMAT.matcher( path ).matches() ) {
