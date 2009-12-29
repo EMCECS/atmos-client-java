@@ -25,12 +25,15 @@
 package com.emc.esu.api;
 
 /**
+ * This object encapsulates all of the information about an Atmos
+ * object when returned from getAllMetadata (the HEAD request version)
  * @author jason
  *
  */
 public class ObjectMetadata {
 	private MetadataList metadata;
 	private Acl acl;
+	private String mimeType;
 	
 	/**
 	 * @param metadata the metadata to set
@@ -55,5 +58,17 @@ public class ObjectMetadata {
 	 */
 	public Acl getAcl() {
 		return acl;
+	}
+	/**
+	 * @return the mimeType
+	 */
+	public String getMimeType() {
+		return mimeType;
+	}
+	/**
+	 * @param mimeType the mimeType to set
+	 */
+	public void setMimeType(String mimeType) {
+		this.mimeType = mimeType;
 	}
 }

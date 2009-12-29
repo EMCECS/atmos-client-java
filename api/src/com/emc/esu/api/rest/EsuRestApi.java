@@ -1842,6 +1842,7 @@ public class EsuRestApi implements EsuApi {
             ObjectMetadata om = new ObjectMetadata();
             om.setAcl( acl );
             om.setMetadata( meta );
+            om.setMimeType( con.getContentType() );
             
             return om;
 
