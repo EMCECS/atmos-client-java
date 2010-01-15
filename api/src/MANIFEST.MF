@@ -5,5 +5,5 @@ Specification-Title: "Atmos Storage Service"
 Specification-Version: "1.2.5"
 Specification-Vendor: "EMC".
 Implementation-Title: "Atmos Java Connector" 
-Implementation-Version: "1.2.5.7"
+Implementation-Version: "1.2.5.13"
 Implementation-Vendor: "EMC"
