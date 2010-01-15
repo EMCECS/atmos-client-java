@@ -1205,7 +1205,7 @@ public class EsuRestApi implements EsuApi {
              //Add extent if needed
             if( extent != null && !extent.equals( Extent.ALL_CONTENT ) ) {
                     long end = extent.getOffset() + (extent.getSize()-1);
-                    headers.put( "Range", "Bytes=" + extent.getOffset() + "-" + end ); 
+                    headers.put( "Range", "bytes=" + extent.getOffset() + "-" + end ); 
             }
 
             // Sign request
@@ -1265,7 +1265,7 @@ public class EsuRestApi implements EsuApi {
              //Add extent if needed
             if( extent != null && !extent.equals( Extent.ALL_CONTENT ) ) {
                     long end = extent.getOffset() + (extent.getSize()-1);
-                    headers.put( "Range", "Bytes=" + extent.getOffset() + "-" + end ); 
+                    headers.put( "Range", "bytes=" + extent.getOffset() + "-" + end ); 
             }
 
             // Sign request
@@ -1364,7 +1364,7 @@ public class EsuRestApi implements EsuApi {
             //Add extent if needed
             if( extent != null && !extent.equals( Extent.ALL_CONTENT ) ) {
                     long end = extent.getOffset() + (extent.getSize() - 1);
-                    headers.put( "Range", "Bytes=" + extent.getOffset() + "-" + end ); 
+                    headers.put( "Range", "bytes=" + extent.getOffset() + "-" + end ); 
             }
 
             // Process data
@@ -1468,7 +1468,7 @@ public class EsuRestApi implements EsuApi {
             //Add extent if needed
             if( extent != null && !extent.equals( Extent.ALL_CONTENT ) ) {
                     long end = extent.getOffset() + (extent.getSize() - 1);
-                    headers.put( "Range", "Bytes=" + extent.getOffset() + "-" + end ); 
+                    headers.put( "Range", "bytes=" + extent.getOffset() + "-" + end ); 
             }
 
             con.setFixedLengthStreamingMode( length );
@@ -1993,14 +1993,14 @@ public class EsuRestApi implements EsuApi {
 
         // If the range header exists, add it.  Otherwise add a blank line.
         if( headers.containsKey( "Range" ) ) {
-            hashStr.append( headers.get( "Range" ).toLowerCase() + "\n" );
+            hashStr.append( headers.get( "Range" ) + "\n" );
         } else {
             hashStr.append( "\n" );
         }
 
         // Add the current date and the resource.
         hashStr.append( headers.get( "Date" ) + "\n" +
-                URLDecoder.decode(resource).toLowerCase() + "\n" );
+                URLDecoder.decode(resource, "UTF-8").toLowerCase() + "\n" );
 
         // Do the 'x-emc' headers.  The headers must be hashed in alphabetic
         // order and the values must be stripped of whitespace and newlines.
@@ -2440,7 +2440,7 @@ public class EsuRestApi implements EsuApi {
             StringBuffer sb = new StringBuffer();
             sb.append( "GET\n" );
             sb.append( resource.toLowerCase() + "\n" );
-            sb.append( uid.toLowerCase() + "\n" );
+            sb.append( uid + "\n" );
             sb.append( ""+(expiration.getTime()/1000) );
             
             String signature = sign( sb.toString() );
