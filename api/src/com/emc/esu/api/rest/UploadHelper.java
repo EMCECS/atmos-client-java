@@ -22,8 +22,18 @@
 //      CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
 //      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 //      POSSIBILITY OF SUCH DAMAGE.
-package com.emc.esu.api;
+package com.emc.esu.api.rest;
 
+import com.emc.esu.api.Acl;
+import com.emc.esu.api.BufferSegment;
+import com.emc.esu.api.EsuApi;
+import com.emc.esu.api.EsuException;
+import com.emc.esu.api.Extent;
+import com.emc.esu.api.Identifier;
+import com.emc.esu.api.MetadataList;
+import com.emc.esu.api.ObjectId;
+import com.emc.esu.api.ObjectPath;
+import com.emc.esu.api.ProgressListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

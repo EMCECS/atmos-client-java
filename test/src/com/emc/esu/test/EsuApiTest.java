@@ -44,7 +44,7 @@ import com.emc.esu.api.Acl;
 import com.emc.esu.api.EsuApi;
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.DirectoryEntry;
-import com.emc.esu.api.DownloadHelper;
+import com.emc.esu.api.rest.DownloadHelper;
 import com.emc.esu.api.Extent;
 import com.emc.esu.api.Grant;
 import com.emc.esu.api.Grantee;
@@ -58,7 +58,7 @@ import com.emc.esu.api.ObjectMetadata;
 import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.ObjectResult;
 import com.emc.esu.api.Permission;
-import com.emc.esu.api.UploadHelper;
+import com.emc.esu.api.rest.UploadHelper;
 
 /**
  * Implements testcases that are independent of the protocol (REST vs. SOAP).
