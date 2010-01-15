@@ -147,7 +147,7 @@ public class EsuRestApiTest extends TestCase {
             Assert.fail( "Expected exception to be thrown" );
         } catch( EsuException e ) {
             Assert.assertEquals( "Expected error code 404 for bad context root", 
-                    404, e.getAtmosCode() );
+                    404, e.getHttpCode() );
         }
         
     }
