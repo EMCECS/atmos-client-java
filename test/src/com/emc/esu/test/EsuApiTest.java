@@ -474,7 +474,7 @@ public class EsuApiTest {
             Assert.fail( "Exception not thrown!" );
         } catch( EsuException e ) {
             // This should happen.
-            Assert.assertEquals( "Expected 1003 for not found", 1003, e.getCode() );
+            Assert.assertEquals( "Expected 1003 for not found", 1003, e.getAtmosCode() );
         }
     }
     

@@ -104,7 +104,7 @@ public class DownloadHelper {
         this.stream = stream;
 
         // Get the file size.  Set to -1 if unknown.
-        MetadataList sMeta = this.esu.getSystemMetadata(id, null);
+        MetadataList sMeta = this.esu.getAllMetadata(id).getMetadata();
         if (sMeta.getMetadata("size") != null) {
             String size = sMeta.getMetadata("size").getValue();
             if (size != null && size.length() > 0) {

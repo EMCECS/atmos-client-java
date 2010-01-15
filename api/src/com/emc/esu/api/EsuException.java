@@ -31,8 +31,9 @@ package com.emc.esu.api;
  */
 public class EsuException extends RuntimeException {
     private static final long serialVersionUID = -6765742140810819241L;
-    
-    private int code = 0;
+
+    private int http_code = 0;      // HTTP return code from Atmos REST API
+    private int atmos_code = 0;           // Atmos internal return code
 
     /**
      * Creates a new ESU Exception with the given message.  The error code
@@ -44,13 +45,25 @@ public class EsuException extends RuntimeException {
     }
     
     /**
-     * Creates a new ESU exception with the given message and error code.
+     * Creates a new ESU exception with the given message and HTTP error code.
      * @param message the error message
-     * @param code the error code
+     * @param HTTP code the error code
      */
-    public EsuException( String message, int code ) {
+    public EsuException( String message, int http_code ) {
         super( message );
-        this.code = code;
+        this.http_code = http_code;
+    }
+
+    /**
+     * Creates a new ESU exception with the given message and HTTP error code.
+     * @param message the error message
+     * @param HTTP code the error code
+     * @param Atmos detailed code the error code
+     */
+    public EsuException( String message, int http_code, int atmos_code ) {
+        super( message );
+        this.http_code = http_code;
+        this.atmos_code = atmos_code;
     }
     
     /**
@@ -66,19 +79,42 @@ public class EsuException extends RuntimeException {
      * Creates a new ESU exception with the given message, code, and cause
      * @param message the error message
      * @param cause the exception that caused the failure
-     * @param code the error code
+     * @param HTTP code the error code
      */
-    public EsuException( String message, Exception cause, int code ) {
+    public EsuException( String message, Exception cause, int http_code ) {
         super( message, cause );
-        this.code = code;
+        this.http_code = http_code;
     }
 
     /**
-     * Returns the error code associated with the exception.  If unknown (the
-     * error did not originate inside the ESU server), the code will be zero.
+     * Creates a new ESU exception with the given message, code, and cause
+     * @param message the error message
+     * @param cause the exception that caused the failure
+     * @param HTTP code the error code
+     * @param Atmos detailed code the error code
+     */
+    public EsuException( String message, Exception cause, int http_code, int atmos_code ) {
+        super( message, cause );
+        this.http_code = http_code;
+        this.atmos_code = atmos_code;
+    }
+
+    /**
+     * Returns the HTTP error code associated with the exception.  If unknown
+     * (the error did not originate inside the ESU server), the code will be zero.
      * @return the error code
      */
-    public int getCode() {
-        return code;
-    } 
+    public int getHttpCode() {
+        return http_code;
+    }
+
+    /**
+     * Returns the Atmos internal error code associated with the exception.
+     * If unknown (the error did not originate inside the ESU server), the
+     * code will be zero.
+     * @return the error code
+     */
+    public int getAtmosCode() {
+        return atmos_code;
+    }
 }

@@ -83,6 +83,7 @@ import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.ObjectResult;
 import com.emc.esu.api.Permission;
 import com.emc.esu.api.Grantee.GRANT_TYPE;
+import java.net.URLDecoder;
 
 /**
  * Implements the REST version of the ESU API.  This class uses HttpUrlRequest
@@ -1985,21 +1986,21 @@ public class EsuRestApi implements EsuApi {
         // If content type exists, add it.  Otherwise add a blank line.
         if( headers.containsKey( "Content-Type" ) ) {
             l4j.debug( "Content-Type: " + headers.get( "Content-Type" ) );
-            hashStr.append( headers.get( "Content-Type" ) + "\n" );
+            hashStr.append( headers.get( "Content-Type" ).toLowerCase() + "\n" );
         } else {
             hashStr.append( "\n" );
         }
 
         // If the range header exists, add it.  Otherwise add a blank line.
         if( headers.containsKey( "Range" ) ) {
-            hashStr.append( headers.get( "Range" ) + "\n" );
+            hashStr.append( headers.get( "Range" ).toLowerCase() + "\n" );
         } else {
             hashStr.append( "\n" );
         }
 
         // Add the current date and the resource.
         hashStr.append( headers.get( "Date" ) + "\n" +
-                resource.toLowerCase() + "\n" );
+                URLDecoder.decode(resource).toLowerCase() + "\n" );
 
         // Do the 'x-emc' headers.  The headers must be hashed in alphabetic
         // order and the values must be stripped of whitespace and newlines.
@@ -2072,8 +2073,10 @@ public class EsuRestApi implements EsuApi {
      * @param con the connection from the failed request.
      */
     private void handleError( HttpURLConnection con ) {
+        int http_code = 0;
         // Try and read the response body.
         try {
+            http_code = con.getResponseCode();
             byte[] response = readResponse( con, null );
             l4j.debug( "Error response: " + new String( response, "UTF-8" ) );
             SAXBuilder sb = new SAXBuilder();
@@ -2085,31 +2088,31 @@ public class EsuRestApi implements EsuApi {
             
             if( code == null && message == null ) {
                 // not an error from ESU
-                throw new EsuException( con.getResponseMessage(), con.getResponseCode() );
+                throw new EsuException( con.getResponseMessage(), http_code );
             }
             
             l4j.debug( "Error: " + code + " message: " + message );
-            throw new EsuException( message, Integer.parseInt( code ) );
+            throw new EsuException( message, http_code, Integer.parseInt( code ) );
             
         } catch( IOException e ) {
             l4j.debug( "Could not read error response body", e );
             // Just throw what we know from the response
             try {
-                throw new EsuException( con.getResponseMessage(), con.getResponseCode() );
+                throw new EsuException( con.getResponseMessage(), http_code );
             } catch (IOException e1) {
                 l4j.warn( "Could not get response code/message!", e );
-                throw new EsuException( "Could not get response code", e );
+                throw new EsuException( "Could not get response code", e, http_code );
             }
         } catch (JDOMException e) {
             try {
                 l4j.debug( "Could not parse response body for " + 
-                        con.getResponseCode() + ": " + con.getResponseMessage(), 
+                        http_code + ": " + con.getResponseMessage(),
                         e );
                 throw new EsuException( "Could not parse response body for " + 
-                        con.getResponseCode() + ": " + con.getResponseMessage(), 
-                        e, con.getResponseCode() );
+                        http_code + ": " + con.getResponseMessage(),
+                        e, http_code );
             } catch (IOException e1) {
-                throw new EsuException( "Could not parse response body", e1 );
+                throw new EsuException( "Could not parse response body", e1, http_code );
             }
             
         }
