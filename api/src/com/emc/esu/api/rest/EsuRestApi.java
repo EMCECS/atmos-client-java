@@ -33,6 +33,8 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.GeneralSecurityException;
@@ -174,7 +176,7 @@ public class EsuRestApi implements EsuApi {
             InputStream data, int length, String mimeType ) {
         try {
             String resource = context + "/objects";
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
             
             if( data == null ) {
@@ -217,7 +219,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "POST", resource, headers );
+            signRequest( con, "POST", u, headers );
 
             con.connect();
 
@@ -266,7 +268,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }    	
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}    	
     }
     
     /**
@@ -288,7 +292,7 @@ public class EsuRestApi implements EsuApi {
         
         try {
             String resource = context + "/objects";
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -331,7 +335,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "POST", resource, headers );
+            signRequest( con, "POST", u, headers );
 
             con.connect();
 
@@ -371,7 +375,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
@@ -397,7 +403,7 @@ public class EsuRestApi implements EsuApi {
 			MetadataList metadata, BufferSegment data, String mimeType) {
         try {
             String resource = getResourcePath( context, path );
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -440,7 +446,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "POST", resource, headers );
+            signRequest( con, "POST", u, headers );
 
             con.connect();
 
@@ -481,7 +487,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
 	}
 
 
@@ -518,7 +526,7 @@ public class EsuRestApi implements EsuApi {
     public void deleteObject(Identifier id) {
         try {
             String resource = getResourcePath( context, id );
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -535,7 +543,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "DELETE", resource, headers );
+            signRequest( con, "DELETE", u, headers );
             
             con.connect();
             
@@ -551,7 +559,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
@@ -566,8 +576,8 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Must specify tags to delete" );
         }
         try {
-        	String resource = getResourcePath( context, id ) + "?metadata/user";
-            URL u = buildUrl( resource );
+        	String resource = getResourcePath( context, id );
+            URL u = buildUrl( resource, "metadata/user" );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -589,7 +599,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "DELETE", resource, headers );
+            signRequest( con, "DELETE", u, headers );
             
             con.connect();
             
@@ -605,7 +615,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
     /**
@@ -615,8 +627,8 @@ public class EsuRestApi implements EsuApi {
      */
     public Acl getAcl(Identifier id) {
         try {
-        	String resource = getResourcePath( context, id ) + "?acl";
-            URL u = buildUrl( resource );
+        	String resource = getResourcePath( context, id );
+            URL u = buildUrl( resource, "acl" );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -633,7 +645,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "GET", resource, headers );
+            signRequest( con, "GET", u, headers );
             
             con.connect();
             
@@ -657,7 +669,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
@@ -681,8 +695,8 @@ public class EsuRestApi implements EsuApi {
      */
     public MetadataTags getListableTags( String tag ) {
         try {
-            String resource = context + "/objects?listabletags";
-            URL u = buildUrl( resource );
+            String resource = context + "/objects";
+            URL u = buildUrl( resource, "listabletags" );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -704,7 +718,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "GET", resource, headers );
+            signRequest( con, "GET", u, headers );
             
             con.connect();
             
@@ -726,7 +740,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
@@ -741,8 +757,8 @@ public class EsuRestApi implements EsuApi {
     public MetadataList getSystemMetadata(Identifier id,
             MetadataTags tags) {
         try {
-        	String resource = getResourcePath( context, id ) + "?metadata/system";
-            URL u = buildUrl( resource );
+        	String resource = getResourcePath( context, id );
+            URL u = buildUrl( resource, "metadata/system" );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -764,7 +780,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "GET", resource, headers );
+            signRequest( con, "GET", u, headers );
             
             con.connect();
             
@@ -788,7 +804,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
@@ -803,8 +821,8 @@ public class EsuRestApi implements EsuApi {
     public MetadataList getUserMetadata(Identifier id,
             MetadataTags tags) {
         try {
-        	String resource = getResourcePath( context, id ) + "?metadata/user";
-            URL u = buildUrl( resource );
+        	String resource = getResourcePath( context, id );
+            URL u = buildUrl( resource, "metadata/user" );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -826,7 +844,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "GET", resource, headers );
+            signRequest( con, "GET", u, headers );
             
             con.connect();
             
@@ -850,7 +868,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
@@ -878,7 +898,7 @@ public class EsuRestApi implements EsuApi {
     public List<Identifier> listObjects(String tag) {
         try {
             String resource = context + "/objects";
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -902,7 +922,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "GET", resource, headers );
+            signRequest( con, "GET", u, headers );
             
             con.connect();
             
@@ -925,7 +945,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
     
     /**
@@ -952,7 +974,7 @@ public class EsuRestApi implements EsuApi {
     public List<ObjectResult> listObjectsWithMetadata(String tag) {
         try {
             String resource = context + "/objects";
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -977,7 +999,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "GET", resource, headers );
+            signRequest( con, "GET", u, headers );
             
             con.connect();
             
@@ -1000,7 +1022,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
@@ -1011,8 +1035,8 @@ public class EsuRestApi implements EsuApi {
      */
     public MetadataTags listUserMetadataTags(Identifier id) {
         try {
-        	String resource = getResourcePath( context, id ) + "?metadata/tags";
-            URL u = buildUrl( resource );
+        	String resource = getResourcePath( context, id );
+            URL u = buildUrl( resource, "metadata/tags" );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1029,7 +1053,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "GET", resource, headers );
+            signRequest( con, "GET", u, headers );
             
             con.connect();
             
@@ -1054,7 +1078,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
@@ -1066,8 +1092,8 @@ public class EsuRestApi implements EsuApi {
      */
     public List<Identifier> listVersions(Identifier id) {
         try {
-        	String resource = getResourcePath( context, id ) + "?versions";
-            URL u = buildUrl( resource );
+        	String resource = getResourcePath( context, id );
+            URL u = buildUrl( resource, "versions" );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1084,7 +1110,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "GET", resource, headers );
+            signRequest( con, "GET", u, headers );
             
             con.connect();
             
@@ -1107,7 +1133,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
@@ -1120,7 +1148,7 @@ public class EsuRestApi implements EsuApi {
     public List<Identifier> queryObjects(String xquery) {
         try {
             String resource = context + "/objects";
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1144,7 +1172,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "GET", resource, headers );
+            signRequest( con, "GET", u, headers );
             
             con.connect();
             
@@ -1167,7 +1195,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
@@ -1186,7 +1216,7 @@ public class EsuRestApi implements EsuApi {
     public byte[] readObject(Identifier id, Extent extent, byte[] buffer ) {
         try {
         	String resource = getResourcePath( context, id );
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1209,7 +1239,7 @@ public class EsuRestApi implements EsuApi {
             }
 
             // Sign request
-            signRequest( con, "GET", resource, headers );
+            signRequest( con, "GET", u, headers );
 
             con.connect();
 
@@ -1229,7 +1259,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
 
     }
 
@@ -1246,7 +1278,7 @@ public class EsuRestApi implements EsuApi {
 	public InputStream readObjectStream(Identifier id, Extent extent) {
         try {
         	String resource = getResourcePath( context, id );
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1269,7 +1301,7 @@ public class EsuRestApi implements EsuApi {
             }
 
             // Sign request
-            signRequest( con, "GET", resource, headers );
+            signRequest( con, "GET", u, headers );
 
             con.connect();
 
@@ -1286,7 +1318,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
 	}
 
     /**
@@ -1335,7 +1369,7 @@ public class EsuRestApi implements EsuApi {
             String mimeType ) {
         try {
         	String resource = getResourcePath( context, id );
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1384,7 +1418,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "PUT", resource, headers );
+            signRequest( con, "PUT", u, headers );
 
             con.connect();
 
@@ -1411,7 +1445,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
 
     }
     
@@ -1439,7 +1475,7 @@ public class EsuRestApi implements EsuApi {
             Extent extent, InputStream data, int length, String mimeType ) {
         try {
         	String resource = getResourcePath( context, id );
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1484,7 +1520,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "PUT", resource, headers );
+            signRequest( con, "PUT", u, headers );
 
             con.connect();
 
@@ -1520,7 +1556,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     	
     }
 
@@ -1535,8 +1573,8 @@ public class EsuRestApi implements EsuApi {
      */
     public void setUserMetadata( Identifier id, MetadataList metadata ) {
         try {
-        	String resource = getResourcePath( context, id ) + "?metadata/user";
-            URL u = buildUrl( resource );
+        	String resource = getResourcePath( context, id );
+            URL u = buildUrl( resource, "metadata/user" );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1558,7 +1596,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "POST", resource, headers );
+            signRequest( con, "POST", u, headers );
 
             con.connect();
 
@@ -1577,7 +1615,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
         
     }
     
@@ -1588,8 +1628,8 @@ public class EsuRestApi implements EsuApi {
      */
     public void setAcl( Identifier id, Acl acl ) {
         try {
-        	String resource = getResourcePath( context, id ) + "?acl";
-            URL u = buildUrl( resource );
+        	String resource = getResourcePath( context, id );
+            URL u = buildUrl( resource, "acl" );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1612,7 +1652,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "POST", resource, headers );
+            signRequest( con, "POST", u, headers );
 
             con.connect();
 
@@ -1631,7 +1671,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
 
     }
 
@@ -1644,8 +1686,8 @@ public class EsuRestApi implements EsuApi {
      */
     public ObjectId versionObject(Identifier id) {
         try {
-        	String resource = getResourcePath( context, id ) + "?versions";
-            URL u = buildUrl( resource );
+        	String resource = getResourcePath( context, id );
+            URL u = buildUrl( resource, "versions" );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1662,7 +1704,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "POST", resource, headers );
+            signRequest( con, "POST", u, headers );
             
             con.connect();
 
@@ -1690,7 +1732,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
@@ -1802,7 +1846,7 @@ public class EsuRestApi implements EsuApi {
 	public ObjectMetadata getAllMetadata( Identifier id ) {
         try {
         	String resource = getResourcePath( context, id );
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, null );
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1819,7 +1863,7 @@ public class EsuRestApi implements EsuApi {
             headers.put( "Date", dateHeader );
 
             // Sign request
-            signRequest( con, "HEAD", resource, headers );
+            signRequest( con, "HEAD", u, headers );
 
             con.connect();
 
@@ -1853,7 +1897,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error connecting to server", e );
         } catch (GeneralSecurityException e) {
             throw new EsuException( "Error computing request signature", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
 	}
 
 
@@ -1865,9 +1911,14 @@ public class EsuRestApi implements EsuApi {
 
     /**
      * Builds a new URL to the given resource
+     * @throws URISyntaxException 
+     * @throws MalformedURLException 
      */
-    private URL buildUrl(String resource) throws MalformedURLException {
-        return new URL( proto + "://" + host + ":" + port + resource );
+    private URL buildUrl(String resource, String query ) throws URISyntaxException, MalformedURLException  {
+    	URI uri = new URI( proto, null, host, port, resource, query, null );
+    	URL u = uri.toURL();
+    	l4j.debug( "URL: " + u );
+    	return u;
     }
 
     /**
@@ -1978,7 +2029,7 @@ public class EsuRestApi implements EsuApi {
      * signature.
      */
     private void signRequest(HttpURLConnection con, String method,
-            String resource, Map<String, String> headers ) throws IOException, GeneralSecurityException {
+            URL resource, Map<String, String> headers ) throws IOException, GeneralSecurityException {
         // Build the string to hash.
         StringBuffer hashStr = new StringBuffer();
         hashStr.append( method + "\n" );
@@ -2000,7 +2051,12 @@ public class EsuRestApi implements EsuApi {
 
         // Add the current date and the resource.
         hashStr.append( headers.get( "Date" ) + "\n" +
-                URLDecoder.decode(resource, "UTF-8").toLowerCase() + "\n" );
+                URLDecoder.decode(resource.getPath(), "UTF-8").toLowerCase() );
+        if( resource.getQuery() != null ) {
+        	hashStr.append( "?" + resource.getQuery() + "\n" );
+        } else {
+        	hashStr.append( "\n" );
+        }
 
         // Do the 'x-emc' headers.  The headers must be hashed in alphabetic
         // order and the values must be stripped of whitespace and newlines.
@@ -2444,10 +2500,10 @@ public class EsuRestApi implements EsuApi {
             sb.append( ""+(expiration.getTime()/1000) );
             
             String signature = sign( sb.toString() );
-            resource += "?uid=" + uidEnc + "&expires=" + (expiration.getTime()/1000) +
+            String query = "uid=" + uidEnc + "&expires=" + (expiration.getTime()/1000) +
                 "&signature=" + URLEncoder.encode( signature, "UTF-8" );
             
-            URL u = buildUrl( resource );
+            URL u = buildUrl( resource, query );
             
             return u;
         } catch (UnsupportedEncodingException e) {
@@ -2460,7 +2516,9 @@ public class EsuRestApi implements EsuApi {
             throw new EsuException( "Error signing request", e );
         } catch (MalformedURLException e) {
             throw new EsuException( "Invalid URL format", e );
-        }
+        } catch (URISyntaxException e) {
+            throw new EsuException( "Invalid URL", e );
+		}
     }
 
 
