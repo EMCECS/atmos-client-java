@@ -2491,7 +2491,6 @@ public class EsuRestApi implements EsuApi {
     public URL getShareableUrl(Identifier id, Date expiration) {
         try {
             String resource = getResourcePath( context, id );
-            String uidEnc = URLEncoder.encode( uid, "UTF-8" );
             
             StringBuffer sb = new StringBuffer();
             sb.append( "GET\n" );
@@ -2500,10 +2499,19 @@ public class EsuRestApi implements EsuApi {
             sb.append( ""+(expiration.getTime()/1000) );
             
             String signature = sign( sb.toString() );
-            String query = "uid=" + uidEnc + "&expires=" + (expiration.getTime()/1000) +
-                "&signature=" + URLEncoder.encode( signature, "UTF-8" );
+            String query = "uid=" + URLEncoder.encode( uid, "UTF8" ) + "&expires=" + (expiration.getTime()/1000) +
+                "&signature=" + URLEncoder.encode( signature, "UTF8" );
             
-            URL u = buildUrl( resource, query );
+            // We do this a little strangely here.  Technically, the trailing "=" in the Base-64 signature
+            // should be encoded since it's a "reserved" character.  Atmos 1.2 is strict about this, but
+            // 1.3 relaxes the rules a bit.  Most URL generators (java.net.URI included) don't have facilities
+            // to break down the query components and encode them individually.  Therefore, we encode the
+            // query ourselves here and append it to the generated URL.  This will then work with both
+            // 1.2 and 1.3.
+            URL u = buildUrl( resource, null );
+        	u = new URL( u.toString() + "?" + query );
+
+        	l4j.debug( "URL: " + u );
             
             return u;
         } catch (UnsupportedEncodingException e) {

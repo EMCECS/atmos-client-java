@@ -24,8 +24,6 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.esu.api;
 
-import java.util.regex.Pattern;
-
 /**
  * Represents an object that is identified by its path in the 
  * filesystem namespace.  If the object path ends in a "/", it
@@ -33,11 +31,7 @@ import java.util.regex.Pattern;
  * regular object.
  */
 public class ObjectPath implements Identifier {
-    /**
-     * Regular expression used to validate identifiers.
-     */
-    private static final Pattern PATH_FORMAT = Pattern.compile( "^/([a-zA-Z0-9 _\\.\\+\\-%]+/?)*" );
-    
+
     /**
      * Stores the string representation of the identifier
      */
@@ -48,9 +42,6 @@ public class ObjectPath implements Identifier {
      * @param path the object ID as a string
      */
     public ObjectPath( String path ) {
-        if( !PATH_FORMAT.matcher( path ).matches() ) {
-            throw new EsuException( path + " is not a valid object path" );
-        }
         this.path = path;
     }
     
