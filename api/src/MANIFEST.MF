@@ -2,8 +2,8 @@ Manifest-Version: 1.0
 
 Name: com.emc.esu
 Specification-Title: "Atmos Storage Service" 
-Specification-Version: "1.2.5"
+Specification-Version: "1.2.7"
 Specification-Vendor: "EMC".
 Implementation-Title: "Atmos Java Connector" 
-Implementation-Version: "1.2.5.13"
+Implementation-Version: "1.2.7.16"
 Implementation-Vendor: "EMC"

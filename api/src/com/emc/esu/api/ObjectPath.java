@@ -66,6 +66,24 @@ public class ObjectPath implements Identifier {
     }
     
     /**
+     * Gets the name of the object (the last path component)
+     * @return
+     */
+    public String getName() {
+    	if( isDirectory() ) {
+    		if( path.equals( "/" ) ) {
+    			return "";
+    		} else {
+    			int slash = path.substring(0, path.length()-1 ).lastIndexOf( '/' );
+    			return path.substring( slash+1, path.length()-1 );
+    		}
+    	} else {
+    		int slash = path.lastIndexOf( '/' );
+    		return path.substring( slash+1, path.length() );
+    	}
+    }
+    
+    /**
      * Returns a hash code for this object id.
      */
     public int hashCode() {
