@@ -6,6 +6,10 @@
 		  <param name="conversionPattern" value="%d{HH:mm:ss,SSS} %-5p [%t] %C{1}: %m%n"/>
 		</layout>
 	</appender>
+ 
+ 	<logger name="org.apache">
+ 		<level value="INFO"></level>
+ 	</logger>
 
 	<root>
 		<priority value="DEBUG" />

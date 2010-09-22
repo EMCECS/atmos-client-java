@@ -25,110 +25,58 @@
 package com.emc.esu.test;
 
 import junit.framework.Assert;
-import junit.framework.TestCase;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.rest.EsuRestApi;
 
-public class EsuRestApiTest extends TestCase {
+public class EsuRestApiTest extends EsuApiTest {
     /**
      * UID to run tests with.  Change this value to your UID.
      */
-    private String uid = "<put your UID here>";
+//    private String uid2 = "<put your UID here>";
+    private String uid2 = "connectic";
 
     /**
      * Shared secret for UID.  Change this value to your UID's shared secret
      */
-    private String secret = "<put your secret key here>";
+    //private String secret = "<put your secret key here>";
+    private String secret = "D7qsp4j16PBHWSiUbc/bt3lbPBY=";
 
     /**
      * Hostname or IP of ESU server.  Change this value to your server's
      * hostname or ip address.
      */
-    private String host = "accesspoint.emccis.com";
+    //private String host = "accesspoint.emccis.com";
+    private String host = "192.168.15.115";
     
     /**
      * Port of ESU server (usually 80 or 443)
      */
     private int port = 80;
-    
-    private EsuApiTest test;
-    private EsuRestApi esu;
-    
-    /**
-     * Tear down after a test is run.  Cleans up objects that were created
-     * during the test.  Set cleanUp=false to disable this behavior.
-     */
-    public void tearDown() {
-        test.tearDown();
-    }
-    
+       
     /**
      * @see junit.framework.TestCase#setUp()
      */
-    protected void setUp() throws Exception {
-        esu = new EsuRestApi( host, port, uid, secret );
-        test = new EsuApiTest( esu );
+    @Before
+    public void setUp() throws Exception {
+        esu = new EsuRestApi( host, port, uid2, secret );
+        uid = uid2;
     }
 
-
-
-    //
-    // TESTS START HERE
-    //
-
-
-
-    /**
-     * Test creating one empty object.  No metadata, no content.
-     */
-    public void testCreateEmptyObject() throws Exception {
-        test.testCreateEmptyObject();
-    }
-
-    public void testCreateEmptyObjectOnPath() throws Exception {
-    	test.testCreateEmptyObjectOnPath();
-    }
-    
-    public void testListDirectory() throws Exception {
-    	test.testListDirectory();
-    }
-    
-    /**
-     * Test creating an object with content but without metadata
-     */
-    public void testCreateObjectWithContent() throws Exception {
-        test.testCreateObjectWithContent();
-    }
-    
-    /**
-     * Test creating an object with content but without metadata
-     */
-    public void testCreateObjectWithContentStream() throws Exception {
-        test.testCreateObjectWithContentStream();
-    }
-
-    /**
-     * Test creating an object with metadata but no content.
-     */
-    public void testCreateObjectWithMetadata() {
-        test.testCreateObjectWithMetadata();
-    }
-    
-    public void testCreateObjectWithMetadataOnPath() {
-    	test.testCreateObjectWithMetadataOnPath();
-    }
 
     /**
      * Test handling signature failures.  Should throw an exception with
      * error code 1032.
      */
+    @Test
     public void testSignatureFailure() throws Exception {
        try {
            // Fiddle with the secret key
            esu = new EsuRestApi( host, port, uid, secret.toUpperCase() );
-           test = new EsuApiTest( esu );
-           test.testCreateEmptyObject();
+           testCreateEmptyObject();
            Assert.fail( "Expected exception to be thrown" );
        } catch( EsuException e ) {
            Assert.assertEquals( "Expected error code 1032 for signature failure", 
@@ -139,11 +87,12 @@ public class EsuRestApiTest extends TestCase {
     /**
      * Test general HTTP errors by generating a 404.
      */
+    @Test
     public void testFourOhFour() throws Exception {
         try {
             // Fiddle with the context
-            esu.setContext( "/restttttttttt" );
-            test.testCreateEmptyObject();
+            ((EsuRestApi)esu).setContext( "/restttttttttt" );
+            testCreateEmptyObject();
             Assert.fail( "Expected exception to be thrown" );
         } catch( EsuException e ) {
             Assert.assertEquals( "Expected error code 404 for bad context root", 
@@ -152,189 +101,5 @@ public class EsuRestApiTest extends TestCase {
         
     }
 
-    /**
-     * Test reading an object's content
-     */
-    public void testReadObject() throws Exception {
-        test.testReadObject();
-    }
-    
-    /**
-     * Test reading an object's content using a
-     * stream.
-     */
-    public void testReadObjectStream() throws Exception {
-        test.testReadObjectStream();
-    }
-
-    /**
-     * Test reading an ACL back
-     */
-    public void testReadAcl() {
-        test.testReadAcl( uid );
-    }
-    
-    /**
-     * Test reading back user metadata
-     */
-    public void testGetUserMetadata() {
-        test.testGetUserMetadata();
-    }
-
-    /**
-     * Test deleting user metadata
-     */
-    public void testDeleteUserMetadata() {
-        test.testDeleteUserMetadata();
-    }
-
-    /**
-     * Test creating object versions
-     */
-//    public void testVersionObject() {
-//        test.testVersionObject();
-//    }
-
-    /**
-     * Test listing the versions of an object
-     */
-//    public void testListVersions() {
-//        test.testListVersions();
-//    }
-
-    /**
-     * Test listing the system metadata on an object
-     */
-    public void testGetSystemMetadata() {
-        test.testGetSystemMetadata();
-    }
-
-    /**
-     * Test listing objects by a tag
-     */
-    public void testListObjects() {
-        test.testListObjects();
-    }
-    
-    /**
-     * Test listing objects by a tag
-     */
-    public void testListObjectsWithMetadata() {
-        test.testListObjectsWithMetadata();
-    }
-
-    /**
-     * Test fetching listable tags
-     */
-    public void testGetListableTags() {
-        test.testGetListableTags();
-    }
-
-    /**
-     * Test listing the user metadata tags on an object
-     */
-    public void testListUserMetadataTags() {
-        test.testListUserMetadataTags();
-    }
-
-//    /**
-//     * Test executing a query.
-//     */
-//    public void testQueryObjects() {
-//        test.testQueryObjects( uid );
-//    }
-
-    /**
-     * Tests updating an object's metadata
-     */
-    public void testUpdateObjectMetadata() throws Exception {
-        test.testUpdateObjectMetadata();
-    }
-    
-    public void testUpdateObjectAcl() throws Exception {
-        test.testUpdateObjectAcl( uid );
-    }
-
-    /**
-     * Tests updating an object's contents
-     */
-    public void testUpdateObjectContent() throws Exception {
-        test.testUpdateObjectContent();
-    }
-    
-    /**
-     * Tests updating an object's contents
-     */
-    public void testUpdateObjectContentStream() throws Exception {
-        test.testUpdateObjectContentStream();
-    }
-
-    /**
-     * Test replacing an object's entire contents
-     */
-    public void testReplaceObjectContent() throws Exception {
-        test.testReplaceObjectContent();
-    }
-
-    /**
-     * Test the UploadHelper's create method
-     */
-    public void testCreateHelper() throws Exception {
-        test.testCreateHelper();
-    }
-
-    /**
-     * Test the UploadHelper's update method
-     */
-    public void testUpdateHelper() throws Exception {
-        test.testUpdateHelper();
-    }
-    
-    public void testCreateHelperWithPath() throws Exception {
-    	test.testCreateHelperWithPath();
-    }
-    
-    public void testUpdateHelperWithPath() throws Exception {
-    	test.testUpdateHelperWithPath();
-    }
-
-    /**
-     * Tests the download helper.  Tests both single and multiple requests.
-     */
-    public void testDownloadHelper() throws Exception {
-        test.testDownloadHelper();
-    }
-    
-    public void testUploadDownload() throws Exception {
-        test.testUploadDownload();
-    }
-    
-	public void testPathNaming() throws Exception {
-		test.testPathNaming();
-	}
-	
-	public void testGetAllMetadataByPath() throws Exception {
-		test.testGetAllMetadataByPath( uid );
-	}
-	
-	public void testGetAllMetadataById() throws Exception {
-		test.testGetAllMetadataById( uid );
-	}
-	
-	public void testGetObjectReplicaInfo() throws Exception {
-		test.testGetObjectReplicaInfo();
-	}
-	
-	public void testGetShareableUrl() throws Exception {
-	    test.testGetShareableUrl( uid );
-	}
-	
-	public void testGetShareableUrlWithPath() throws Exception {
-	    test.testGetShareableUrlWithPath( uid );
-	}
-	
-	public void testExpiredSharableUrl() throws Exception {
-	    test.testExpiredSharableUrl( uid );
-	}
 
 }
