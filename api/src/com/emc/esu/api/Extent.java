@@ -77,5 +77,14 @@ public class Extent {
         return b.getOffset() == offset && b.getSize() == size;
     }
     
+    public String toString() {
+        long end = offset + (size-1);
+        return "bytes=" + offset + "-" + end;
+    }
+
+    public String getHeaderName() {
+        return "Range";
+    }
+    
 
 }

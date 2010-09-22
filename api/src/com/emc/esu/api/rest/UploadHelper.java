@@ -26,6 +26,7 @@ package com.emc.esu.api.rest;
 
 import com.emc.esu.api.Acl;
 import com.emc.esu.api.BufferSegment;
+import com.emc.esu.api.Checksum;
 import com.emc.esu.api.EsuApi;
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.Extent;
@@ -34,11 +35,14 @@ import com.emc.esu.api.MetadataList;
 import com.emc.esu.api.ObjectId;
 import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.ProgressListener;
+import com.emc.esu.api.Checksum.Algorithm;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -68,6 +72,8 @@ public class UploadHelper {
     private Exception error;
     private List<ProgressListener> listeners;
     private int minReadSize = -1;
+    private boolean checksumming;
+    private Checksum checksum;
 
     /**
      * Creates a new upload helper.
@@ -141,11 +147,19 @@ public class UploadHelper {
         this.stream = stream;
 
         ObjectId id = null;
+        
+        if( checksumming ) {
+        	try {
+				checksum = new Checksum( Algorithm.SHA0 );
+			} catch (NoSuchAlgorithmException e) {
+				throw new RuntimeException( "Could not initialize checksum", e );
+			}
+        }
 
         // First call should be to create object
         try {
             boolean eof = readChunk();
-            id = this.esu.createObjectFromSegment(acl, metadata, buffer, null);
+            id = this.esu.createObjectFromSegment(acl, metadata, buffer, null, checksum);
             if (!eof) {
                 this.progress(buffer.getSize());
             } else {
@@ -217,10 +231,17 @@ public class UploadHelper {
 
         ObjectId id = null;
 
+        if( checksumming ) {
+        	try {
+				checksum = new Checksum( Algorithm.SHA0 );
+			} catch (NoSuchAlgorithmException e) {
+				throw new RuntimeException( "Could not initialize checksum", e );
+			}
+        }
         // First call should be to create object
         try {
             boolean eof = readChunk();
-            id = this.esu.createObjectFromSegmentOnPath(path, acl, metadata, buffer, null);
+            id = this.esu.createObjectFromSegmentOnPath(path, acl, metadata, buffer, null, checksum);
             if (!eof) {
                 this.progress(buffer.getSize());
             } else {
@@ -287,11 +308,19 @@ public class UploadHelper {
         this.closeStream = closeStream;
         this.stream = stream;
 
+        if( checksumming ) {
+        	try {
+				checksum = new Checksum( Algorithm.SHA0 );
+			} catch (NoSuchAlgorithmException e) {
+				throw new RuntimeException( "Could not initialize checksum", e );
+			}
+        }
+
         // First call uses a null extent to truncate the file.
         try {
             boolean eof = readChunk();
             this.esu.updateObjectFromSegment(id, acl, metadata, null, buffer,
-                    null);
+                    null, checksum);
 
             if (!eof) {
                 this.progress(buffer.getSize());
@@ -396,7 +425,7 @@ public class UploadHelper {
             }
 
             Extent extent = new Extent(currentBytes, buffer.getSize());
-            esu.updateObjectFromSegment(id, null, null, extent, buffer, null);
+            esu.updateObjectFromSegment(id, null, null, extent, buffer, null, checksum);
             this.progress(buffer.getSize());
         }
 
@@ -499,6 +528,20 @@ public class UploadHelper {
 
 	public int getMinReadSize() {
 		return minReadSize;
+	}
+
+	/**
+	 * @return the checksumming
+	 */
+	public boolean isChecksumming() {
+		return checksumming;
+	}
+
+	/**
+	 * @param checksumming the checksumming to set
+	 */
+	public void setChecksumming(boolean checksumming) {
+		this.checksumming = checksumming;
 	}
 
 }

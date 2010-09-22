@@ -48,8 +48,29 @@ public interface EsuApi {
      * @return Identifier of the newly created object.
      * @throws EsuException if the request fails.
      */
-    public ObjectId createObject( Acl acl, MetadataList metadata, 
+    ObjectId createObject( Acl acl, MetadataList metadata, 
             byte[] data, String mimeType );
+    
+    /**
+     * Creates a new object in the cloud.
+     * @param acl Access control list for the new object.  May be null
+     * to use a default ACL
+     * @param metadata Metadata for the new object.  May be null for
+     * no metadata.
+     * @param data The initial contents of the object.  May be appended
+     * to later.  May be null to create an object with no content.
+     * @param mimeType the MIME type of the content.  Optional, 
+     * may be null.  If data is non-null and mimeType is null, the MIME
+     * type will default to application/octet-stream.
+     * @param checksum if not null, use the Checksum object to compute
+     * the checksum for the create object request.  If appending
+     * to the object with subsequent requests, use the same
+     * checksum object for each request.
+     * @return Identifier of the newly created object.
+     * @throws EsuException if the request fails.
+     */
+    ObjectId createObject( Acl acl, MetadataList metadata, 
+            byte[] data, String mimeType, Checksum checksum );
     
     /**
      * Creates a new object in the cloud.
@@ -68,8 +89,8 @@ public interface EsuApi {
      * @return Identifier of the newly created object.
      * @throws EsuException if the request fails.
      */
-    public ObjectId createObjectFromStream( Acl acl, MetadataList metadata, 
-            InputStream data, int length, String mimeType );
+    ObjectId createObjectFromStream( Acl acl, MetadataList metadata, 
+            InputStream data, long length, String mimeType );
     
     /**
      * Creates a new object in the cloud on the specified path.
@@ -86,9 +107,31 @@ public interface EsuApi {
      * @return the ObjectId of the newly-created object for references by ID.
      * @throws EsuException if the request fails.
      */
-    public ObjectId createObjectOnPath( ObjectPath path, Acl acl, 
+    ObjectId createObjectOnPath( ObjectPath path, Acl acl, 
     		MetadataList metadata, 
             byte[] data, String mimeType );
+    /**
+     * Creates a new object in the cloud on the specified path.
+     * @param path The path to create the object on.
+     * @param acl Access control list for the new object.  May be null
+     * to use a default ACL
+     * @param metadata Metadata for the new object.  May be null for
+     * no metadata.
+     * @param data The initial contents of the object.  May be appended
+     * to later.  May be null to create an object with no content.
+     * @param mimeType the MIME type of the content.  Optional, 
+     * may be null.  If data is non-null and mimeType is null, the MIME
+     * type will default to application/octet-stream.
+     * @param checksum if not null, use the Checksum object to compute
+     * the checksum for the create object request.  If appending
+     * to the object with subsequent requests, use the same
+     * checksum object for each request.
+     * @return the ObjectId of the newly-created object for references by ID.
+     * @throws EsuException if the request fails.
+     */
+    ObjectId createObjectOnPath( ObjectPath path, Acl acl, 
+    		MetadataList metadata, 
+            byte[] data, String mimeType, Checksum checksum );
     
     /**
      * Creates a new object in the cloud using a BufferSegment.
@@ -104,8 +147,29 @@ public interface EsuApi {
      * @return Identifier of the newly created object.
      * @throws EsuException if the request fails.
      */
-    public ObjectId createObjectFromSegment( Acl acl, MetadataList metadata, 
+    ObjectId createObjectFromSegment( Acl acl, MetadataList metadata, 
             BufferSegment data, String mimeType );
+    
+    /**
+     * Creates a new object in the cloud using a BufferSegment.
+     * @param acl Access control list for the new object.  May be null
+     * to use a default ACL
+     * @param metadata Metadata for the new object.  May be null for
+     * no metadata.
+     * @param data The initial contents of the object.  May be appended
+     * to later.  May be null to create an object with no content.
+     * @param mimeType the MIME type of the content.  Optional, 
+     * may be null.  If data is non-null and mimeType is null, the MIME
+     * type will default to application/octet-stream.
+     * @param checksum if not null, use the Checksum object to compute
+     * the checksum for the create object request.  If appending
+     * to the object with subsequent requests, use the same
+     * checksum object for each request.
+     * @return Identifier of the newly created object.
+     * @throws EsuException if the request fails.
+     */
+    ObjectId createObjectFromSegment( Acl acl, MetadataList metadata, 
+            BufferSegment data, String mimeType, Checksum checksum );
 
     /**
      * Creates a new object in the cloud using a BufferSegment on the
@@ -123,9 +187,33 @@ public interface EsuApi {
      * @return the ObjectId of the newly-created object for references by ID.
      * @throws EsuException if the request fails.
      */
-    public ObjectId createObjectFromSegmentOnPath( ObjectPath path,
+    ObjectId createObjectFromSegmentOnPath( ObjectPath path,
     		Acl acl, MetadataList metadata, 
             BufferSegment data, String mimeType );
+
+    /**
+     * Creates a new object in the cloud using a BufferSegment on the
+     * given path.
+     * @param path the path to create the object on.
+     * @param acl Access control list for the new object.  May be null
+     * to use a default ACL
+     * @param metadata Metadata for the new object.  May be null for
+     * no metadata.
+     * @param data The initial contents of the object.  May be appended
+     * to later.  May be null to create an object with no content.
+     * @param mimeType the MIME type of the content.  Optional, 
+     * may be null.  If data is non-null and mimeType is null, the MIME
+     * type will default to application/octet-stream.
+     * @param checksum if not null, use the Checksum object to compute
+     * the checksum for the create object request.  If appending
+     * to the object with subsequent requests, use the same
+     * checksum object for each request.
+     * @return the ObjectId of the newly-created object for references by ID.
+     * @throws EsuException if the request fails.
+     */
+    ObjectId createObjectFromSegmentOnPath( ObjectPath path,
+    		Acl acl, MetadataList metadata, 
+            BufferSegment data, String mimeType, Checksum checksum );
     
             
     /**
@@ -145,8 +233,32 @@ public interface EsuApi {
      * type will default to application/octet-stream.
      * @throws EsuException if the request fails.
      */
-    public void updateObject( Identifier id, Acl acl, MetadataList metadata, 
+    void updateObject( Identifier id, Acl acl, MetadataList metadata, 
             Extent extent, byte[] data, String mimeType );
+
+    /**
+     * Updates an object in the cloud.
+     * @param id The ID of the object to update
+     * @param acl Access control list for the new object. Optional, default
+     * is NULL to leave the ACL unchanged.
+     * @param metadata Metadata list for the new object.  Optional,
+     * default is NULL for no changes to the metadata.
+     * @param data The new contents of the object.  May be appended
+     * to later. Optional, default is NULL (no content changes).
+     * @param extent portion of the object to update.  May be null to indicate
+     * the whole object is to be replaced.  If not null, the extent size must
+     * match the data size.
+     * @param mimeType the MIME type of the content.  Optional, 
+     * may be null.  If data is non-null and mimeType is null, the MIME
+     * type will default to application/octet-stream.
+     * @param checksum if not null, use the Checksum object to compute
+     * the checksum for the update object request.  If appending
+     * to the object with subsequent requests, use the same
+     * checksum object for each request.
+     * @throws EsuException if the request fails.
+     */
+    void updateObject( Identifier id, Acl acl, MetadataList metadata, 
+            Extent extent, byte[] data, String mimeType, Checksum checksum );
 
     /**
      * Updates an object in the cloud.
@@ -168,8 +280,8 @@ public interface EsuApi {
      * type will default to application/octet-stream.
      * @throws EsuException if the request fails.
      */
-    public void updateObjectFromStream( Identifier id, Acl acl, MetadataList metadata, 
-            Extent extent, InputStream data, int length, String mimeType );
+    void updateObjectFromStream( Identifier id, Acl acl, MetadataList metadata, 
+            Extent extent, InputStream data, long length, String mimeType );
     
     /**
      * Updates an object in the cloud using a portion of a buffer.
@@ -188,8 +300,32 @@ public interface EsuApi {
      * type will default to application/octet-stream.
      * @throws EsuException if the request fails.
      */
-    public void updateObjectFromSegment( Identifier id, Acl acl, MetadataList metadata, 
+    void updateObjectFromSegment( Identifier id, Acl acl, MetadataList metadata, 
             Extent extent, BufferSegment data, String mimeType );
+
+    /**
+     * Updates an object in the cloud using a portion of a buffer.
+     * @param id The ID of the object to update
+     * @param acl Access control list for the new object. Optional, default
+     * is NULL to leave the ACL unchanged.
+     * @param metadata Metadata list for the new object.  Optional,
+     * default is NULL for no changes to the metadata.
+     * @param data The new contents of the object.  May be appended
+     * to later. Optional, default is NULL (no content changes).
+     * @param extent portion of the object to update.  May be null to indicate
+     * the whole object is to be replaced.  If not null, the extent size must
+     * match the data size.
+     * @param mimeType the MIME type of the content.  Optional, 
+     * may be null.  If data is non-null and mimeType is null, the MIME
+     * type will default to application/octet-stream.
+     * @param checksum if not null, use the Checksum object to compute
+     * the checksum for the update object request.  If appending
+     * to the object with subsequent requests, use the same
+     * checksum object for each request.
+     * @throws EsuException if the request fails.
+     */
+    void updateObjectFromSegment( Identifier id, Acl acl, MetadataList metadata, 
+            Extent extent, BufferSegment data, String mimeType, Checksum checksum );
     
     /**
      * Writes the metadata into the object. If the tag does not exist, it is 
@@ -198,20 +334,26 @@ public interface EsuApi {
      * @param id the identifier of the object to update
      * @param metadata metadata to write to the object.
      */
-    public void setUserMetadata( Identifier id, MetadataList metadata );
+    void setUserMetadata( Identifier id, MetadataList metadata );
     
     /**
      * Sets (overwrites) the ACL on the object.
      * @param id the identifier of the object to change the ACL on.
      * @param acl the new ACL for the object.
      */
-    public void setAcl( Identifier id, Acl acl );
+    void setAcl( Identifier id, Acl acl );
             
     /**
      * Deletes an object from the cloud.
      * @param id the identifier of the object to delete.
      */
-    public void deleteObject( Identifier id );
+    void deleteObject( Identifier id );
+    
+    /**
+     * Deletes a version of an object from the cloud.
+     * @param id the identifier of the object to delete.
+     */
+    void deleteVersion( ObjectId id );
     
     /**
      * Fetches the user metadata for the object.
@@ -221,7 +363,7 @@ public interface EsuApi {
      * all user metadata will be fetched.
      * @return The list of user metadata for the object.
      */
-    public MetadataList getUserMetadata( Identifier id, MetadataTags tags );
+    MetadataList getUserMetadata( Identifier id, MetadataTags tags );
     
     /**
      * Fetches the system metadata for the object.
@@ -231,7 +373,7 @@ public interface EsuApi {
      * Default value is null to fetch all system metadata.
      * @return The list of system metadata for the object.
      */
-    public MetadataList getSystemMetadata( Identifier id, MetadataTags tags );
+    MetadataList getSystemMetadata( Identifier id, MetadataTags tags );
     
     /**
      * Reads an object's content.
@@ -245,7 +387,7 @@ public interface EsuApi {
      * will be valid.
      * @return the object data read as a byte array.
      */
-    public byte[] readObject( Identifier id, Extent extent, byte[] buffer );
+    byte[] readObject( Identifier id, Extent extent, byte[] buffer );
     
     /**
      * Reads an object's content and returns an InputStream to read the content.
@@ -257,14 +399,14 @@ public interface EsuApi {
      * Default is null to read the entire object.
      * @return an InputStream to read the object data.
      */
-    public InputStream readObjectStream( Identifier id, Extent extent );
+    InputStream readObjectStream( Identifier id, Extent extent );
     
     /**
      * Returns an object's ACL
      * @param id the identifier of the object whose ACL to read
      * @return the object's ACL
      */
-    public Acl getAcl( Identifier id );
+    Acl getAcl( Identifier id );
     
     /**
      * Deletes metadata items from an object.
@@ -272,7 +414,7 @@ public interface EsuApi {
      * delete.
      * @param tags the list of metadata tags to delete.
      */
-    public void deleteUserMetadata( Identifier id, MetadataTags tags );
+    void deleteUserMetadata( Identifier id, MetadataTags tags );
     
     /**
      * Lists the versions of an object.
@@ -280,14 +422,14 @@ public interface EsuApi {
      * @return The list of versions of the object.  If the object does
      * not have any versions, the array will be empty.
      */
-    public List<Identifier> listVersions( Identifier id );
+    List<Identifier> listVersions( Identifier id );
     
     /**
      * Creates a new immutable version of an object.
      * @param id the object to version
      * @return the id of the newly created version
      */
-    public ObjectId versionObject( Identifier id );
+    ObjectId versionObject( Identifier id );
     
     /**
      * Lists all objects with the given tag.
@@ -296,7 +438,7 @@ public interface EsuApi {
      * are found the array will be empty.
      * @throws EsuException if no objects are found (code 1003)
      */
-    public List<Identifier> listObjects( MetadataTag tag );
+    List<Identifier> listObjects( MetadataTag tag );
     
     /**
      * Lists all objects with the given tag.
@@ -305,7 +447,7 @@ public interface EsuApi {
      * are found the array will be empty.
      * @throws EsuException if no objects are found (code 1003)
      */
-    public List<Identifier> listObjects( String tag );
+    List<Identifier> listObjects( String tag );
     
     /**
      * Lists all objects with the given tag and returns both their
@@ -315,7 +457,7 @@ public interface EsuApi {
      * are found the array will be empty.
      * @throws EsuException if no objects are found (code 1003)
      */
-    public List<ObjectResult> listObjectsWithMetadata( MetadataTag tag );
+    List<ObjectResult> listObjectsWithMetadata( MetadataTag tag );
     
     /**
      * Lists all objects with the given tag and returns both their
@@ -325,7 +467,7 @@ public interface EsuApi {
      * are found the array will be empty.
      * @throws EsuException if no objects are found (code 1003)
      */
-    public List<ObjectResult> listObjectsWithMetadata( String tag );
+    List<ObjectResult> listObjectsWithMetadata( String tag );
     
     /**
      * Returns a list of the tags that are listable the current user's tennant.
@@ -333,7 +475,7 @@ public interface EsuApi {
      * under the specified tag.  If null, only top level tags will be returned.
      * @return the list of listable tags.
      */
-    public MetadataTags getListableTags( MetadataTag tag );
+    MetadataTags getListableTags( MetadataTag tag );
     
     /**
      * Returns a list of the tags that are listable the current user's tennant.
@@ -341,7 +483,7 @@ public interface EsuApi {
      * under the specified tag.  If null, only top level tags will be returned.
      * @return the list of listable tags.
      */
-    public MetadataTags getListableTags( String tag );
+    MetadataTags getListableTags( String tag );
     
     
     /**
@@ -349,7 +491,7 @@ public interface EsuApi {
      * @param id the object whose metadata tags to list
      * @return the list of user metadata tags assigned to the object
      */
-    public MetadataTags listUserMetadataTags( Identifier id );
+    MetadataTags listUserMetadataTags( Identifier id );
     
     /**
      * Executes a query for objects matching the specified XQuery string.
@@ -357,14 +499,14 @@ public interface EsuApi {
      * @return the list of objects matching the query.  If no objects
      * are found, the array will be empty.
      */
-    public List<Identifier> queryObjects( String xquery );
+    List<Identifier> queryObjects( String xquery );
 
     /**
      * Lists the contents of a directory.
      * @param path the path to list.  Must be a directory.
      * @return the directory entries in the directory.
      */
-    public List<DirectoryEntry> listDirectory( ObjectPath path );
+    List<DirectoryEntry> listDirectory( ObjectPath path );
     
     /**
      * Returns all of an object's metadata and its ACL in
@@ -372,7 +514,7 @@ public interface EsuApi {
      * @param id the object's identifier.
      * @return the object's metadata
      */
-    public ObjectMetadata getAllMetadata( Identifier id );
+    ObjectMetadata getAllMetadata( Identifier id );
     
     /**
      * An Atmos user (UID) can construct a pre-authenticated URL to an 
@@ -384,5 +526,25 @@ public interface EsuApi {
      * @param expiration the expiration date of the URL
      * @return a URL that can be used to share the object's content
      */
-    public URL getShareableUrl( Identifier id, Date expiration );
+    URL getShareableUrl( Identifier id, Date expiration );
+    
+
+    /**
+     * Renames a file or directory within the namespace.
+     * @param source The file or directory to rename
+     * @param destination The new path for the file or directory
+     * @param force If true, the desination file or 
+     * directory will be overwritten.  Directories must be empty to be 
+     * overwritten.  Also note that overwrite operations on files are
+     * not synchronous; a delay may be required before the object is
+     * available at its destination.
+     */
+    void rename(ObjectPath source, ObjectPath destination, boolean force);
+
+    /**
+     * Gets the current Atmos server information.  Currently, this simply
+     * returns the version of Atmos that is running.
+     * @return the ServiceInformation object
+     */
+    ServiceInformation getServiceInformation();
 }

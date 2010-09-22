@@ -25,15 +25,9 @@
 package com.emc.esu.api.rest;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
@@ -43,6 +37,25 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.conn.scheme.PlainSocketFactory;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.message.AbstractHttpMessage;
 import org.apache.log4j.Logger;
 import org.jdom.Document;
 import org.jdom.Element;
@@ -57,7 +70,6 @@ import com.emc.esu.api.DirectoryEntry;
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.Extent;
 import com.emc.esu.api.Grantee;
-import com.emc.esu.api.HttpInputStreamWrapper;
 import com.emc.esu.api.Identifier;
 import com.emc.esu.api.MetadataList;
 import com.emc.esu.api.MetadataTag;
@@ -69,16 +81,21 @@ import com.emc.esu.api.ObjectResult;
 import com.emc.esu.api.ServiceInformation;
 
 /**
- * Implements the REST version of the ESU API. This class uses HttpUrlRequest to
- * perform object and metadata calls against the ESU server. All of the methods
- * that communicate with the server are atomic and stateless so the object can
- * be used safely in a multithreaded environment.
+ * This is an enhanced version of the REST API that uses the Apache Commons
+ * HTTP Client as its transport layer instead of the built-in Java HTTP
+ * client.  It should perform better at the expense of a slightly larger
+ * footprint.  See the JARs in the commons-httpclient directory in the
+ * project's root folder.
+ * 
+ * @author Jason Cwik
+ *
  */
-public class EsuRestApi extends AbstractEsuRestApi {
-    private static final Logger l4j = Logger.getLogger(EsuRestApi.class);
+public class EsuRestApiApache extends AbstractEsuRestApi {
+    private static final Logger l4j = Logger.getLogger( EsuRestApiApache.class );
+    private DefaultHttpClient httpClient;
 
     /**
-     * Creates a new EsuRestApi object.
+     * Creates a new EsuRestApiApache object.
      * 
      * @param host the hostname or IP address of the ESU server
      * @param port the port on the server to communicate with. Generally this is
@@ -87,8 +104,25 @@ public class EsuRestApi extends AbstractEsuRestApi {
      * @param sharedSecret the Base64 encoded shared secret to use to sign
      *            requests to the server.
      */
-    public EsuRestApi(String host, int port, String uid, String sharedSecret) {
+    public EsuRestApiApache(String host, int port, String uid, String sharedSecret) {
         super(host, port, uid, sharedSecret);
+        SchemeRegistry schemeRegistry = new SchemeRegistry();
+        
+        if( port == 443 || (""+port).endsWith( "43" ) ) {
+            schemeRegistry.register(
+                    new Scheme("https", port, SSLSocketFactory.getSocketFactory()));
+        } else {
+            schemeRegistry.register(
+                 new Scheme("http", port, PlainSocketFactory.getSocketFactory()));
+        }
+
+        ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(schemeRegistry);
+        // Increase max total connection to 200
+        cm.setMaxTotalConnections(200);
+        // Increase default max connection per route to 20
+        cm.setDefaultMaxPerRoute(200);
+
+        httpClient = new DefaultHttpClient( cm, null );
     }
 
     /**
@@ -113,7 +147,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = context + "/objects";
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             if (data == null) {
                 throw new IllegalArgumentException("Input stream is required");
@@ -142,48 +175,22 @@ public class EsuRestApi extends AbstractEsuRestApi {
                 processAcl(acl, headers);
             }
 
-            con.setFixedLengthStreamingMode((int) length);
-            con.setDoOutput(true);
-
             // Add date
             headers.put("Date", getDateHeader());
 
             // Sign request
             signRequest("POST", u, headers);
-            configureRequest( con, "POST", headers );
 
-            con.connect();
-
-            // post data
-            OutputStream out = null;
-            byte[] buffer = new byte[128 * 1024];
-            int read = 0;
-            try {
-                out = con.getOutputStream();
-                while (read < length) {
-                    int c = data.read(buffer);
-                    if (c == -1) {
-                        throw new EsuException(
-                                "EOF encountered reading data stream");
-                    }
-                    out.write(buffer, 0, c);
-                    read += c;
-                }
-                out.close();
-            } catch (IOException e) {
-                silentClose(out);
-                con.disconnect();
-                throw new EsuException("Error posting data", e);
-            }
+            HttpResponse response = restPost( u, headers, data, length );
 
             // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            handleError( response );
 
             // The new object ID is returned in the location response header
-            String location = con.getHeaderField("location");
-            con.disconnect();
+            String location = response.getFirstHeader("location").getValue();
+            
+            // Cleanup the connection
+            cleanup( response );
 
             // Parse the value out of the URL
             return getObjectId( location );
@@ -197,7 +204,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             throw new EsuException("Invalid URL", e);
         }
     }
-
+    
     /**
      * Creates a new object in the cloud using a BufferSegment.
      * 
@@ -222,7 +229,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = context + "/objects";
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -251,12 +257,10 @@ public class EsuRestApi extends AbstractEsuRestApi {
             if (data == null) {
                 data = new BufferSegment(new byte[0]);
             }
-            con.setFixedLengthStreamingMode(data.getSize());
-            con.setDoOutput(true);
 
             // Add date
             headers.put("Date", getDateHeader());
-            
+
             // Compute checksum
             if( checksum != null ) {
             	checksum.update( data.getBuffer(), data.getOffset(), data.getSize() );
@@ -265,33 +269,21 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("POST", u, headers);
-            configureRequest( con, "POST", headers );
+            
+            HttpResponse response = restPost( u, headers, data );
 
-            con.connect();
-
-            // post data
-            OutputStream out = null;
-            try {
-                out = con.getOutputStream();
-                out.write(data.getBuffer(), data.getOffset(), data.getSize());
-                out.close();
-            } catch (IOException e) {
-                silentClose(out);
-                con.disconnect();
-                throw new EsuException("Error posting data", e);
-            }
 
             // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            handleError( response );
 
             // The new object ID is returned in the location response header
-            String location = con.getHeaderField("location");
-            con.disconnect();
+            String location = response.getFirstHeader("location").getValue();
+            
+            // Cleanup the connection
+            cleanup( response );
 
             // Parse the value out of the URL
-            return getObjectId(location);
+            return getObjectId( location );
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
         } catch (IOException e) {
@@ -328,7 +320,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, path);
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -357,8 +348,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
             if (data == null) {
                 data = new BufferSegment(new byte[0]);
             }
-            con.setFixedLengthStreamingMode(data.getSize());
-            con.setDoOutput(true);
 
             // Add date
             headers.put("Date", getDateHeader());
@@ -371,33 +360,19 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("POST", u, headers);
-            configureRequest( con, "POST", headers );
-
-            con.connect();
-
-            // post data
-            OutputStream out = null;
-            try {
-                out = con.getOutputStream();
-                out.write(data.getBuffer(), data.getOffset(), data.getSize());
-                out.close();
-            } catch (IOException e) {
-                silentClose(out);
-                con.disconnect();
-                throw new EsuException("Error posting data", e);
-            }
+            HttpResponse response = restPost( u, headers, data );
 
             // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            handleError( response );
 
             // The new object ID is returned in the location response header
-            String location = con.getHeaderField("location");
-            con.disconnect();
+            String location = response.getFirstHeader("location").getValue();
+            
+            // Cleanup the connection
+            cleanup( response );
 
             // Parse the value out of the URL
-            return getObjectId(location);
+            return getObjectId( location );
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -410,8 +385,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         }
     }
 
-
-
     /**
      * Deletes an object from the cloud.
      * 
@@ -421,7 +394,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -433,15 +405,12 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("DELETE", u, headers);
-            configureRequest( con, "DELETE", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-            con.disconnect();
+            
+            HttpResponse response = restDelete( u, headers );
+            
+            handleError( response );
+            
+            cleanup( response );
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -463,7 +432,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, "versions");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -475,15 +443,12 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("DELETE", u, headers);
-            configureRequest( con, "DELETE", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-            con.disconnect();
+            
+            HttpResponse response = restDelete( u, headers );
+            
+            handleError( response );
+            
+            cleanup( response );
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -509,7 +474,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, "metadata/user");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -526,16 +490,13 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("DELETE", u, headers);
-            configureRequest( con, "DELETE", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-            con.disconnect();
-
+            
+            HttpResponse response = restDelete( u, headers );
+            
+            handleError( response );
+            
+            finishRequest( response );
+            
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
         } catch (IOException e) {
@@ -557,7 +518,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, "acl");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -569,24 +529,19 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            HttpResponse response = restGet( u, headers );
+            
+            handleError(response);
 
             // Parse return headers. User grants are in x-emc-useracl and
             // group grants are in x-emc-groupacl
             Acl acl = new Acl();
-            readAcl(acl, con.getHeaderField("x-emc-useracl"),
+            readAcl(acl, response.getFirstHeader("x-emc-useracl").getValue(),
                     Grantee.GRANT_TYPE.USER);
-            readAcl(acl, con.getHeaderField("x-emc-groupacl"),
+            readAcl(acl, response.getFirstHeader("x-emc-groupacl").getValue(),
                     Grantee.GRANT_TYPE.GROUP);
 
-            con.disconnect();
+            finishRequest( response );
             return acl;
 
         } catch (MalformedURLException e) {
@@ -624,7 +579,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = context + "/objects";
             URL u = buildUrl(resource, "listabletags");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -641,21 +595,16 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
+            
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
 
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-
-            String header = con.getHeaderField("x-emc-listable-tags");
+            String header = response.getFirstHeader("x-emc-listable-tags").getValue();
             l4j.debug("x-emc-listable-tags: " + header);
             MetadataTags tags = new MetadataTags();
             readTags(tags, header, true);
 
-            con.disconnect();
+            finishRequest( response );
             return tags;
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -680,7 +629,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, "metadata/system");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -697,22 +645,17 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
 
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
 
             // Parse return headers. Regular metadata is in x-emc-meta and
             // listable metadata is in x-emc-listable-meta
             MetadataList meta = new MetadataList();
-            readMetadata(meta, con.getHeaderField("x-emc-meta"), false);
-            readMetadata(meta, con.getHeaderField("x-emc-listable-meta"), true);
+            readMetadata(meta, response.getFirstHeader("x-emc-meta"), false);
+            readMetadata(meta, response.getFirstHeader("x-emc-listable-meta"), true);
 
-            con.disconnect();
+            finishRequest( response );
             return meta;
 
         } catch (MalformedURLException e) {
@@ -738,7 +681,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, "metadata/user");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -755,22 +697,17 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
 
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
 
             // Parse return headers. Regular metadata is in x-emc-meta and
             // listable metadata is in x-emc-listable-meta
             MetadataList meta = new MetadataList();
-            readMetadata(meta, con.getHeaderField("x-emc-meta"), false);
-            readMetadata(meta, con.getHeaderField("x-emc-listable-meta"), true);
+            readMetadata(meta, response.getFirstHeader("x-emc-meta"), false);
+            readMetadata(meta, response.getFirstHeader("x-emc-listable-meta"), true);
 
-            con.disconnect();
+            finishRequest( response );
             return meta;
 
         } catch (MalformedURLException e) {
@@ -808,7 +745,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = context + "/objects";
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -827,22 +763,20 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
 
             // Get object id list from response
-            byte[] response = readResponse(con, null);
+            byte[] data = readStream( response.getEntity().getContent(), 
+                    (int) response.getEntity().getContentLength() );
 
-            l4j.debug("Response: " + new String(response, "UTF-8"));
-            con.disconnect();
+            if( l4j.isDebugEnabled() ) {
+                l4j.debug("Response: " + new String(data, "UTF-8"));
+            }
+            finishRequest( response );
 
-            return parseObjectList(response);
+            return parseObjectList(data);
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -881,7 +815,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = context + "/objects";
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -901,22 +834,20 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
 
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
+            
             // Get object id list from response
-            byte[] response = readResponse(con, null);
+            byte[] data = readStream( response.getEntity().getContent(), 
+                    (int) response.getEntity().getContentLength() );
 
-            l4j.debug("Response: " + new String(response, "UTF-8"));
-            con.disconnect();
+            if( l4j.isDebugEnabled() ) {
+                l4j.debug("Response: " + new String(data, "UTF-8"));
+            }
+            finishRequest( response );
 
-            return parseObjectListWithMetadata(response);
+            return parseObjectListWithMetadata(data);
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -939,7 +870,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, "metadata/tags");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -951,23 +881,19 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
 
             // Get the user metadata tags out of x-emc-listable-tags and
             // x-emc-tags
             MetadataTags tags = new MetadataTags();
 
-            readTags(tags, con.getHeaderField("x-emc-listable-tags"), true);
-            readTags(tags, con.getHeaderField("x-emc-tags"), false);
+            readTags(tags, response.getFirstHeader("x-emc-listable-tags").getValue(), true);
+            readTags(tags, response.getFirstHeader("x-emc-tags").getValue(), false);
 
-            con.disconnect();
+            finishRequest( response );
+            
             return tags;
 
         } catch (MalformedURLException e) {
@@ -992,7 +918,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, "versions");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1004,22 +929,20 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
 
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
 
             // Get object id list from response
-            byte[] response = readResponse(con, null);
+            byte[] data = readStream( response.getEntity().getContent(), 
+                    (int) response.getEntity().getContentLength() );
 
-            l4j.debug("Response: " + new String(response, "UTF-8"));
+            if( l4j.isDebugEnabled() ) {
+                l4j.debug("Response: " + new String(data, "UTF-8"));
+            }
+            finishRequest( response );
 
-            con.disconnect();
-            return parseVersionList(response);
+            return parseVersionList(data);
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -1043,7 +966,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = context + "/objects";
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1062,22 +984,19 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
 
             // Get object id list from response
-            byte[] response = readResponse(con, null);
+            byte[] data = readStream( response.getEntity().getContent(), 
+                    (int) response.getEntity().getContentLength() );
 
-            l4j.debug("Response: " + new String(response, "UTF-8"));
-
-            con.disconnect();
-            return parseObjectList(response);
+            if( l4j.isDebugEnabled() ) {
+                l4j.debug("Response: " + new String(data, "UTF-8"));
+            }
+            finishRequest( response );
+            return parseObjectList(data);
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -1107,7 +1026,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1124,18 +1042,16 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            HttpResponse response = restGet( u, headers );
 
             // The requested content is in the response body.
-            byte[] data = readResponse(con, buffer);
-            con.disconnect();
+            byte[] data = readStream( response.getEntity().getContent(), 
+                    (int) response.getEntity().getContentLength() );
+
+            if( l4j.isDebugEnabled() ) {
+                l4j.debug("Response: " + new String(data, "UTF-8"));
+            }
+            finishRequest( response );
             return data;
 
         } catch (MalformedURLException e) {
@@ -1165,7 +1081,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1182,16 +1097,11 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
+            
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
 
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-
-            return new HttpInputStreamWrapper(con.getInputStream(), con);
+            return new CommonsInputStreamWrapper( response );
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -1203,6 +1113,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             throw new EsuException("Invalid URL", e);
         }
     }
+
 
     /**
      * Updates an object in the cloud and optionally its metadata and ACL.
@@ -1232,7 +1143,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1266,8 +1176,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
             if (data == null) {
                 data = new BufferSegment(new byte[0]);
             }
-            con.setFixedLengthStreamingMode(data.getSize());
-            con.setDoOutput(true);
 
             // Add date
             headers.put("Date", getDateHeader());
@@ -1280,27 +1188,11 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("PUT", u, headers);
-            configureRequest( con, "PUT", headers );
-
-            con.connect();
-
-            // post data
-            OutputStream out = null;
-            try {
-                out = con.getOutputStream();
-                out.write(data.getBuffer(), data.getOffset(), data.getSize());
-                out.close();
-            } catch (IOException e) {
-                silentClose(out);
-                con.disconnect();
-                throw new EsuException("Error posting data", e);
-            }
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-            con.disconnect();
+            
+            HttpResponse response = restPut( u, headers, data );
+            handleError( response );
+            
+            finishRequest( response );
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
         } catch (IOException e) {
@@ -1340,7 +1232,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1370,45 +1261,17 @@ public class EsuRestApi extends AbstractEsuRestApi {
                 headers.put(extent.getHeaderName(), extent.toString());
             }
 
-            con.setFixedLengthStreamingMode((int) length);
-            con.setDoOutput(true);
-
             // Add date
             headers.put("Date", getDateHeader());
 
             // Sign request
             signRequest("PUT", u, headers);
-            configureRequest( con, "PUT", headers );
-
-            con.connect();
-
-            // post data
-            OutputStream out = null;
-            byte[] buffer = new byte[128 * 1024];
-            int read = 0;
-            try {
-                out = con.getOutputStream();
-                while (read < length) {
-                    int c = data.read(buffer);
-                    if (c == -1) {
-                        throw new EsuException(
-                                "EOF encountered reading data stream");
-                    }
-                    out.write(buffer, 0, c);
-                    read += c;
-                }
-                out.close();
-            } catch (IOException e) {
-                silentClose(out);
-                con.disconnect();
-                throw new EsuException("Error posting data", e);
-            }
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-            con.disconnect();
+            
+            HttpResponse response = restPut( u, headers, data, length );
+            handleError( response );
+            
+            finishRequest( response );
+            
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
         } catch (IOException e) {
@@ -1433,7 +1296,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, "metadata/user");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1450,19 +1312,11 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("POST", u, headers);
-            configureRequest( con, "POST", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-
-            // Read the response to complete the request (will be empty)
-            InputStream in = con.getInputStream();
-            in.close();
-            con.disconnect();
+            
+            HttpResponse response = restPost( u, headers, null );
+            handleError( response );
+            
+            finishRequest( response );
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
         } catch (IOException e) {
@@ -1485,7 +1339,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, "acl");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1502,19 +1355,12 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("POST", u, headers);
-            configureRequest( con, "POST", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-
-            // Read the response to complete the request (will be empty)
-            InputStream in = con.getInputStream();
-            in.close();
-            con.disconnect();
+            
+            HttpResponse response = restPost( u, headers, null );
+            handleError( response );
+            
+            finishRequest( response );
+            
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
         } catch (IOException e) {
@@ -1537,7 +1383,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, "versions");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1549,17 +1394,14 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("POST", u, headers);
-            configureRequest( con, "POST", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-
+            
+            HttpResponse response = restPost( u, headers, null );
+            handleError( response );
+            
             // The new object ID is returned in the location response header
-            String location = con.getHeaderField("location");
+            String location = response.getFirstHeader("location").getValue();
+            
+            finishRequest( response );
 
             // Parse the value out of the URL
             return getObjectId( location );
@@ -1643,7 +1485,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1655,34 +1496,31 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("HEAD", u, headers);
-            configureRequest( con, "HEAD", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-
+            
+            HttpResponse response = restHead( u, headers );
+            handleError( response );
+ 
             // Parse return headers. User grants are in x-emc-useracl and
             // group grants are in x-emc-groupacl
             Acl acl = new Acl();
-            readAcl(acl, con.getHeaderField("x-emc-useracl"),
+            readAcl(acl, response.getFirstHeader("x-emc-useracl").getValue(),
                     Grantee.GRANT_TYPE.USER);
-            readAcl(acl, con.getHeaderField("x-emc-groupacl"),
+            readAcl(acl, response.getFirstHeader("x-emc-groupacl").getValue(),
                     Grantee.GRANT_TYPE.GROUP);
 
             // Parse return headers. Regular metadata is in x-emc-meta and
             // listable metadata is in x-emc-listable-meta
             MetadataList meta = new MetadataList();
-            readMetadata(meta, con.getHeaderField("x-emc-meta"), false);
-            readMetadata(meta, con.getHeaderField("x-emc-listable-meta"), true);
+            readMetadata(meta, response.getFirstHeader("x-emc-meta"), false);
+            readMetadata(meta, response.getFirstHeader("x-emc-listable-meta"), true);
 
             ObjectMetadata om = new ObjectMetadata();
             om.setAcl(acl);
             om.setMetadata(meta);
-            om.setMimeType(con.getContentType());
+            om.setMimeType(response.getFirstHeader( "Content-Type").getValue());
 
+            finishRequest( response );
+            
             return om;
 
         } catch (MalformedURLException e) {
@@ -1701,7 +1539,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = context + "/service";
             URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1713,22 +1550,20 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Sign request
             signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
+            
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
 
             // Get object id list from response
-            byte[] response = readResponse(con, null);
+            byte[] data = readStream( response.getEntity().getContent(), 
+                    (int) response.getEntity().getContentLength() );
 
-            l4j.debug("Response: " + new String(response, "UTF-8"));
-            con.disconnect();
+            if( l4j.isDebugEnabled() ) {
+                l4j.debug("Response: " + new String(data, "UTF-8"));
+            }
+            finishRequest( response );
 
-            return parseServiceInformation(response);
+            return parseServiceInformation(data);
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -1740,6 +1575,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             throw new EsuException("Invalid URL", e);
         }
 	}
+	
 	
     /**
      * Renames a file or directory within the namespace.
@@ -1755,7 +1591,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         try {
             String resource = getResourcePath(context, source);
             URL u = buildUrl(resource, "rename");
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1775,20 +1610,14 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             // Add date
             headers.put("Date", getDateHeader());
-            
-            // Compute checksum
+
             // Sign request
             signRequest("POST", u, headers);
-            configureRequest( con, "POST", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-
-            con.disconnect();
+            
+            HttpResponse response = restPost( u, headers, null );
+            handleError( response );
+            
+            finishRequest( response );
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -1799,169 +1628,187 @@ public class EsuRestApi extends AbstractEsuRestApi {
         } catch (URISyntaxException e) {
             throw new EsuException("Invalid URL", e);
         }
-
+    	
     }
-
-
-
-    // ///////////////////
-    // Private Methods //
-    // ///////////////////
 
 
     
-    private void configureRequest( HttpURLConnection con, String method, Map<String,String> headers ) throws ProtocolException, UnsupportedEncodingException {
-        // Can set all the headers, etc now.
-        for (Iterator<String> i = headers.keySet().iterator(); i.hasNext();) {
-            String name = i.next();
-            
-            // Convert values from platform charset to ISO-8859-1.  The string
-            // is created as ISO-8859-1 bytes but reread with platform encoding.
-            // This makes sure that when the header is re-serialized into bytes
-            // that it uses the bytes we want.
-            con.setRequestProperty(new String(name.getBytes("ISO-8859-1")), 
-            		new String(headers.get(name).getBytes("ISO-8859-1")));
-        }
-
-        // Set the method.
-        con.setRequestMethod(method);        
-    }
-
-    /**
-     * Attempts to generate a reasonable error message from from a request. If
-     * the error is from the web service, there should be a message and code in
-     * the response body encapsulated in XML.
-     * 
-     * @param con the connection from the failed request.
-     */
-    private void handleError(HttpURLConnection con) {
-        int http_code = 0;
-        // Try and read the response body.
-        try {
-            http_code = con.getResponseCode();
-            byte[] response = readResponse(con, null);
-            l4j.debug("Error response: " + new String(response, "UTF-8"));
-            SAXBuilder sb = new SAXBuilder();
-
-            Document d = sb.build(new ByteArrayInputStream(response));
-
-            String code = d.getRootElement().getChildText("Code");
-            String message = d.getRootElement().getChildText("Message");
-
-            if (code == null && message == null) {
-                // not an error from ESU
-                throw new EsuException(con.getResponseMessage(), http_code);
-            }
-
-            l4j.debug("Error: " + code + " message: " + message);
-            throw new EsuException(message, http_code, Integer.parseInt(code));
-
-        } catch (IOException e) {
-            l4j.debug("Could not read error response body", e);
-            // Just throw what we know from the response
+    
+    /////////////////////
+    // Private Methods //
+    /////////////////////
+    
+    private void handleError(HttpResponse resp) {
+        StatusLine status = resp.getStatusLine();
+        if( status.getStatusCode() > 299 ) {
             try {
-                throw new EsuException(con.getResponseMessage(), http_code);
-            } catch (IOException e1) {
-                l4j.warn("Could not get response code/message!", e);
-                throw new EsuException("Could not get response code", e,
-                        http_code);
-            }
-        } catch (JDOMException e) {
-            try {
-                l4j.debug("Could not parse response body for " + http_code
-                        + ": " + con.getResponseMessage(), e);
+                HttpEntity body = resp.getEntity();
+                if( body == null ) {
+                    throw new EsuException( status.getReasonPhrase(), status.getStatusCode() );
+                }
+                
+                byte[] response = readStream( body.getContent(), (int) body.getContentLength() );
+                l4j.debug("Error response: " + new String(response, "UTF-8"));
+                SAXBuilder sb = new SAXBuilder();
+
+                Document d = sb.build(new ByteArrayInputStream(response));
+
+                String code = d.getRootElement().getChildText("Code");
+                String message = d.getRootElement().getChildText("Message");
+
+                if (code == null && message == null) {
+                    // not an error from ESU
+                    throw new EsuException( status.getReasonPhrase(), status.getStatusCode() );
+                }
+
+                l4j.debug("Error: " + code + " message: " + message);
+                throw new EsuException(message, status.getStatusCode(), Integer.parseInt(code));
+
+            } catch (IOException e) {
+                l4j.debug("Could not read error response body", e);
+                // Just throw what we know from the response
+                throw new EsuException(status.getReasonPhrase(), status.getStatusCode());
+            } catch (JDOMException e) {
+                l4j.debug("Could not parse response body for " + status.getStatusCode()
+                        + ": " + status.getReasonPhrase(), e);
                 throw new EsuException("Could not parse response body for "
-                        + http_code + ": " + con.getResponseMessage(), e,
-                        http_code);
-            } catch (IOException e1) {
-                throw new EsuException("Could not parse response body", e1,
-                        http_code);
+                        + status.getStatusCode() + ": " + status.getReasonPhrase(), e,
+                        status.getStatusCode());
+
+            } finally {
+                if( resp.getEntity() != null ) {
+                    try {
+                        resp.getEntity().consumeContent();
+                    } catch (IOException e) {
+                        l4j.warn( "Error finishing error response", e );
+                    }
+                }
             }
 
         }
-
     }
 
-    /**
-     * Reads the response body and returns it in a byte array.
-     * 
-     * @param con the HTTP connection
-     * @param buffer The buffer to use to read the response. The response buffer
-     *            must be large enough to read the entire response or an error
-     *            will be thrown.
-     * @return the byte array containing the response body. Note that if you
-     *         pass in a buffer, this will the same buffer object. Be sure to
-     *         check the content length to know what data in the buffer is valid
-     *         (from zero to contentLength).
-     * @throws IOException if reading the response stream fails.
-     */
-    private byte[] readResponse(HttpURLConnection con, byte[] buffer)
-            throws IOException {
-        InputStream in = null;
-        if (con.getResponseCode() > 299) {
-            in = con.getErrorStream();
-            if (in == null) {
-                in = con.getInputStream();
+    private HttpResponse restPost( URL url, Map<String,String> headers, InputStream in, long contentLength ) throws URISyntaxException, ClientProtocolException, IOException {
+        HttpPost post = new HttpPost( url.toURI() );
+        
+        setHeaders( post, headers );
+        
+        if( in != null ) {
+            post.setEntity( new InputStreamEntity( in, contentLength ) );
+        } else {
+            post.setEntity( new ByteArrayEntity( new byte[0] ) );
+        }
+        
+        return httpClient.execute( post );
+    }
+    
+    private HttpResponse restPost( URL url, Map<String,String> headers, BufferSegment data ) throws URISyntaxException, ClientProtocolException, IOException {
+        HttpPost post = new HttpPost( url.toURI() );
+        
+        setHeaders( post, headers );
+        
+        if( data != null ) {
+            if( data.getOffset() == 0 && (data.getSize() == data.getBuffer().length ) ) {
+                // use the native byte array
+                post.setEntity( new ByteArrayEntity( data.getBuffer() ) );
+            } else {
+                post.setEntity( new InputStreamEntity( 
+                        new ByteArrayInputStream(data.getBuffer(), data.getOffset(), data.getSize()),
+                        data.getSize() ) );
             }
         } else {
-            in = con.getInputStream();
+            post.setEntity( new ByteArrayEntity( new byte[0] ) );
         }
-        if (in == null) {
-            // could not get stream
-            return new byte[0];
-        }
-        try {
-            byte[] output;
-            int contentLength = con.getContentLength();
-            // If we know the content length, read it directly into a buffer.
-            if (contentLength != -1) {
-                if (buffer != null && buffer.length < con.getContentLength()) {
-                    throw new EsuException(
-                            "The response buffer was not long enough to hold the response: "
-                                    + buffer.length + "<"
-                                    + con.getContentLength());
-                }
-                if (buffer != null) {
-                    output = buffer;
-                } else {
-                    output = new byte[con.getContentLength()];
-                }
+        
+        return httpClient.execute( post );
+    }
 
-                int c = 0;
-                while (c < contentLength) {
-                    int read = in.read(output, c, contentLength - c);
-                    if (read == -1) {
-                        // EOF!
-                        throw new EOFException(
-                                "EOF reading response at position " + c
-                                        + " size " + (contentLength - c));
-                    }
-                    c += read;
-                }
+    private HttpResponse restDelete(URL url, Map<String, String> headers) throws URISyntaxException, ClientProtocolException, IOException {
+        HttpDelete delete = new HttpDelete( url.toURI() );
+        
+        setHeaders(delete, headers);
+        
+        return httpClient.execute( delete );
+    }
 
-                return output;
+    private HttpResponse restGet(URL url, Map<String, String> headers) throws URISyntaxException, ClientProtocolException, IOException {
+        HttpGet get = new HttpGet( url.toURI() );
+        
+        setHeaders(get, headers);
+        
+        return httpClient.execute( get );
+    }
+
+    private HttpResponse restPut(URL url, Map<String, String> headers,
+            BufferSegment data) throws ClientProtocolException, IOException, URISyntaxException {
+        
+        HttpPut put = new HttpPut( url.toURI() );
+        
+        setHeaders( put, headers );
+        
+        if( data != null ) {
+            if( data.getOffset() == 0 && (data.getSize() == data.getBuffer().length ) ) {
+                // use the native byte array
+                put.setEntity( new ByteArrayEntity( data.getBuffer() ) );
             } else {
-                l4j.debug("Content length is unknown.  Buffering output.");
-                // Else, use a ByteArrayOutputStream to collect the response.
-                if (buffer == null) {
-                    buffer = new byte[4096];
-                }
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                int c = 0;
-                while ((c = in.read(buffer)) != -1) {
-                    baos.write(buffer, 0, c);
-                }
-                baos.close();
-
-                l4j.debug("Buffered " + baos.size() + " response bytes");
-
-                return baos.toByteArray();
+                put.setEntity( new InputStreamEntity( 
+                        new ByteArrayInputStream(data.getBuffer(), data.getOffset(), data.getSize()),
+                        data.getSize() ) );
             }
-        } finally {
-            if (in != null) {
-                in.close();
-            }
+        } else {
+            put.setEntity( new ByteArrayEntity( new byte[0] ) );
         }
+        
+        return httpClient.execute( put );
+
+    }
+
+    private HttpResponse restPut(URL url, Map<String, String> headers,
+            InputStream in, long contentLength) throws URISyntaxException, ClientProtocolException, IOException {
+        HttpPut put = new HttpPut( url.toURI() );
+        
+        setHeaders( put, headers );
+        
+        if( in != null ) {
+            put.setEntity( new InputStreamEntity( in, contentLength ) );
+        } else {
+            put.setEntity( new ByteArrayEntity( new byte[0] ) );
+        }
+        
+        return httpClient.execute( put );
+    }
+
+    private HttpResponse restHead(URL url, Map<String, String> headers) throws URISyntaxException, ClientProtocolException, IOException {
+        HttpHead head = new HttpHead( url.toURI() );
+        
+        setHeaders( head, headers );
+        
+        return httpClient.execute( head );
+    }
+
+    private void setHeaders( AbstractHttpMessage request, Map<String, String> headers ) {
+        for( String headerName : headers.keySet() ) {
+            request.addHeader( headerName, headers.get( headerName ) );
+        }
+    }
+    
+    private void finishRequest(HttpResponse response) throws IOException {
+        if( response.getEntity() != null ) {
+            cleanup( response );
+        }
+    }
+
+    private void readMetadata(MetadataList meta, Header firstHeader,
+            boolean listable) {
+        if( firstHeader != null ) {
+            super.readMetadata(meta, firstHeader.getValue(), listable );
+        }
+    }
+
+    private void cleanup( HttpResponse response ) throws IOException {
+    	if( response.getEntity() != null ) {
+    		response.getEntity().consumeContent();
+    	}
     }
 
 
