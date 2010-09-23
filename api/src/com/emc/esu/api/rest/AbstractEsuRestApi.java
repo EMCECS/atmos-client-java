@@ -893,7 +893,7 @@ public abstract class AbstractEsuRestApi implements EsuApi {
                 first = false;
             }
             // this.trace( "xheader: " . k . "." . newheaders[k] );
-            hashStr.append(key + ':' + newheaders.get(key));
+            hashStr.append(key + ':' + normalizeSpace(newheaders.get(key)));
         }
 
         String hashOut = sign(hashStr.toString());
@@ -904,6 +904,26 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 
 
     /**
+     * Condenses consecutive spaces into one.
+     * @param string
+     * @return
+     */
+    private String normalizeSpace(String str) {
+		int length = str.length();
+		while(true) {
+			str = str.replace( "  ", " " );
+			if( str.length() == length ) {
+				// unchanged
+				break;
+			}
+			length = str.length();
+		}
+		
+		return str;
+		
+	}
+
+	/**
      * Gets the current time formatted for HTTP headers
      * @return
      */

@@ -236,6 +236,26 @@ public abstract class EsuApiTest {
         Assert.assertEquals( "'unlistable2' is listable", false, meta.getMetadata( "unlistable2" ).isListable() );
 
     }
+    
+    /**
+     * Test creating an object with metadata but no content.
+     */
+    @Test
+    public void testMetadataNormalizeSpace() {
+        MetadataList mlist = new MetadataList();
+        Metadata unlistable = new Metadata( "unlistable", "bar  bar   bar    bar", false );
+        mlist.addMetadata( unlistable );
+        ObjectId id = this.esu.createObject( null, mlist, null, null );
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        // Read and validate the metadata
+        MetadataList meta = this.esu.getUserMetadata( id, null );
+        Assert.assertEquals( "value of 'unlistable' wrong", "bar  bar   bar    bar", meta.getMetadata( "unlistable" ).getValue() );
+        // Check listable flags
+        Assert.assertEquals( "'unlistable' is listable" , false, meta.getMetadata( "unlistable" ).isListable() );
+
+    }
 
     /**
      * Test reading an object's content
@@ -809,6 +829,7 @@ public abstract class EsuApiTest {
     public void testUpdateHelper() throws Exception {
         // use a blocksize of 1 to test multiple transfers.
         UploadHelper uploadHelper = new UploadHelper( this.esu, new byte[1] );
+        uploadHelper.setMimeType( "text/plain" );
 
         // Create an object with content.
         ObjectId id = this.esu.createObject( null, null, "Four score and twenty years ago".getBytes( "UTF-8" ), "text/plain" );
@@ -1088,6 +1109,7 @@ public abstract class EsuApiTest {
 
     	// use a blocksize of 1 to test multiple transfers.
         UploadHelper uploadHelper = new UploadHelper( this.esu, new byte[1] );
+        uploadHelper.setMimeType( "text/plain" );
 
         // Create an object with content.
         ObjectId id = this.esu.createObjectOnPath( op, null, null, "Four score and twenty years ago".getBytes( "UTF-8" ), "text/plain" );

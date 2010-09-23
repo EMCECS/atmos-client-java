@@ -74,6 +74,7 @@ public class UploadHelper {
     private int minReadSize = -1;
     private boolean checksumming;
     private Checksum checksum;
+    private String mimeType;
 
     /**
      * Creates a new upload helper.
@@ -159,7 +160,7 @@ public class UploadHelper {
         // First call should be to create object
         try {
             boolean eof = readChunk();
-            id = this.esu.createObjectFromSegment(acl, metadata, buffer, null, checksum);
+            id = this.esu.createObjectFromSegment(acl, metadata, buffer, mimeType, checksum);
             if (!eof) {
                 this.progress(buffer.getSize());
             } else {
@@ -241,7 +242,7 @@ public class UploadHelper {
         // First call should be to create object
         try {
             boolean eof = readChunk();
-            id = this.esu.createObjectFromSegmentOnPath(path, acl, metadata, buffer, null, checksum);
+            id = this.esu.createObjectFromSegmentOnPath(path, acl, metadata, buffer, mimeType, checksum);
             if (!eof) {
                 this.progress(buffer.getSize());
             } else {
@@ -320,7 +321,7 @@ public class UploadHelper {
         try {
             boolean eof = readChunk();
             this.esu.updateObjectFromSegment(id, acl, metadata, null, buffer,
-                    null, checksum);
+                    mimeType, checksum);
 
             if (!eof) {
                 this.progress(buffer.getSize());
@@ -542,6 +543,21 @@ public class UploadHelper {
 	 */
 	public void setChecksumming(boolean checksumming) {
 		this.checksumming = checksumming;
+	}
+
+	/**
+	 * Sets the mimetype to be used when creating the object.
+	 * @param mimeType the mimeType
+	 */
+	public void setMimeType(String mimeType) {
+		this.mimeType = mimeType;
+	}
+
+	/**
+	 * @return the mimeType
+	 */
+	public String getMimeType() {
+		return mimeType;
 	}
 
 }
