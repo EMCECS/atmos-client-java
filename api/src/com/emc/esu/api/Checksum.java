@@ -29,7 +29,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 import org.concord.security.ccjce.cryptix.jce.provider.CryptixCrypto;
 
@@ -53,7 +52,7 @@ public class Checksum {
 	private MessageDigest digest;
 	private Algorithm alg;
 	private long offset;
-	private byte[] current;
+	private String expectedValue;
 	
 	public Checksum( Algorithm alg ) throws NoSuchAlgorithmException {
 		switch( alg ) {
@@ -121,6 +120,22 @@ public class Checksum {
 		
 		BigInteger bigInt = new BigInteger(1, currDigest);
 		return bigInt.toString(16);
+	}
+
+	/**
+	 * Sets the expected value for this checksum.  Only used for read operations
+	 * @param expectedValue the expectedValue to set
+	 */
+	public void setExpectedValue(String expectedValue) {
+		this.expectedValue = expectedValue;
+	}
+
+	/**
+	 * Gets the expected value for this checksum.  Only used for read operations.
+	 * @return the expectedValue
+	 */
+	public String getExpectedValue() {
+		return expectedValue;
 	}
 	
 	

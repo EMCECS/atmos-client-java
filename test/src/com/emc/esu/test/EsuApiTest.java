@@ -1232,36 +1232,44 @@ public abstract class EsuApiTest {
 		cleanup.add( id );
 	}
     
-//    @Test
-//    public void testUploadDownloadChecksum() throws Exception {
-//        // Create a byte array to test
-//        int size=10*1024*1024;
-//        byte[] testData = new byte[size];
-//        for( int i=0; i<size; i++ ) {
-//            testData[i] = (byte)(i%0x93);
-//        }
-//        UploadHelper uh = new UploadHelper( this.esu, null );
-//        uh.setChecksumming( true );
-//        
-//        ObjectId id = uh.createObject( new ByteArrayInputStream( testData ), null, null, true );
-//        cleanup.add( id );
-//        
-//        ByteArrayOutputStream baos = new ByteArrayOutputStream( size );
-//        
-//        DownloadHelper dl = new DownloadHelper( this.esu, new byte[4*1024*1024] );
-//        dl.readObject( id, baos, true );
-//        
-//        Assert.assertFalse( "Download should have been OK", dl.isFailed() );
-//        Assert.assertNull( "Error should have been null", dl.getError() );
-//        
-//        byte[] outData = baos.toByteArray();
-//        
-//        // Check the files
-//        Assert.assertEquals( "File lengths differ", testData.length, outData.length );
-//
-//        Assert.assertArrayEquals( "Data contents differ", testData, outData );
-//        
-//    }
+    /**
+     * Note, to test read checksums, see comment in testReadChecksum
+     * @throws Exception
+     */
+    @Test
+    public void testUploadDownloadChecksum() throws Exception {
+        // Create a byte array to test
+        int size=10*1024*1024;
+        byte[] testData = new byte[size];
+        for( int i=0; i<size; i++ ) {
+            testData[i] = (byte)(i%0x93);
+        }
+    	MetadataList mlist = new MetadataList();
+    	Metadata policy = new Metadata( "policy", "erasure", false );
+    	mlist.addMetadata( policy );
+        UploadHelper uh = new UploadHelper( this.esu, null );
+        uh.setChecksumming( true );
+        
+        ObjectId id = uh.createObject( new ByteArrayInputStream( testData ), null, mlist, true );
+        cleanup.add( id );
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream( size );
+        
+        DownloadHelper dl = new DownloadHelper( this.esu, new byte[4*1024*1024] );
+        dl.setChecksumming( true );
+        dl.readObject( id, baos, true );
+        
+        Assert.assertFalse( "Download should have been OK", dl.isFailed() );
+        Assert.assertNull( "Error should have been null", dl.getError() );
+        
+        byte[] outData = baos.toByteArray();
+        
+        // Check the files
+        Assert.assertEquals( "File lengths differ", testData.length, outData.length );
+
+        Assert.assertArrayEquals( "Data contents differ", testData, outData );
+        
+    }
     
     @Test
     public void testUnicodeMetadata() throws Exception {
@@ -1325,6 +1333,29 @@ public abstract class EsuApiTest {
         String content = new String( this.esu.readObject( op2, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "Four score and seven years ago", content );
    	
+    }
+    
+    
+    /**
+     * Tests readback with checksum verification.  In order to test this, create a policy
+     * with erasure coding and then set a policy selector with "policy=erasure" to invoke
+     * the erasure coding policy.
+     * @throws Exception
+     */
+    @Test
+    public void testReadChecksum() throws Exception {
+    	MetadataList mlist = new MetadataList();
+    	Metadata policy = new Metadata( "policy", "erasure", false );
+    	mlist.addMetadata( policy );
+    	Checksum createChecksum = new Checksum( Algorithm.SHA0 );
+        ObjectId id = this.esu.createObject( null, mlist, "hello".getBytes( "UTF-8" ), "text/plain", createChecksum );
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        // Read back the content
+        Checksum readChecksum = new Checksum( Algorithm.SHA0 );
+        String content = new String( this.esu.readObject( id, null, null, readChecksum ), "UTF-8" );
+        Assert.assertEquals( "object content wrong", "hello", content );
     }
 
 	

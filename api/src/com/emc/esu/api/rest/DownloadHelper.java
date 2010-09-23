@@ -25,6 +25,8 @@
 package com.emc.esu.api.rest;
 
 import com.emc.esu.api.BufferSegment;
+import com.emc.esu.api.Checksum;
+import com.emc.esu.api.Checksum.Algorithm;
 import com.emc.esu.api.EsuApi;
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.Extent;
@@ -36,6 +38,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -64,6 +67,8 @@ public class DownloadHelper {
     private boolean closeStream;
     private OutputStream stream;
     private List<ProgressListener> listeners;
+    private boolean checksumming;
+    private Checksum checksum;
 
     /**
      * Creates a new download helper.
@@ -128,6 +133,14 @@ public class DownloadHelper {
         if (this.totalBytes == -1) {
             throw new EsuException("Failed to get object size");
         }
+        
+        if( checksumming ) {
+        	try {
+				checksum = new Checksum( Algorithm.SHA0 );
+			} catch (NoSuchAlgorithmException e) {
+				throw new RuntimeException( "Could not initialize SHA0 hash algorithm" );
+			}
+        }
 
         // Loop, downloading chunks until the transfer is complete.
         while (true) {
@@ -148,7 +161,7 @@ public class DownloadHelper {
                 buffer.setSize((int) extent.getSize());
 
                 // Read data from the server.
-                byte[] obuffer = this.esu.readObject(id, extent, buffer.getBuffer());
+                byte[] obuffer = this.esu.readObject(id, extent, buffer.getBuffer(), checksum);
 
                 // See if they returned the buffer we're using.  In some
                 // cases, this doesn't happen (when content length is not
@@ -172,6 +185,16 @@ public class DownloadHelper {
 
                 // See if we're done.
                 if (this.currentBytes == this.totalBytes) {
+                	if( checksumming && checksum.getExpectedValue() != null ) {
+                		// Validate
+                    	
+                    	if( !checksum.getExpectedValue().equals( checksum.toString() ) ) {
+                    		throw new EsuException("Checksum validation error.  Expected " + checksum.getExpectedValue() + " but computed " + checksum.toString() );
+                    	} else {
+                    		l4j.info( "Checksum OK: " + checksum.getExpectedValue() );
+                    	}
+
+                	}
                     this.complete();
                     return;
                 }
@@ -287,5 +310,19 @@ public class DownloadHelper {
         }
 
     }
+
+	/**
+	 * @param checksumming the checksumming to set
+	 */
+	public void setChecksumming(boolean checksumming) {
+		this.checksumming = checksumming;
+	}
+
+	/**
+	 * @return the checksumming
+	 */
+	public boolean isChecksumming() {
+		return checksumming;
+	}
 
 }

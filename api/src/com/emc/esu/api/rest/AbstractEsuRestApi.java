@@ -104,6 +104,8 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 
     protected String context = "/rest";
     protected String proto;
+    
+    protected boolean readChecksum;
 
     /**
      * Creates a new AbstractEsuRestApi
@@ -376,6 +378,24 @@ public abstract class AbstractEsuRestApi implements EsuApi {
             String mimeType) {
     	updateObjectFromSegment( id, acl, metadata, extent, data, mimeType, null );
     }
+    
+    /**
+     * Reads an object's content.
+     * 
+     * @param id the identifier of the object whose content to read.
+     * @param extent the portion of the object data to read. Optional. Default
+     *            is null to read the entire object.
+     * @param buffer the buffer to use to read the extent. Must be large enough
+     *            to read the response or an error will be thrown. If null, a
+     *            buffer will be allocated to hold the response data. If you
+     *            pass a buffer that is larger than the extent, only
+     *            extent.getSize() bytes will be valid.
+     * @return the object data read as a byte array.
+     */
+    public byte[] readObject(Identifier id, Extent extent, byte[] buffer) {
+    	return readObject( id, extent, buffer, null );
+    }
+
 
     /**
      * Generates an HMAC-SHA1 signature of the given input string using the
@@ -994,4 +1014,20 @@ public abstract class AbstractEsuRestApi implements EsuApi {
     protected ServiceInformation parseServiceInformation( byte[] response ) {
     	return null;
     }
+
+	/**
+	 * @return the readChecksum
+	 */
+	public boolean isReadChecksum() {
+		return readChecksum;
+	}
+
+	/**
+	 * Turns read checksum verification on or off.  Note that 
+	 * checksums are only returned from the server for erasure coded objects.
+	 * @param readChecksum the readChecksum to set
+	 */
+	public void setReadChecksum(boolean readChecksum) {
+		this.readChecksum = readChecksum;
+	}
 }

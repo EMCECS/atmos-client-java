@@ -390,6 +390,26 @@ public interface EsuApi {
     byte[] readObject( Identifier id, Extent extent, byte[] buffer );
     
     /**
+     * Reads an object's content.
+     * @param id the identifier of the object whose content to read.
+     * @param extent the portion of the object data to read.  Optional.
+     * Default is null to read the entire object.
+     * @param buffer the buffer to use to read the extent.  Must be large
+     * enough to read the response or an error will be thrown.  If null,
+     * a buffer will be allocated to hold the response data.  If you pass
+     * a buffer that is larger than the extent, only extent.getSize() bytes
+     * will be valid.
+     * @param checksum if not null, the given checksum object will be used
+     * to verify checksums during the read operation.  Note that only erasure
+     * coded objects will return checksums *and* if you're reading the object
+     * in chunks, you'll have to read the data back sequentially to keep
+     * the checksum consistent.  If the read operation does not return
+     * a checksum from the server, the checksum operation will be skipped.
+     * @return the object data read as a byte array.
+     */
+    byte[] readObject( Identifier id, Extent extent, byte[] buffer, Checksum checksum );
+    
+    /**
      * Reads an object's content and returns an InputStream to read the content.
      * Since the input stream is linked to the HTTP connection, it is imperative
      * that you close the input stream as soon as you are done with the stream
@@ -547,4 +567,6 @@ public interface EsuApi {
      * @return the ServiceInformation object
      */
     ServiceInformation getServiceInformation();
+
+
 }

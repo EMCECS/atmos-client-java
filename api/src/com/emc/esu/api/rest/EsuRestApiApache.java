@@ -1020,9 +1020,15 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
      *            buffer will be allocated to hold the response data. If you
      *            pass a buffer that is larger than the extent, only
      *            extent.getSize() bytes will be valid.
+     * @param checksum if not null, the given checksum object will be used
+     * to verify checksums during the read operation.  Note that only erasure
+     * coded objects will return checksums *and* if you're reading the object
+     * in chunks, you'll have to read the data back sequentially to keep
+     * the checksum consistent.  If the read operation does not return
+     * a checksum from the server, the checksum operation will be skipped.
      * @return the object data read as a byte array.
      */
-    public byte[] readObject(Identifier id, Extent extent, byte[] buffer) {
+    public byte[] readObject(Identifier id, Extent extent, byte[] buffer, Checksum checksum) {
         try {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, null);
@@ -1048,10 +1054,25 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             byte[] data = readStream( response.getEntity().getContent(), 
                     (int) response.getEntity().getContentLength() );
 
-            if( l4j.isDebugEnabled() ) {
-                l4j.debug("Response: " + new String(data, "UTF-8"));
-            }
+//            if( l4j.isDebugEnabled() ) {
+//                l4j.debug("Response: " + new String(data, "UTF-8"));
+//            }
             finishRequest( response );
+            
+            // See if a checksum was returned.
+            Header checksumHeader = response.getFirstHeader("x-emc-wschecksum");
+            
+            if( checksumHeader != null && checksum != null ) {
+            	String checksumStr = checksumHeader.getValue();
+            	l4j.debug( "Checksum header: " + checksumStr );
+            	checksum.setExpectedValue( checksumStr );
+            	if( response.getEntity().getContentLength() != -1 ) {
+            		checksum.update( data, 0, (int)response.getEntity().getContentLength() );
+            	} else {
+            		checksum.update( data, 0, data.length );
+            	}
+            }
+
             return data;
 
         } catch (MalformedURLException e) {
