@@ -1012,7 +1012,28 @@ public abstract class AbstractEsuRestApi implements EsuApi {
     }
     
     protected ServiceInformation parseServiceInformation( byte[] response ) {
-    	return null;
+        // Use JDOM to parse the XML
+        SAXBuilder sb = new SAXBuilder();
+        try {
+            Document d = sb.build( new ByteArrayInputStream( response ) );
+            
+            ServiceInformation si = new ServiceInformation();
+            
+            // The ObjectID element is part of a namespace so we need to use
+            // the namespace to identify the elements.
+            Namespace esuNs = Namespace.getNamespace( "http://www.emc.com/cos/" );
+
+            Element ver = d.getRootElement().getChild( "Version", esuNs );
+            Element atmos = ver.getChild( "Atmos", esuNs );
+            
+            si.setAtmosVersion( atmos.getTextNormalize() );
+            
+            return si;
+        } catch (JDOMException e) {
+            throw new EsuException( "Error parsing response", e );
+        } catch (IOException e) {
+            throw new EsuException( "Error reading response", e );
+        }
     }
 
 	/**

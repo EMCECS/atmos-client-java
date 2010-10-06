@@ -63,6 +63,7 @@ import com.emc.esu.api.ObjectMetadata;
 import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.ObjectResult;
 import com.emc.esu.api.Permission;
+import com.emc.esu.api.ServiceInformation;
 import com.emc.esu.api.rest.UploadHelper;
 
 /**
@@ -1378,6 +1379,16 @@ public abstract class EsuApiTest {
         Checksum readChecksum = new Checksum( Algorithm.SHA0 );
         String content = new String( this.esu.readObject( id, null, null, readChecksum ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
+    }
+    
+    /**
+     * Tests getting the service information
+     */
+    @Test
+    public void testGetServiceInformation() throws Exception {
+    	ServiceInformation si = this.esu.getServiceInformation();
+    	
+    	Assert.assertNotNull( "Atmos version is null", si.getAtmosVersion() );
     }
 
 	
