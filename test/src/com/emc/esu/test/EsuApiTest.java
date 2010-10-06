@@ -29,6 +29,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -486,6 +487,27 @@ public abstract class EsuApiTest {
         Assert.assertFalse( "version 1 found in version list", versions.contains( vid1 ) );
         Assert.assertTrue( "version 2 not found in version list", versions.contains( vid2 ) );
         
+    }
+    
+    @Test
+    public void testRestoreVersion() throws UnsupportedEncodingException {
+        ObjectId id = this.esu.createObject(null, null, "Base Version Content".getBytes("UTF-8"), "text/plain");
+        Assert.assertNotNull("null ID returned", id);
+        cleanup.add(id);
+
+        // Version the object
+        ObjectId vId = this.esu.versionObject(id);
+
+        // Update the object content
+        this.esu.updateObject(id, null, null, null, "Child Version Content -- You should never see me".getBytes("UTF-8"), "text/plain");
+
+        // Restore the original version
+        this.esu.restoreVersion(id, vId);
+
+        // Read back the content
+        String content = new String(this.esu.readObject(id, null, null), "UTF-8");
+        Assert.assertEquals("object content wrong", "Base Version Content", content );
+
     }
 
     /**

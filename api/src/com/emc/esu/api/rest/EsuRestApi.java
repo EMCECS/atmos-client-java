@@ -1821,6 +1821,51 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
     }
 
+    /**
+     * Restores a version of an object to the base version (i.e. "promote" an 
+     * old version to the current version).
+     * @param id Base object ID (target of the restore)
+     * @param vId Version object ID to restore
+     */
+    public void restoreVersion( ObjectId id, ObjectId vId ) {
+        try {
+            String resource = getResourcePath(context, id);
+            URL u = buildUrl(resource, "versions");
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            headers.put("x-emc-uid", uid);
+            
+            // Version to promote
+            headers.put("x-emc-version-oid", vId.toString());
+
+            // Add date
+            headers.put("Date", getDateHeader());
+
+            // Sign request
+            signRequest("PUT", u, headers);
+            configureRequest( con, "PUT", headers );
+
+            con.connect();
+
+            // Check response
+            if (con.getResponseCode() > 299) {
+                handleError(con);
+            }
+            con.disconnect();
+        } catch (MalformedURLException e) {
+            throw new EsuException("Invalid URL", e);
+        } catch (IOException e) {
+            throw new EsuException("Error connecting to server", e);
+        } catch (GeneralSecurityException e) {
+            throw new EsuException("Error computing request signature", e);
+        } catch (URISyntaxException e) {
+            throw new EsuException("Invalid URL", e);
+        }
+    	
+    }
 
 
     // ///////////////////

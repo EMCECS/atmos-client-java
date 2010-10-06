@@ -560,6 +560,14 @@ public interface EsuApi {
      * available at its destination.
      */
     void rename(ObjectPath source, ObjectPath destination, boolean force);
+    
+    /**
+     * Restores a version of an object to the base version (i.e. "promote" an 
+     * old version to the current version).
+     * @param id Base object ID (target of the restore)
+     * @param vId Version object ID to restore
+     */
+    void restoreVersion( ObjectId id, ObjectId vId );
 
     /**
      * Gets the current Atmos server information.  Currently, this simply
