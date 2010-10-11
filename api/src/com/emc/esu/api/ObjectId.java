@@ -24,6 +24,11 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.esu.api;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 
 /**
@@ -78,4 +83,20 @@ public class ObjectId implements Identifier {
     public int hashCode() {
         return id.hashCode();
     }
+
+	public static Date parseXmlDate(String dateText) {
+		if( dateText == null ) {
+			return null;
+		}
+		
+		DateFormat xmlDate = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss'Z'" );
+		xmlDate.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
+		
+		try {
+			Date d = xmlDate.parse( dateText );
+			return d;
+		} catch (ParseException e) {
+			throw new EsuException( "Failed to parse date: " + dateText, e );
+		}
+	}
 }

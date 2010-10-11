@@ -75,6 +75,7 @@ import com.emc.esu.api.MetadataList;
 import com.emc.esu.api.MetadataTag;
 import com.emc.esu.api.MetadataTags;
 import com.emc.esu.api.ObjectId;
+import com.emc.esu.api.ObjectInfo;
 import com.emc.esu.api.ObjectMetadata;
 import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.ObjectResult;
@@ -1694,6 +1695,56 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
         }
     	
     }
+    
+    /**
+     * Get information about an object's state including
+     * replicas, expiration, and retention.
+     * @param id the object identifier
+     * @return and ObjectInfo object containing the state information
+     */
+    public ObjectInfo getObjectInfo( Identifier id ) {
+        try {
+            String resource = getResourcePath(context, id);
+            URL u = buildUrl(resource, "info");
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            headers.put("x-emc-uid", uid);
+
+            // Add date
+            headers.put("Date", getDateHeader());
+
+            // Sign request
+            signRequest("GET", u, headers);
+
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
+
+            // Get object id list from response
+            byte[] data = readStream( response.getEntity().getContent(), 
+                    (int) response.getEntity().getContentLength() );
+
+            String responseXml = new String(data, "UTF-8");
+            if( l4j.isDebugEnabled() ) {
+                l4j.debug("Response: " + responseXml);
+            }
+            finishRequest( response );
+
+            return new ObjectInfo(responseXml);
+
+        } catch (MalformedURLException e) {
+            throw new EsuException("Invalid URL", e);
+        } catch (IOException e) {
+            throw new EsuException("Error connecting to server", e);
+        } catch (GeneralSecurityException e) {
+            throw new EsuException("Error computing request signature", e);
+        } catch (URISyntaxException e) {
+            throw new EsuException("Invalid URL", e);
+        }
+    	
+    }
+
 
     
     

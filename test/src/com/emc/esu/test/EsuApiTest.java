@@ -59,6 +59,7 @@ import com.emc.esu.api.MetadataList;
 import com.emc.esu.api.MetadataTag;
 import com.emc.esu.api.MetadataTags;
 import com.emc.esu.api.ObjectId;
+import com.emc.esu.api.ObjectInfo;
 import com.emc.esu.api.ObjectMetadata;
 import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.ObjectResult;
@@ -1391,5 +1392,35 @@ public abstract class EsuApiTest {
     	Assert.assertNotNull( "Atmos version is null", si.getAtmosVersion() );
     }
 
-	
+	/**
+     * Test getting object info.  Note to fully run this testcase, you should
+     * create a policy named 'retaindelete' that keys off of the metadata
+     * policy=retaindelete that includes a retention and deletion criteria.
+     */
+    @Test
+    public void testGetObjectInfo() throws Exception {
+    	MetadataList mlist = new MetadataList();
+    	Metadata policy = new Metadata( "policy", "retaindelete", false );
+    	mlist.addMetadata( policy );
+        ObjectId id = this.esu.createObject( null, mlist, "hello".getBytes( "UTF-8" ), "text/plain" );
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        // Read back the content
+        String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
+        Assert.assertEquals( "object content wrong", "hello", content );
+        
+        // Get the object info
+        ObjectInfo oi = this.esu.getObjectInfo( id );
+        Assert.assertNotNull( "ObjectInfo null", oi );
+        Assert.assertNotNull("ObjectInfo expiration null", oi.getExpiration() );
+        Assert.assertNotNull("ObjectInfo objectid null", oi.getObjectId() );
+        Assert.assertNotNull("ObjectInfo raw xml null", oi.getRawXml() );
+        Assert.assertNotNull("ObjectInfo replicas null", oi.getReplicas() );
+        Assert.assertNotNull("ObjectInfo retention null", oi.getRetention() );
+        Assert.assertNotNull("ObjectInfo selection null", oi.getSelection() );
+        Assert.assertTrue("ObjectInfo should have at least one replica", oi.getReplicas().size()>0 );
+
+    }
+
 }

@@ -576,5 +576,11 @@ public interface EsuApi {
      */
     ServiceInformation getServiceInformation();
 
-
+    /**
+     * Get information about an object's state including
+     * replicas, expiration, and retention.
+     * @param id the object identifier
+     * @return and ObjectInfo object containing the state information
+     */
+    ObjectInfo getObjectInfo( Identifier id );
 }
