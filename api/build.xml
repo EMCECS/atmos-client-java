@@ -16,6 +16,9 @@
 		<fileset dir="${lib}">
 			<include name="*.jar"/>
 		</fileset>
+		<fileset dir="commons-httpclient">
+			<include name="*.jar"/>
+		</fileset>
 	</path>
 
 	<!-- Builds the distribution zip file -->
@@ -26,6 +29,7 @@
 				<include name="${build}/**" />
 				<include name="${doc}/**" />
 				<include name="${lib}/**" />
+				<include name="commons-httpclient/**" />
 				<include name="build.xml" />
 				<include name="readme.txt" />
 				

@@ -100,3 +100,11 @@ You can fix this problem by editing the registry and changing MaxUserPort and
 TCPTimedWaitDelay settings.  This is discussed in the article:
 http://support.microsoft.com/kb/196271/en-us
 
+New in 1.4: EsuRestApiApache
+----------------------------
+In version 1.4 a new implementation is available: EsuRestApiApache.  This version
+implements the same EsuApi interface, but uses the Apache Commons HTTP client 
+instead of the built-in Java HTTP client.  This version should offer more options
+with connection pooling and HTTP keep-alive requests for higher throughput than
+the standard client.  The only downside is that you'll need to include the JAR
+files in the commons-httpclient folder with your application.
