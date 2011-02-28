@@ -32,6 +32,9 @@ public class DirectoryEntry {
 	private ObjectPath path;
 	private ObjectId id;
 	private String type;
+	private MetadataList systemMetadata;
+	private MetadataList userMetadata;
+	
 	/**
 	 * @return the path
 	 */
@@ -75,6 +78,34 @@ public class DirectoryEntry {
 	public String toString() {
 		// TODO Auto-generated method stub
 		return path + " - " + type + " - " + id;
+	}
+	/**
+	 * @param systemMetadata the systemMetadata to set
+	 */
+	public void setSystemMetadata(MetadataList systemMetadata) {
+		this.systemMetadata = systemMetadata;
+	}
+	/**
+	 * Gets the system metadata for this directory entry. If metadata was not
+	 * requested in the listDirectory method, this will be null.
+	 * @return the systemMetadata
+	 */
+	public MetadataList getSystemMetadata() {
+		return systemMetadata;
+	}
+	/**
+	 * @param userMetadata the userMetadata to set
+	 */
+	public void setUserMetadata(MetadataList userMetadata) {
+		this.userMetadata = userMetadata;
+	}
+	/**
+	 * Gets the user metadata for this directory entry. If metadata was not
+	 * requested in the listDirectory method, this will be null.
+	 * @return the userMetadata
+	 */
+	public MetadataList getUserMetadata() {
+		return userMetadata;
 	}
 	
 }

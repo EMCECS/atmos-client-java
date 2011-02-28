@@ -19,20 +19,18 @@ public class EsuRestApiApacheTest extends EsuApiTest {
     /**
      * UID to run tests with.  Change this value to your UID.
      */
-    //private String uid = "<put your UID here>";
-    private String uid2 = "connectic";
+    private String uid2 = "<put your UID here>";
 
     /**
      * Shared secret for UID.  Change this value to your UID's shared secret
      */
-    //private String secret = "<put your secret key here>";
-    private String secret = "D7qsp4j16PBHWSiUbc/bt3lbPBY=";
+    private String secret = "<put your secret key here>";
 
     /**
      * Hostname or IP of ESU server.  Change this value to your server's
      * hostname or ip address.
      */
-    private String host = "192.168.15.115";
+    private String host = "<put your host here>";
     
     /**
      * Port of ESU server (usually 80 or 443)

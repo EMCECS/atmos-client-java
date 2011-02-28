@@ -69,6 +69,9 @@ public class ObjectId implements Identifier {
      * Returns true if the object IDs are equal.
      */
     public boolean equals( Object obj ) {
+    	if( obj instanceof ObjectResult ) {
+    		return this.equals( ((ObjectResult)obj).getId() );
+    	}
         if( !(obj instanceof ObjectId) ) {
             return false;
         }
@@ -85,7 +88,7 @@ public class ObjectId implements Identifier {
     }
 
 	public static Date parseXmlDate(String dateText) {
-		if( dateText == null ) {
+		if( dateText == null || dateText.length() < 1 ) {
 			return null;
 		}
 		

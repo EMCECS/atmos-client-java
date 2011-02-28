@@ -57,5 +57,20 @@ public class ObjectResult {
 	public void setMetadata(MetadataList metadata) {
 		this.metadata = metadata;
 	}
+	/**
+	 * Equality test.  For convienience, you can compare this to an ObjectId
+	 * object to test against the encapuslated ID.
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if( obj instanceof ObjectId ) {
+			return id.equals( obj );
+		} else {
+			return ((ObjectResult)obj).getId().equals( id );
+		}
+	}
+	
+	
 	
 }

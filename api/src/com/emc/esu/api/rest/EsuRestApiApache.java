@@ -31,9 +31,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -58,9 +56,7 @@ import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.log4j.Logger;
 import org.jdom.Document;
-import org.jdom.Element;
 import org.jdom.JDOMException;
-import org.jdom.Namespace;
 import org.jdom.input.SAXBuilder;
 
 import com.emc.esu.api.Acl;
@@ -71,6 +67,7 @@ import com.emc.esu.api.EsuException;
 import com.emc.esu.api.Extent;
 import com.emc.esu.api.Grantee;
 import com.emc.esu.api.Identifier;
+import com.emc.esu.api.ListOptions;
 import com.emc.esu.api.MetadataList;
 import com.emc.esu.api.MetadataTag;
 import com.emc.esu.api.MetadataTags;
@@ -730,19 +727,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
      *         the array will be empty.
      * @throws EsuException if no objects are found (code 1003)
      */
-    public List<Identifier> listObjects(MetadataTag tag) {
-        return listObjects(tag.getName());
-    }
-
-    /**
-     * Lists all objects with the given tag.
-     * 
-     * @param tag the tag to search for
-     * @return The list of objects with the given tag. If no objects are found
-     *         the array will be empty.
-     * @throws EsuException if no objects are found (code 1003)
-     */
-    public List<Identifier> listObjects(String tag) {
+    public List<ObjectResult> listObjects(String tag, ListOptions options) {
         try {
             String resource = context + "/objects";
             URL u = buildUrl(resource, null);
@@ -758,6 +743,28 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             } else {
                 throw new EsuException("Tag cannot be null");
             }
+            
+            // Process options
+            if( options != null ) {
+            	if( options.isIncludeMetadata() ) {
+            		headers.put( "x-emc-include-meta", "1" );
+            		if( options.getSystemMetadata() != null ) {
+            			headers.put( "x-emc-system-tags", 
+            					join( options.getSystemMetadata(), "," ) );
+            		}
+            		if( options.getUserMetadata() != null ) {
+            			headers.put( "x-emc-user-tags", 
+            					join( options.getUserMetadata(), "," ) );            			
+            		}
+            	}
+            	if( options.getLimit() > 0 ) {
+            		headers.put( "x-emc-limit", ""+options.getLimit() );
+            	}
+            	if( options.getToken() != null ) {
+            		headers.put( "x-emc-token", options.getToken() );
+            	}
+            }
+
 
             // Add date
             headers.put("Date", getDateHeader());
@@ -767,6 +774,24 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             
             HttpResponse response = restGet( u, headers );
             handleError( response );
+            
+            if( options != null ) {
+            	// Update the token for listing more results.  If there are no
+            	// more results, the header will not be set and the token will
+            	// be cleared in the options object.
+            	Header token = response.getFirstHeader("x-emc-token");
+            	if( token != null ) {
+            		options.setToken( token.getValue() );
+            	} else {
+            		options.setToken( null );
+            	}
+            } else {
+            	Header token = response.getFirstHeader("x-emc-token");
+            	if( token != null ) {
+            		l4j.warn( "Result set truncated. Use ListOptions to " +
+    				"retrieve token for next page of results." );
+            	}            	
+            }
 
             // Get object id list from response
             byte[] data = readStream( response.getEntity().getContent(), 
@@ -777,7 +802,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             }
             finishRequest( response );
 
-            return parseObjectList(data);
+            return parseObjectListWithMetadata(data);
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -1446,60 +1471,89 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
      * @param path the path to list. Must be a directory.
      * @return the directory entries in the directory.
      */
-    @SuppressWarnings("rawtypes")
-	public List<DirectoryEntry> listDirectory(ObjectPath path) {
+	public List<DirectoryEntry> listDirectory(ObjectPath path, 
+			ListOptions options) {
+    	
         if (!path.isDirectory()) {
             throw new EsuException(
                     "listDirectory must be called with a directory path");
         }
 
         // Read out the directory's contents
-        byte[] dir = readObject(path, null, null);
-
-        // Parse
-        List<DirectoryEntry> objs = new ArrayList<DirectoryEntry>();
-
-        // Use JDOM to parse the XML
-        SAXBuilder sb = new SAXBuilder();
+        byte[] data = null;
         try {
-            Document d = sb.build(new ByteArrayInputStream(dir));
+            String resource = getResourcePath(context, path);
+            URL u = buildUrl(resource, null);
 
-            // The ObjectID element is part of a namespace so we need to use
-            // the namespace to identify the elements.
-            Namespace esuNs = Namespace.getNamespace("http://www.emc.com/cos/");
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
 
-            List children = d.getRootElement().getChild("DirectoryList", esuNs)
-                    .getChildren("DirectoryEntry", esuNs);
-            l4j.debug("Found " + children.size() + " objects");
-            for (Iterator i = children.iterator(); i.hasNext();) {
-                Object o = i.next();
-                if (o instanceof Element) {
-                    DirectoryEntry de = new DirectoryEntry();
-                    de.setId(new ObjectId(((Element) o).getChildText(
-                            "ObjectID", esuNs)));
-                    String name = ((Element) o).getChildText("Filename", esuNs);
-                    String type = ((Element) o).getChildText("FileType", esuNs);
+            headers.put("x-emc-uid", uid);
 
-                    name = path.toString() + name;
-                    if ("directory".equals(type)) {
-                        name += "/";
-                    }
-                    de.setPath(new ObjectPath(name));
-                    de.setType(type);
-
-                    objs.add(de);
-                } else {
-                    l4j.debug(o + " is not an Element!");
-                }
+            // Process options
+            if( options != null ) {
+            	if( options.isIncludeMetadata() ) {
+            		headers.put( "x-emc-include-meta", "1" );
+            		if( options.getSystemMetadata() != null ) {
+            			headers.put( "x-emc-system-tags", 
+            					join( options.getSystemMetadata(), "," ) );
+            		}
+            		if( options.getUserMetadata() != null ) {
+            			headers.put( "x-emc-user-tags", 
+            					join( options.getUserMetadata(), "," ) );            			
+            		}
+            	}
+            	if( options.getLimit() > 0 ) {
+            		headers.put( "x-emc-limit", ""+options.getLimit() );
+            	}
+            	if( options.getToken() != null ) {
+            		headers.put( "x-emc-token", options.getToken() );
+            	}
             }
 
-        } catch (JDOMException e) {
-            throw new EsuException("Error parsing response", e);
+            // Add date
+            headers.put("Date", getDateHeader());
+
+            // Sign request
+            signRequest("GET", u, headers);
+            HttpResponse response = restGet( u, headers );
+
+            if( options != null ) {
+            	// Update the token for listing more results.  If there are no
+            	// more results, the header will not be set and the token will
+            	// be cleared in the options object.
+            	Header token = response.getFirstHeader("x-emc-token");
+            	if( token != null ) {
+            		options.setToken( token.getValue() );
+            	} else {
+            		options.setToken( null );
+            	}
+            } else {
+            	Header token = response.getFirstHeader("x-emc-token");
+            	if( token != null ) {
+            		l4j.warn( "Result set truncated. Use ListOptions to " +
+    				"retrieve token for next page of results." );
+            	}            	
+            }
+
+            // The requested content is in the response body.
+            data = readStream( response.getEntity().getContent(), 
+                    (int) response.getEntity().getContentLength() );
+
+            finishRequest( response );
+            
+        } catch (MalformedURLException e) {
+            throw new EsuException("Invalid URL", e);
         } catch (IOException e) {
-            throw new EsuException("Error reading response", e);
+            throw new EsuException("Error connecting to server", e);
+        } catch (GeneralSecurityException e) {
+            throw new EsuException("Error computing request signature", e);
+        } catch (URISyntaxException e) {
+            throw new EsuException("Invalid URL", e);
         }
 
-        return objs;
+ 
+        return parseDirectoryListing( data, path );
 
     }
 

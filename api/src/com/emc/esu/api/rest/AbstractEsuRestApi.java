@@ -68,12 +68,14 @@ import org.jdom.input.SAXBuilder;
 import com.emc.esu.api.Acl;
 import com.emc.esu.api.BufferSegment;
 import com.emc.esu.api.Checksum;
+import com.emc.esu.api.DirectoryEntry;
 import com.emc.esu.api.EsuApi;
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.Extent;
 import com.emc.esu.api.Grant;
 import com.emc.esu.api.Grantee;
 import com.emc.esu.api.Identifier;
+import com.emc.esu.api.ListOptions;
 import com.emc.esu.api.Metadata;
 import com.emc.esu.api.MetadataList;
 import com.emc.esu.api.MetadataTag;
@@ -395,6 +397,54 @@ public abstract class AbstractEsuRestApi implements EsuApi {
     public byte[] readObject(Identifier id, Extent extent, byte[] buffer) {
     	return readObject( id, extent, buffer, null );
     }
+    
+    /**
+     * Lists all objects with the given tag.
+     * 
+     * @param tag the tag to search for
+     * @return The list of objects with the given tag. If no objects are found
+     *         the array will be empty.
+     * @throws EsuException if no objects are found (code 1003)
+     */
+    public List<Identifier> listObjects(MetadataTag tag) {
+        return filterIdList(listObjects(tag.getName(), null));
+    }
+    
+	/**
+     * Lists all objects with the given tag.
+     * 
+     * @param tag the tag to search for
+     * @param options the options for listing the objects
+     * @return The list of objects with the given tag. If no objects are found
+     *         the array will be empty.
+     * @throws EsuException if no objects are found (code 1003)
+     */
+    public List<ObjectResult> listObjects(MetadataTag tag, ListOptions options) {
+        return listObjects(tag.getName(), options);
+    }
+    
+    /**
+     * Lists all objects with the given tag.
+     * 
+     * @param tag the tag to search for
+     * @return The list of objects with the given tag. If no objects are found
+     *         the array will be empty.
+     * @throws EsuException if no objects are found (code 1003)
+     */
+    public List<Identifier> listObjects(String tag) {
+    	return filterIdList( listObjects( tag, null ) );
+    }
+    
+    /**
+     * Lists the contents of a directory.
+     * @param path the path to list.  Must be a directory.
+     * @return the directory entries in the directory.
+     * @deprecated Use the version with ListOptions to control the result
+     * count and handle large result sets.
+     */
+    public List<DirectoryEntry> listDirectory( ObjectPath path ) {
+    	return listDirectory( path, null );
+    }
 
 
     /**
@@ -713,22 +763,27 @@ public abstract class AbstractEsuRestApi implements EsuApi {
                     Element uMeta = e.getChild( "UserMetadataList", esuNs );
                     obj.setMetadata( new MetadataList() );
                     
-                    for( Iterator m = sMeta.getChildren( "Metadata" , esuNs ).iterator(); m.hasNext(); ) {
-                        Element metaElement = (Element)m.next();
-                        
-                        String mName = metaElement.getChildText( "Name", esuNs );
-                        String mValue = metaElement.getChildText( "Value", esuNs );
-                        
-                        obj.getMetadata().addMetadata( new Metadata( mName, mValue, false ) );
+                    if( sMeta != null ) {
+	                    for( Iterator m = sMeta.getChildren( "Metadata" , esuNs ).iterator(); m.hasNext(); ) {
+	                        Element metaElement = (Element)m.next();
+	                        
+	                        String mName = metaElement.getChildText( "Name", esuNs );
+	                        String mValue = metaElement.getChildText( "Value", esuNs );
+	                        
+	                        obj.getMetadata().addMetadata( new Metadata( mName, mValue, false ) );
+	                    }
                     }
-                    for( Iterator m = uMeta.getChildren( "Metadata" , esuNs ).iterator(); m.hasNext(); ) {
-                        Element metaElement = (Element)m.next();
-                        
-                        String mName = metaElement.getChildText( "Name", esuNs );
-                        String mValue = metaElement.getChildText( "Value", esuNs );
-                        String mListable = metaElement.getChildText( "Listable", esuNs );
-                        
-                        obj.getMetadata().addMetadata( new Metadata( mName, mValue, "true".equals( mListable ) ) );
+                    
+                    if( uMeta != null ) {
+	                    for( Iterator m = uMeta.getChildren( "Metadata" , esuNs ).iterator(); m.hasNext(); ) {
+	                        Element metaElement = (Element)m.next();
+	                        
+	                        String mName = metaElement.getChildText( "Name", esuNs );
+	                        String mValue = metaElement.getChildText( "Value", esuNs );
+	                        String mListable = metaElement.getChildText( "Listable", esuNs );
+	                        
+	                        obj.getMetadata().addMetadata( new Metadata( mName, mValue, "true".equals( mListable ) ) );
+	                    }
                     }
                     
                     objs.add( obj );
@@ -741,6 +796,87 @@ public abstract class AbstractEsuRestApi implements EsuApi {
             throw new EsuException( "Error parsing response", e );
         } catch (IOException e) {
             throw new EsuException( "Error reading response", e );
+        }
+
+        return objs;
+    }
+    
+    
+    @SuppressWarnings("rawtypes")
+	protected List<DirectoryEntry> parseDirectoryListing( byte[] data, 
+    		ObjectPath basePath ) {
+    	
+        // Parse
+        List<DirectoryEntry> objs = new ArrayList<DirectoryEntry>();
+
+        // Use JDOM to parse the XML
+        SAXBuilder sb = new SAXBuilder();
+        try {
+            Document d = sb.build(new ByteArrayInputStream(data));
+
+            // The ObjectID element is part of a namespace so we need to use
+            // the namespace to identify the elements.
+            Namespace esuNs = Namespace.getNamespace("http://www.emc.com/cos/");
+
+            List children = d.getRootElement().getChild("DirectoryList", esuNs)
+                    .getChildren("DirectoryEntry", esuNs);
+            l4j.debug("Found " + children.size() + " objects");
+            for (Iterator i = children.iterator(); i.hasNext();) {
+                Object o = i.next();
+                if (o instanceof Element) {
+                    DirectoryEntry de = new DirectoryEntry();
+                    de.setId(new ObjectId(((Element) o).getChildText(
+                            "ObjectID", esuNs)));
+                    String name = ((Element) o).getChildText("Filename", esuNs);
+                    String type = ((Element) o).getChildText("FileType", esuNs);
+
+                    name = basePath.toString() + name;
+                    if ("directory".equals(type)) {
+                        name += "/";
+                    }
+                    de.setPath(new ObjectPath(name));
+                    de.setType(type);
+                    
+                    // next, get metadata
+                    Element sMeta = ((Element) o).getChild( "SystemMetadataList", esuNs );
+                    Element uMeta = ((Element) o).getChild( "UserMetadataList", esuNs );
+                    
+                    if( sMeta != null ) {
+	                    de.setSystemMetadata( new MetadataList() );
+	                    
+	                    for( Iterator m = sMeta.getChildren( "Metadata" , esuNs ).iterator(); m.hasNext(); ) {
+	                        Element metaElement = (Element)m.next();
+	                        
+	                        String mName = metaElement.getChildText( "Name", esuNs );
+	                        String mValue = metaElement.getChildText( "Value", esuNs );
+	                        
+	                        de.getSystemMetadata().addMetadata( new Metadata( mName, mValue, false ) );
+	                    }
+                    }
+                    
+                    if( uMeta != null ) {
+                    	de.setUserMetadata( new MetadataList() );
+	                    for( Iterator m = uMeta.getChildren( "Metadata" , esuNs ).iterator(); m.hasNext(); ) {
+	                        Element metaElement = (Element)m.next();
+	                        
+	                        String mName = metaElement.getChildText( "Name", esuNs );
+	                        String mValue = metaElement.getChildText( "Value", esuNs );
+	                        String mListable = metaElement.getChildText( "Listable", esuNs );
+	                        
+	                        de.getUserMetadata().addMetadata( new Metadata( mName, mValue, "true".equals( mListable ) ) );
+	                    }
+                    }
+
+                    objs.add(de);
+                } else {
+                    l4j.debug(o + " is not an Element!");
+                }
+            }
+
+        } catch (JDOMException e) {
+            throw new EsuException("Error parsing response", e);
+        } catch (IOException e) {
+            throw new EsuException("Error reading response", e);
         }
 
         return objs;
@@ -1035,6 +1171,44 @@ public abstract class AbstractEsuRestApi implements EsuApi {
             throw new EsuException( "Error reading response", e );
         }
     }
+    
+    /**
+     * Converts an ObjectResult list to an Identifier list.
+     * @param listObjects
+     * @return
+     */
+    private List<Identifier> filterIdList(List<ObjectResult> list) {
+		List<Identifier> result = new ArrayList<Identifier>( list.size() );
+		
+		for( ObjectResult r : list ) {
+			result.add( r.getId() );
+		}
+		
+		return result;
+	}
+
+    /**
+     * Joins a list of Strings using a delimiter (similar to PERL, PHP, etc)
+     * @param list the list of Strings
+     * @param delimiter the string to join the list with
+     * @return the joined String.
+     */
+    protected String join(List<String> list, String delimiter) {
+		boolean first = true;
+		StringBuffer sb = new StringBuffer();
+		
+		for( String s : list ) {
+			if( first ) {
+				first = false;
+			} else {
+				sb.append( delimiter );
+			}
+			sb.append( s );
+		}
+		
+		return sb.toString();
+	}
+
 
 	/**
 	 * @return the readChecksum

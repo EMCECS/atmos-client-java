@@ -457,8 +457,20 @@ public interface EsuApi {
      * @return The list of objects with the given tag.  If no objects
      * are found the array will be empty.
      * @throws EsuException if no objects are found (code 1003)
+     * @deprecated Use the version with ListOptions to control the result
+     * count and handle large result sets.
      */
     List<Identifier> listObjects( MetadataTag tag );
+    
+    /**
+     * Lists all objects with the given tag.
+     * @param tag the tag to search for
+     * @param options options for returning the list
+     * @return The list of objects with the given tag.  If no objects
+     * are found the array will be empty.
+     * @throws EsuException if no objects are found (code 1003)
+     */
+    List<ObjectResult> listObjects( MetadataTag tag, ListOptions options );
     
     /**
      * Lists all objects with the given tag.
@@ -466,8 +478,20 @@ public interface EsuApi {
      * @return The list of objects with the given tag.  If no objects
      * are found the array will be empty.
      * @throws EsuException if no objects are found (code 1003)
+     * @deprecated Use the version with ListOptions to control the result
+     * count and handle large result sets.
      */
     List<Identifier> listObjects( String tag );
+    
+    /**
+     * Lists all objects with the given tag.
+     * @param tag the tag to search for
+     * @param options options for returning the list
+     * @return The list of objects with the given tag.  If no objects
+     * are found the array will be empty.
+     * @throws EsuException if no objects are found (code 1003)
+     */
+    List<ObjectResult> listObjects( String tag, ListOptions options );
     
     /**
      * Lists all objects with the given tag and returns both their
@@ -476,6 +500,8 @@ public interface EsuApi {
      * @return The list of objects with the given tag.  If no objects
      * are found the array will be empty.
      * @throws EsuException if no objects are found (code 1003)
+     * @deprecated Use the version of listObjects with ListOptions to include
+     * metadata. 
      */
     List<ObjectResult> listObjectsWithMetadata( MetadataTag tag );
     
@@ -486,6 +512,8 @@ public interface EsuApi {
      * @return The list of objects with the given tag.  If no objects
      * are found the array will be empty.
      * @throws EsuException if no objects are found (code 1003)
+     * @deprecated Use the version of listObjects with ListOptions to include
+     * metadata. 
      */
     List<ObjectResult> listObjectsWithMetadata( String tag );
     
@@ -525,8 +553,18 @@ public interface EsuApi {
      * Lists the contents of a directory.
      * @param path the path to list.  Must be a directory.
      * @return the directory entries in the directory.
+     * @deprecated Use the version with ListOptions to control the result
+     * count and handle large result sets.
      */
     List<DirectoryEntry> listDirectory( ObjectPath path );
+    
+    /**
+     * Lists the contents of a directory.
+     * @param path the path to list.  Must be a directory.
+     * @param options options for returning the list.
+     * @return the directory entries in the directory.
+     */
+    List<DirectoryEntry> listDirectory( ObjectPath path, ListOptions options );
     
     /**
      * Returns all of an object's metadata and its ACL in

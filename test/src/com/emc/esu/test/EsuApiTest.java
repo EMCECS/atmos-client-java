@@ -32,12 +32,17 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
@@ -54,6 +59,7 @@ import com.emc.esu.api.Extent;
 import com.emc.esu.api.Grant;
 import com.emc.esu.api.Grantee;
 import com.emc.esu.api.Identifier;
+import com.emc.esu.api.ListOptions;
 import com.emc.esu.api.Metadata;
 import com.emc.esu.api.MetadataList;
 import com.emc.esu.api.MetadataTag;
@@ -563,13 +569,13 @@ public abstract class EsuApiTest {
         cleanup.add( id );
 
         // List the objects.  Make sure the one we created is in the list
-        List<Identifier> objects = this.esu.listObjects( "listable" );
+        List<ObjectResult> objects = this.esu.listObjects( "listable", null );
         Assert.assertTrue( "No objects returned", objects.size() > 0 );
         Assert.assertTrue( "object not found in list" , objects.contains( id ) );
 
         // Check for unlisted
         try {
-            this.esu.listObjects( "unlistable" );
+            this.esu.listObjects( "unlistable", null );
             Assert.fail( "Exception not thrown!" );
         } catch( EsuException e ) {
             // This should happen.
@@ -597,7 +603,9 @@ public abstract class EsuApiTest {
         cleanup.add( id );
 
         // List the objects.  Make sure the one we created is in the list
-        List<ObjectResult> objects = this.esu.listObjectsWithMetadata( "listable" );
+        ListOptions options = new ListOptions();
+        options.setIncludeMetadata( true );
+        List<ObjectResult> objects = this.esu.listObjects( "listable", options );
         Assert.assertTrue( "No objects returned", objects.size() > 0 );
         
         // Find the item.
@@ -612,8 +620,89 @@ public abstract class EsuApiTest {
             }
         }
         Assert.assertTrue( "object not found in list" , found );
-
     }
+    
+    /**
+     * Test listing objects by a tag, with only some of the metadata
+     */
+    @Test
+    public void testListObjectsWithSomeMetadata() {
+        // Create an object
+        MetadataList mlist = new MetadataList();
+        Metadata listable = new Metadata( "listable", "foo", true );
+        Metadata unlistable = new Metadata( "unlistable", "bar", false );
+        Metadata listable2 = new Metadata( "list/able/2", "foo2 foo2", true );
+        Metadata unlistable2 = new Metadata( "list/able/not", "bar2 bar2", false );
+        mlist.addMetadata( listable );
+        mlist.addMetadata( unlistable );
+        mlist.addMetadata( listable2 );
+        mlist.addMetadata( unlistable2 );
+        ObjectId id = this.esu.createObject( null, mlist, null, null );
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        // List the objects.  Make sure the one we created is in the list
+        ListOptions options = new ListOptions();
+        options.setIncludeMetadata( true );
+        options.setUserMetadata( Arrays.asList( new String[] { "listable" } ) );
+        List<ObjectResult> objects = this.esu.listObjects( "listable", options );
+        Assert.assertTrue( "No objects returned", objects.size() > 0 );
+        
+        // Find the item.
+        boolean found = false;
+        for( Iterator<ObjectResult> i = objects.iterator(); i.hasNext(); ) {
+            ObjectResult or = i.next();
+            if( or.getId().equals( id ) ) {
+                found = true;
+                // check metadata
+                Assert.assertEquals( "Wrong value on metadata", 
+                        or.getMetadata().getMetadata( "listable" ).getValue(), "foo" );
+                
+                // Other metadata should not be present
+                Assert.assertNull( "unlistable should be missing",  
+                		or.getMetadata().getMetadata( "unlistable" ) );
+            }
+        }
+        Assert.assertTrue( "object not found in list" , found );
+    }
+    
+    /**
+     * Test listing objects by a tag, paging the results
+     */
+    @Test
+    public void testListObjectsPaged() {
+        // Create two objects.
+        MetadataList mlist = new MetadataList();
+        Metadata listable = new Metadata( "listable", "foo", true );
+        mlist.addMetadata( listable );
+        ObjectId id1 = this.esu.createObject( null, mlist, null, null );
+        ObjectId id2 = this.esu.createObject( null, mlist, null, null );
+        Assert.assertNotNull( "null ID returned", id1 );
+        Assert.assertNotNull( "null ID returned", id2 );
+        cleanup.add( id1 );
+        cleanup.add( id2 );
+
+        // List the objects.  Make sure the one we created is in the list
+        ListOptions options = new ListOptions();
+        options.setIncludeMetadata( true );
+        options.setLimit( 1 );
+        List<ObjectResult> objects = this.esu.listObjects( "listable", options );
+        Assert.assertTrue( "No objects returned", objects.size() > 0 );
+        Assert.assertNotNull( "Token should be present", options.getToken() );
+        
+    	l4j.debug( "listObjectsPaged, Token: " + options.getToken() );
+        while( options.getToken() != null ) {
+        	// Subsequent pages
+        	objects.addAll( this.esu.listObjects( "listable", options) );
+        	l4j.debug( "listObjectsPaged, Token: " + options.getToken() );
+        }
+        
+        // Ensure our IDs exist
+        Assert.assertTrue( "First object not found", objects.contains( id1 ) );
+        Assert.assertTrue( "Second object not found", objects.contains( id2 ) );
+    }
+
+
 
     /**
      * Test fetching listable tags
@@ -957,11 +1046,147 @@ public abstract class EsuApiTest {
         Assert.assertEquals( "object content wrong when reading by id", "", content );
         
         // List the parent path
-        List<DirectoryEntry> dirList = esu.listDirectory( dirPath );
+        List<DirectoryEntry> dirList = esu.listDirectory( dirPath, null );
         l4j.debug( "Dir content: " + content );
         Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
         Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );
 	}
+    
+    @Test
+	public void testListDirectoryPaged() throws Exception {
+		String dir = rand8char();
+		String file = rand8char();
+		String dir2 = rand8char();
+        ObjectPath dirPath = new ObjectPath( "/" + dir + "/" );
+    	ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
+    	ObjectPath dirPath2 = new ObjectPath( "/" + dir + "/" + dir2 + "/" );
+    	
+    	ObjectId dirId = this.esu.createObjectOnPath( dirPath, null, null, null, null );
+        ObjectId id = this.esu.createObjectOnPath( op, null, null, null, null );
+        this.esu.createObjectOnPath( dirPath2, null, null, null, null );
+        cleanup.add( op );
+        cleanup.add( dirPath2 );
+        cleanup.add( dirPath );
+        l4j.debug( "Path: " + op + " ID: " + id );
+        Assert.assertNotNull( id );
+        Assert.assertNotNull( dirId );
+
+        // List the parent path
+        ListOptions options = new ListOptions();
+        options.setLimit( 1 );
+        List<DirectoryEntry> dirList = esu.listDirectory( dirPath, options );
+        
+        Assert.assertNotNull( "Token should have been returned", options.getToken() );
+        l4j.debug( "listDirectoryPaged, token: " + options.getToken() );
+        while( options.getToken() != null ) {
+        	dirList.addAll( esu.listDirectory( dirPath, options ) );
+        }
+        
+        Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
+        Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );
+	}
+    
+    @Test
+	public void testListDirectoryWithMetadata() throws Exception {
+		String dir = rand8char();
+		String file = rand8char();
+		String dir2 = rand8char();
+        ObjectPath dirPath = new ObjectPath( "/" + dir + "/" );
+    	ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
+    	ObjectPath dirPath2 = new ObjectPath( "/" + dir + "/" + dir2 + "/" );
+    	
+        MetadataList mlist = new MetadataList();
+        Metadata listable = new Metadata( "listable", "foo", true );
+        Metadata unlistable = new Metadata( "unlistable", "bar", false );
+        Metadata listable2 = new Metadata( "list/able/2", "foo2 foo2", true );
+        Metadata unlistable2 = new Metadata( "list/able/not", "bar2 bar2", false );
+        mlist.addMetadata( listable );
+        mlist.addMetadata( unlistable );
+        mlist.addMetadata( listable2 );
+        mlist.addMetadata( unlistable2 );
+
+        ObjectId dirId = this.esu.createObjectOnPath( dirPath, null, null, null, null );
+        ObjectId id = this.esu.createObjectOnPath( op, null, mlist, null, null );
+        this.esu.createObjectOnPath( dirPath2, null, null, null, null );
+        cleanup.add( op );
+        cleanup.add( dirPath2 );
+        cleanup.add( dirPath );
+        l4j.debug( "Path: " + op + " ID: " + id );
+        Assert.assertNotNull( id );
+        Assert.assertNotNull( dirId );
+       
+        // List the parent path
+        ListOptions options = new ListOptions();
+        options.setIncludeMetadata( true );
+        List<DirectoryEntry> dirList = esu.listDirectory( dirPath, options );
+        Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
+        Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );
+        
+		for( Iterator<DirectoryEntry> i = dirList.iterator(); i.hasNext(); ) {
+			DirectoryEntry de = i.next();
+			if( de.getPath().equals( op ) ) {
+				// Check the metadata
+                Assert.assertEquals( "Wrong value on metadata", 
+                        de.getUserMetadata().getMetadata( "listable" ).getValue(), "foo" );
+				
+			}
+		}
+        Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
+        Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );        
+	}
+    
+    @Test
+	public void testListDirectoryWithSomeMetadata() throws Exception {
+		String dir = rand8char();
+		String file = rand8char();
+		String dir2 = rand8char();
+        ObjectPath dirPath = new ObjectPath( "/" + dir + "/" );
+    	ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
+    	ObjectPath dirPath2 = new ObjectPath( "/" + dir + "/" + dir2 + "/" );
+    	
+        MetadataList mlist = new MetadataList();
+        Metadata listable = new Metadata( "listable", "foo", true );
+        Metadata unlistable = new Metadata( "unlistable", "bar", false );
+        Metadata listable2 = new Metadata( "list/able/2", "foo2 foo2", true );
+        Metadata unlistable2 = new Metadata( "list/able/not", "bar2 bar2", false );
+        mlist.addMetadata( listable );
+        mlist.addMetadata( unlistable );
+        mlist.addMetadata( listable2 );
+        mlist.addMetadata( unlistable2 );
+
+        ObjectId dirId = this.esu.createObjectOnPath( dirPath, null, null, null, null );
+        ObjectId id = this.esu.createObjectOnPath( op, null, mlist, null, null );
+        this.esu.createObjectOnPath( dirPath2, null, null, null, null );
+        cleanup.add( op );
+        cleanup.add( dirPath2 );
+        cleanup.add( dirPath );
+        l4j.debug( "Path: " + op + " ID: " + id );
+        Assert.assertNotNull( id );
+        Assert.assertNotNull( dirId );
+       
+        // List the parent path
+        ListOptions options = new ListOptions();
+        options.setIncludeMetadata( true );
+        options.setUserMetadata( Arrays.asList( new String[] { "listable" } ) );
+        List<DirectoryEntry> dirList = esu.listDirectory( dirPath, options );
+        Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
+        Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );
+        
+		for( Iterator<DirectoryEntry> i = dirList.iterator(); i.hasNext(); ) {
+			DirectoryEntry de = i.next();
+			if( de.getPath().equals( op ) ) {
+				// Check the metadata
+                Assert.assertEquals( "Wrong value on metadata", 
+                        de.getUserMetadata().getMetadata( "listable" ).getValue(), "foo" );
+                // Other metadata should not be present
+                Assert.assertNull( "unlistable should be missing",  
+                		de.getUserMetadata().getMetadata( "unlistable" ) );
+			}
+		}
+        Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
+        Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );        
+	}
+
 	
 	private boolean directoryContains( List<DirectoryEntry> dir, ObjectPath path ) {
 		for( Iterator<DirectoryEntry> i = dir.iterator(); i.hasNext(); ) {
@@ -1421,6 +1646,24 @@ public abstract class EsuApiTest {
         Assert.assertNotNull("ObjectInfo selection null", oi.getSelection() );
         Assert.assertTrue("ObjectInfo should have at least one replica", oi.getReplicas().size()>0 );
 
+    }
+    
+    @Test
+    public void testHmac() throws Exception {
+        // Compute the signature hash
+    	String input = "Hello World";
+    	byte[] secret = Base64.decodeBase64( "D7qsp4j16PBHWSiUbc/bt3lbPBY=".getBytes( "UTF-8" ) );
+    	Mac mac = Mac.getInstance( "HmacSHA1" );
+        SecretKeySpec key = new SecretKeySpec( secret, "HmacSHA1" );
+        mac.init( key );
+        l4j.debug( "Hashing: \n" + input.toString() );
+
+        byte[] hashData = mac.doFinal( input.toString().getBytes( "ISO-8859-1" ) );
+
+        // Encode the hash in Base64.
+        String hashOut = new String( Base64.encodeBase64( hashData ), "UTF-8" );
+        
+        l4j.debug( "Hash: " + hashOut );
     }
 
 }
