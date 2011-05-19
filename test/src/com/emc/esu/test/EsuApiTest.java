@@ -175,6 +175,20 @@ public abstract class EsuApiTest {
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
 	}
+    
+    @Test
+	public void testCreateObjectWithContentStreamOnPath() throws Exception {
+    	ObjectPath op = new ObjectPath( "/" + rand8char() + ".tmp" );
+		InputStream in = new ByteArrayInputStream( "hello".getBytes( "UTF-8" ) );
+        ObjectId id = this.esu.createObjectFromStreamOnPath( op, null, null, in, 5, "text/plain" );
+        in.close();
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        // Read back the content
+        String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
+        Assert.assertEquals( "object content wrong", "hello", content );
+	}
 
     /**
      * Test creating an object with metadata but no content.

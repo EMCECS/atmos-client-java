@@ -122,6 +122,89 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
 
         httpClient = new DefaultHttpClient( cm, null );
     }
+    
+    /**
+     * Creates a new object in the cloud.
+     * @param path The path to create the object on.
+     * @param acl Access control list for the new object.  May be null
+     * to use a default ACL
+     * @param metadata Metadata for the new object.  May be null for
+     * no metadata.
+     * @param data The initial contents of the object.  May be appended
+     * to later.  The stream will NOT be closed at the end of the request.
+     * @param length The length of the stream in bytes.  If the stream
+     * is longer than the length, only length bytes will be written.  If
+     * the stream is shorter than the length, an error will occur.
+     * @param mimeType the MIME type of the content.  Optional, 
+     * may be null.  If data is non-null and mimeType is null, the MIME
+     * type will default to application/octet-stream.
+     * @return Identifier of the newly created object.
+     * @throws EsuException if the request fails.
+     */
+    public ObjectId createObjectFromStreamOnPath( ObjectPath path, Acl acl, MetadataList metadata, 
+            InputStream data, long length, String mimeType ) {
+        try {
+            String resource = getResourcePath(context, path);
+            URL u = buildUrl(resource, null);
+
+            if (data == null) {
+                throw new IllegalArgumentException("Input stream is required");
+            }
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            // Figure out the mimetype
+            if (mimeType == null) {
+                mimeType = "application/octet-stream";
+            }
+
+            headers.put("Content-Type", mimeType);
+            headers.put("x-emc-uid", uid);
+
+            // Process metadata
+            if (metadata != null) {
+                processMetadata(metadata, headers);
+            }
+
+            l4j.debug("meta " + headers.get("x-emc-meta"));
+
+            // Add acl
+            if (acl != null) {
+                processAcl(acl, headers);
+            }
+
+            // Add date
+            headers.put("Date", getDateHeader());
+
+            // Sign request
+            signRequest("POST", u, headers);
+
+            HttpResponse response = restPost( u, headers, data, length );
+
+            // Check response
+            handleError( response );
+
+            // The new object ID is returned in the location response header
+            String location = response.getFirstHeader("location").getValue();
+            
+            // Cleanup the connection
+            cleanup( response );
+
+            // Parse the value out of the URL
+            return getObjectId( location );
+        } catch (MalformedURLException e) {
+            throw new EsuException("Invalid URL", e);
+        } catch (IOException e) {
+            throw new EsuException("Error connecting to server", e);
+        } catch (GeneralSecurityException e) {
+            throw new EsuException("Error computing request signature", e);
+        } catch (URISyntaxException e) {
+            throw new EsuException("Invalid URL", e);
+        }
+    }
+
+
 
     /**
      * Creates a new object in the cloud.
