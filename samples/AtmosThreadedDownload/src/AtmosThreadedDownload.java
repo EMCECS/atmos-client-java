@@ -121,11 +121,14 @@ public class AtmosThreadedDownload implements ProgressListener {
 			localfile = objectpath.getName();
 		}
 		
+		long start, end;
+		
 		try {
 			esu = new EsuRestApi(host, port, uid, secret);
 			MetadataList smeta = esu.getSystemMetadata(objectpath, null);
 			filesize = Long.parseLong(smeta.getMetadata("size").getValue());
 			progress = 0;
+			start = System.currentTimeMillis();
 			
 			File outFile = new File(localfile);
 			RandomAccessFile raf = new RandomAccessFile(outFile, "rw");
@@ -157,12 +160,18 @@ public class AtmosThreadedDownload implements ProgressListener {
 				b.setPath(objectpath);
 				blocksRemaining.add(b);
 				pool.submit(b);
-				System.out.println( "Submitted block " + i );
+				//System.out.println( "Submitted block " + i );
 			}
 			
 			while( blocksRemaining.size() > 0 ) {
-				Thread.sleep(2000);
+				Thread.sleep(500);
 			}
+			
+			end = System.currentTimeMillis();
+			long secs = ((end-start)/1000);
+			long rate = filesize / secs;
+			System.out.println();
+			System.out.println("Downloaded " + filesize + " bytes in " + secs + " seconds (" + rate + " bytes/s)" );
 			
 			System.exit(0);
 		} catch( Exception e ) {
@@ -178,7 +187,7 @@ public class AtmosThreadedDownload implements ProgressListener {
 		blocksRemaining.remove(block);
 		progress += count;
 		long pct = progress*100/filesize;
-		System.out.println( pct + "% " + progress + "/" + filesize );
+		System.out.print( "\r" + pct + "% " + progress + "/" + filesize );
 		System.out.flush();
 	}
 

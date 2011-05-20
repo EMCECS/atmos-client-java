@@ -58,7 +58,7 @@ public class DownloadBlock implements Runnable {
 
 	@Override
 	public void run() {
-		System.err.println( "Thread: " + Thread.currentThread() + " read: " + extent);
+		//System.err.println( "Thread: " + Thread.currentThread() + " read: " + extent);
 		
 		try {
 			byte[] data = null;
@@ -76,11 +76,11 @@ public class DownloadBlock implements Runnable {
 					}
 				}
 			}
-			System.err.println( "Thread: " + Thread.currentThread() + " write: " + extent);
-			System.out.flush();
+			//System.err.println( "Thread: " + Thread.currentThread() + " write: " + extent);
+			//System.out.flush();
 			channel.write(ByteBuffer.wrap(data), extent.getOffset());
-			System.err.println( "Thread: " + Thread.currentThread() + " complete: " + extent);
-			System.out.flush();
+			//System.err.println( "Thread: " + Thread.currentThread() + " complete: " + extent);
+			//System.out.flush();
 			listener.complete(this);
 		} catch (IOException e) {
 			listener.error(e);
