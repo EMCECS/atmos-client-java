@@ -24,31 +24,60 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.esu.test;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.junit.Before;
 
 import com.emc.esu.api.rest.EsuRestApi;
 
 public class EsuRestApiTest extends EsuApiTest {
     /**
-     * UID to run tests with.  Change this value to your UID.
+     * UID to run tests with.  Set in properties file or -Datmos.uid.
      */
-    private String uid2 = "<put your UID here>";
+    private String uid2;
 
     /**
-     * Shared secret for UID.  Change this value to your UID's shared secret
+     * Shared secret for UID.  Set in atmos.properties or -Datmos.secret
      */
-    private String secret = "<put your secret key here>";
+    private String secret;
 
     /**
-     * Hostname or IP of ESU server.  Change this value to your server's
-     * hostname or ip address.
+     * Hostname or IP of ESU server.  Set in atmos.properties or -Datmos.host
      */
-    private String host = "accesspoint.emccis.com";
+    private String host;
     
     /**
-     * Port of ESU server (usually 80 or 443)
+     * Port of ESU server (usually 80 or 443). Set in atmos.properties or -Datmos.port
      */
     private int port = 80;
+    	
+    public EsuRestApiTest() {
+    	super();
+    	
+    	InputStream in = ClassLoader.getSystemResourceAsStream("atmos.properties");
+    	if( in != null ) {
+    		try {
+				System.getProperties().load(in);
+			} catch (IOException e) {
+				throw new RuntimeException( "Could not load atmos.properties", e);
+			}
+    	}
+    	
+    	uid2 = System.getProperty( "atmos.uid" );
+    	if( uid2 == null ) {
+    		throw new RuntimeException( "atmos.uid is null.  Set in atmos.properties or on command line with -Datmos.uid" );
+    	}
+    	secret = System.getProperty( "atmos.secret" );
+    	if( secret == null ) {
+    		throw new RuntimeException( "atmos.secret is null.  Set in atmos.properties or on command line with -Datmos.secret" );
+    	}
+    	host = System.getProperty( "atmos.host" );
+    	if( host == null ) {
+    		throw new RuntimeException( "atmos.host is null.  Set in atmos.properties or on command line with -Datmos.host" );
+    	}
+    	port = Integer.parseInt( System.getProperty( "atmos.port" ) );
+    }
        
     /**
      * @see junit.framework.TestCase#setUp()

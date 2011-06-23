@@ -435,6 +435,33 @@ public abstract class AbstractEsuRestApi implements EsuApi {
     	return filterIdList( listObjects( tag, null ) );
     }
     
+	/**
+     * Lists all objects with the given tag and returns both their IDs and their
+     * metadata.
+     * 
+     * @param tag the tag to search for
+     * @return The list of objects with the given tag. If no objects are found
+     *         the array will be empty.
+     */
+    public List<ObjectResult> listObjectsWithMetadata(MetadataTag tag) {
+        return listObjectsWithMetadata(tag.getName());
+    }
+
+    /**
+     * Lists all objects with the given tag and returns both their IDs and their
+     * metadata.
+     * 
+     * @param tag the tag to search for
+     * @return The list of objects with the given tag. If no objects are found
+     *         the array will be empty.
+     */
+    public List<ObjectResult> listObjectsWithMetadata(String tag) {
+    	ListOptions options = new ListOptions();
+    	options.setIncludeMetadata( true );
+    	return listObjects( tag, options );
+    }
+
+    
     /**
      * Lists the contents of a directory.
      * @param path the path to list.  Must be a directory.

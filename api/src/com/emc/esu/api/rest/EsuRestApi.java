@@ -37,6 +37,7 @@ import java.net.ProtocolException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -896,8 +897,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
      * 
      * @param tag the tag to search for
      * @return The list of objects with the given tag. If no objects are found
-     *         the array will be empty.
-     * @throws EsuException if no objects are found (code 1003)
+     *         the List will be empty.
      */
     public List<ObjectResult> listObjects(String tag, ListOptions options) {
         try {
@@ -948,8 +948,15 @@ public class EsuRestApi extends AbstractEsuRestApi {
             con.connect();
 
             // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
+            try {
+	            if (con.getResponseCode() > 299) {
+	                handleError(con);
+	            }
+            } catch( EsuException e ) {
+            	if( e.getAtmosCode() == 1003 ) {
+            		return Collections.emptyList();
+            	}
+            	throw e;
             }
 
             // Get object id list from response
@@ -983,79 +990,6 @@ public class EsuRestApi extends AbstractEsuRestApi {
         }
     }
 
-	/**
-     * Lists all objects with the given tag and returns both their IDs and their
-     * metadata.
-     * 
-     * @param tag the tag to search for
-     * @return The list of objects with the given tag. If no objects are found
-     *         the array will be empty.
-     * @throws EsuException if no objects are found (code 1003)
-     */
-    public List<ObjectResult> listObjectsWithMetadata(MetadataTag tag) {
-        return listObjectsWithMetadata(tag.getName());
-    }
-
-    /**
-     * Lists all objects with the given tag and returns both their IDs and their
-     * metadata.
-     * 
-     * @param tag the tag to search for
-     * @return The list of objects with the given tag. If no objects are found
-     *         the array will be empty.
-     * @throws EsuException if no objects are found (code 1003)
-     */
-    public List<ObjectResult> listObjectsWithMetadata(String tag) {
-        try {
-            String resource = context + "/objects";
-            URL u = buildUrl(resource, null);
-            HttpURLConnection con = (HttpURLConnection) u.openConnection();
-
-            // Build headers
-            Map<String, String> headers = new HashMap<String, String>();
-
-            headers.put("x-emc-uid", uid);
-            headers.put("x-emc-include-meta", "1");
-
-            // Add tag
-            if (tag != null) {
-                headers.put("x-emc-tags", tag);
-            } else {
-                throw new EsuException("Tag cannot be null");
-            }
-
-            // Add date
-            headers.put("Date", getDateHeader());
-
-            // Sign request
-            signRequest("GET", u, headers);
-            configureRequest( con, "GET", headers );
-
-            con.connect();
-
-            // Check response
-            if (con.getResponseCode() > 299) {
-                handleError(con);
-            }
-
-            // Get object id list from response
-            byte[] response = readResponse(con, null);
-
-            l4j.debug("Response: " + new String(response, "UTF-8"));
-            con.disconnect();
-
-            return parseObjectListWithMetadata(response);
-
-        } catch (MalformedURLException e) {
-            throw new EsuException("Invalid URL", e);
-        } catch (IOException e) {
-            throw new EsuException("Error connecting to server", e);
-        } catch (GeneralSecurityException e) {
-            throw new EsuException("Error computing request signature", e);
-        } catch (URISyntaxException e) {
-            throw new EsuException("Invalid URL", e);
-        }
-    }
 
     /**
      * Returns the list of user metadata tags assigned to the object.

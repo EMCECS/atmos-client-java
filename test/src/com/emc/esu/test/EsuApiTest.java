@@ -562,6 +562,17 @@ public abstract class EsuApiTest {
         Assert.assertNull( "value of 'gid' should not have been returned", meta.getMetadata( "gid" ) );
         Assert.assertNull( "value of 'listable' should not have been returned", meta.getMetadata( "listable" ) );
     }
+    
+    /**
+     * Test listing objects by a tag that doesn't exist
+     */
+    @Test
+    public void testListObjectsNoExist() {
+    	ListOptions options = new ListOptions();
+    	List<ObjectResult> objects = this.esu.listObjects("this_tag_should_not_exist", options);
+    	Assert.assertNotNull("object list should be not null", objects);
+    	Assert.assertEquals("No objects should be returned", 0, objects.size());
+    }
 
     /**
      * Test listing objects by a tag
@@ -587,14 +598,6 @@ public abstract class EsuApiTest {
         Assert.assertTrue( "No objects returned", objects.size() > 0 );
         Assert.assertTrue( "object not found in list" , objects.contains( id ) );
 
-        // Check for unlisted
-        try {
-            this.esu.listObjects( "unlistable", null );
-            Assert.fail( "Exception not thrown!" );
-        } catch( EsuException e ) {
-            // This should happen.
-            Assert.assertEquals( "Expected 1003 for not found", 1003, e.getAtmosCode() );
-        }
     }
     
     /**

@@ -476,8 +476,8 @@ public interface EsuApi {
      * Lists all objects with the given tag.
      * @param tag the tag to search for
      * @return The list of objects with the given tag.  If no objects
-     * are found the array will be empty.
-     * @throws EsuException if no objects are found (code 1003)
+     * are found the List will be empty.
+     * @throws EsuException if there is an error loading the object list
      * @deprecated Use the version with ListOptions to control the result
      * count and handle large result sets.
      */
@@ -488,8 +488,8 @@ public interface EsuApi {
      * @param tag the tag to search for
      * @param options options for returning the list
      * @return The list of objects with the given tag.  If no objects
-     * are found the array will be empty.
-     * @throws EsuException if no objects are found (code 1003)
+     * are found the List will be empty.
+     * @throws EsuException if there is an error loading the object list
      */
     List<ObjectResult> listObjects( MetadataTag tag, ListOptions options );
     
@@ -497,8 +497,8 @@ public interface EsuApi {
      * Lists all objects with the given tag.
      * @param tag the tag to search for
      * @return The list of objects with the given tag.  If no objects
-     * are found the array will be empty.
-     * @throws EsuException if no objects are found (code 1003)
+     * are found the List will be empty.
+     * @throws EsuException if there is an error loading the object list
      * @deprecated Use the version with ListOptions to control the result
      * count and handle large result sets.
      */
@@ -509,8 +509,8 @@ public interface EsuApi {
      * @param tag the tag to search for
      * @param options options for returning the list
      * @return The list of objects with the given tag.  If no objects
-     * are found the array will be empty.
-     * @throws EsuException if no objects are found (code 1003)
+     * are found the List will be empty.
+     * @throws EsuException if there is an error loading the object list
      */
     List<ObjectResult> listObjects( String tag, ListOptions options );
     
@@ -519,8 +519,8 @@ public interface EsuApi {
      * IDs and their metadata.
      * @param tag the tag to search for
      * @return The list of objects with the given tag.  If no objects
-     * are found the array will be empty.
-     * @throws EsuException if no objects are found (code 1003)
+     * are found the List will be empty.
+     * @throws EsuException if there is an error loading the object list
      * @deprecated Use the version of listObjects with ListOptions to include
      * metadata. 
      */
@@ -531,8 +531,8 @@ public interface EsuApi {
      * IDs and their metadata.
      * @param tag the tag to search for
      * @return The list of objects with the given tag.  If no objects
-     * are found the array will be empty.
-     * @throws EsuException if no objects are found (code 1003)
+     * are found the List will be empty.
+     * @throws EsuException if there is an error loading the object list
      * @deprecated Use the version of listObjects with ListOptions to include
      * metadata. 
      */

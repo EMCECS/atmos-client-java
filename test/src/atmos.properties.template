@@ -1,0 +1,11 @@
+# Replace with your atmos UID
+atmos.uid=
+
+# Replace with your Atmos shared secret
+atmos.secret=
+
+# Replace with your Atmos host
+atmos.host=accesspoint.emccis.com
+
+# Replace with your Atmos port
+atmos.port=80
