@@ -484,7 +484,7 @@ public abstract class AbstractEsuRestApi implements EsuApi {
      * @throws IllegalStateException
      * @throws UnsupportedEncodingException
      */
-    protected String sign( String input ) throws NoSuchAlgorithmException, InvalidKeyException, IllegalStateException, UnsupportedEncodingException {
+    public String sign( String input ) throws NoSuchAlgorithmException, InvalidKeyException, IllegalStateException, UnsupportedEncodingException {
         // Compute the signature hash
         Mac mac = Mac.getInstance( "HmacSHA1" );
         SecretKeySpec key = new SecretKeySpec( secret, "HmacSHA1" );
@@ -571,7 +571,16 @@ public abstract class AbstractEsuRestApi implements EsuApi {
      * @throws MalformedURLException 
      */
     protected URL buildUrl(String resource, String query ) throws URISyntaxException, MalformedURLException  {
-        URI uri = new URI( proto, null, host, port, resource, query, null );
+    	int uriport =0;
+    	if( "http".equals(proto) && port == 80 ) {
+    		// Default port
+    		uriport = -1;
+    	} else if( "https".equals(proto) && port == 443 ) {
+    		uriport = -1;
+    	} else {
+    		uriport = port;
+    	}
+        URI uri = new URI( proto, null, host, uriport, resource, query, null );
         URL u = uri.toURL();
         l4j.debug( "URL: " + u );
         return u;
@@ -603,11 +612,11 @@ public abstract class AbstractEsuRestApi implements EsuApi {
             return;
         }
 
-        String[] attrs = header.split(",");
+		String[] attrs = header.split( ",(?=[^,]+=)" );
         for (int i = 0; i < attrs.length; i++) {
             String[] nvpair = attrs[i].split("=", 2);
             String name = nvpair[0];
-            String value = nvpair[1];
+            String value = nvpair.length>1?nvpair[1]:null;
 
             name = name.trim();
 
@@ -970,10 +979,13 @@ public abstract class AbstractEsuRestApi implements EsuApi {
     /**
      * Formats a tag value for passing in the header.
      */
-    protected Object formatTag(Metadata meta) {
+    protected String formatTag(Metadata meta) {
+    	if( meta.getValue() == null ) {
+    		return meta.getName() + "=";
+    	}
         // strip commas and newlines for now.
-        String fixed = meta.getValue().replace(",", "");
-        fixed = fixed.replace("\n", "");
+        String fixed = meta.getValue().replace("\n", "");
+        fixed = fixed.replace( ",", "" );
         return meta.getName() + "=" + fixed;
     }
 

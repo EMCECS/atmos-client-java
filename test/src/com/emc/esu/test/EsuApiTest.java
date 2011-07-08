@@ -49,12 +49,10 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.emc.esu.api.Acl;
-import com.emc.esu.api.EsuApi;
-import com.emc.esu.api.EsuException;
-import com.emc.esu.api.DirectoryEntry;
-import com.emc.esu.api.rest.DownloadHelper;
 import com.emc.esu.api.Checksum;
 import com.emc.esu.api.Checksum.Algorithm;
+import com.emc.esu.api.DirectoryEntry;
+import com.emc.esu.api.EsuApi;
 import com.emc.esu.api.Extent;
 import com.emc.esu.api.Grant;
 import com.emc.esu.api.Grantee;
@@ -71,6 +69,7 @@ import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.ObjectResult;
 import com.emc.esu.api.Permission;
 import com.emc.esu.api.ServiceInformation;
+import com.emc.esu.api.rest.DownloadHelper;
 import com.emc.esu.api.rest.UploadHelper;
 
 /**
@@ -238,10 +237,16 @@ public abstract class EsuApiTest {
         Metadata unlistable = new Metadata( "unlistable", "bar", false );
         Metadata listable2 = new Metadata( "listable2", "foo2 foo2", true );
         Metadata unlistable2 = new Metadata( "unlistable2", "bar2 bar2", false );
+        Metadata listable3 = new Metadata( "listable3", null, true );
+        //Metadata withCommas = new Metadata( "withcommas", "I, Robot", false );
+        //Metadata withEquals = new Metadata( "withequals", "name=value", false );
         mlist.addMetadata( listable );
         mlist.addMetadata( unlistable );
         mlist.addMetadata( listable2 );
         mlist.addMetadata( unlistable2 );
+        mlist.addMetadata( listable3 );
+        //mlist.addMetadata( withCommas );
+        //mlist.addMetadata( withEquals );
         ObjectId id = this.esu.createObject( null, mlist, null, null );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -252,9 +257,15 @@ public abstract class EsuApiTest {
         Assert.assertEquals( "value of 'listable2' wrong", "foo2 foo2", meta.getMetadata( "listable2" ).getValue() );
         Assert.assertEquals( "value of 'unlistable' wrong", "bar", meta.getMetadata( "unlistable" ).getValue() );
         Assert.assertEquals( "value of 'unlistable2' wrong", "bar2 bar2", meta.getMetadata( "unlistable2" ).getValue() );
+        Assert.assertNotNull( "listable3 missing", meta.getMetadata( "listable3" ) );
+        Assert.assertTrue( "Value of listable3 should be empty", meta.getMetadata( "listable3" ).getValue() == null || meta.getMetadata( "listable3" ).getValue().length()==0);
+        //Assert.assertEquals( "Value of withcommas wrong", "I, Robot", meta.getMetadata( "withcommas" ).getValue() );
+        //Assert.assertEquals( "Value of withequals wrong", "name=value", meta.getMetadata( "withequals" ).getValue() );
+        
         // Check listable flags
         Assert.assertEquals( "'listable' is not listable", true, meta.getMetadata( "listable" ).isListable()  );
         Assert.assertEquals( "'listable2' is not listable", true, meta.getMetadata( "listable2" ).isListable() );
+        Assert.assertEquals( "'listable3' is not listable", true, meta.getMetadata( "listable3" ).isListable() );
         Assert.assertEquals( "'unlistable' is listable" , false, meta.getMetadata( "unlistable" ).isListable() );
         Assert.assertEquals( "'unlistable2' is listable", false, meta.getMetadata( "unlistable2" ).isListable() );
 
