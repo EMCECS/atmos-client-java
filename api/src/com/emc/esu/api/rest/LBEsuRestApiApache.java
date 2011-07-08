@@ -32,19 +32,13 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-/**
- * Implements a simple load-balanced version of EsuRestApi that round-robins through
- * a list of access point hostnames.  This should increase performance in a heavily
- * threaded environment by distributing requests against a number of hosts.
- * @author cwikj
- */
-public class LBEsuRestApi extends EsuRestApi {
-	private static final Logger l4j = Logger.getLogger(LBEsuRestApi.class);
+public class LBEsuRestApiApache extends EsuRestApiApache {
+	private static final Logger l4j = Logger.getLogger(LBEsuRestApiApache.class);
 	
 	private List<String> hosts;
 	private long requestCount = 0L;
 	
-    public LBEsuRestApi(List<String> hosts, int port, String uid, String sharedSecret) {
+    public LBEsuRestApiApache(List<String> hosts, int port, String uid, String sharedSecret) {
         super(hosts.get(0), port, uid, sharedSecret);
     	this.hosts = hosts;
     }
@@ -68,7 +62,4 @@ public class LBEsuRestApi extends EsuRestApi {
 	    l4j.debug( "URL: " + u );
 	    return u;
 	}
-    
-    
-
 }

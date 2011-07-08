@@ -117,7 +117,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
 
         ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(schemeRegistry);
         // Increase max total connection to 200
-        cm.setMaxTotalConnections(200);
+        cm.setMaxTotal(200);
         // Increase default max connection per route to 20
         cm.setDefaultMaxPerRoute(200);
 

@@ -6,10 +6,10 @@
 	<classpathentry exported="true" kind="lib" path="lib/log4j-1.2.15.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/commons-codec-1.4.jar"/>
 	<classpathentry kind="lib" path="commons-httpclient/commons-logging-1.1.1.jar"/>
-	<classpathentry kind="lib" path="commons-httpclient/httpclient-4.1-alpha2.jar"/>
-	<classpathentry kind="lib" path="commons-httpclient/httpclient-cache-4.1-alpha2.jar"/>
-	<classpathentry kind="lib" path="commons-httpclient/httpcore-4.1-beta1.jar"/>
-	<classpathentry kind="lib" path="commons-httpclient/httpmime-4.1-alpha2.jar"/>
 	<classpathentry kind="lib" path="lib/security-1.1.jar"/>
+	<classpathentry kind="lib" path="commons-httpclient/httpclient-4.1.1.jar"/>
+	<classpathentry kind="lib" path="commons-httpclient/httpclient-cache-4.1.1.jar"/>
+	<classpathentry kind="lib" path="commons-httpclient/httpcore-4.1.jar"/>
+	<classpathentry kind="lib" path="commons-httpclient/httpmime-4.1.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
