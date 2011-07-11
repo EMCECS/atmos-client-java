@@ -70,6 +70,7 @@ import com.emc.esu.api.ObjectResult;
 import com.emc.esu.api.Permission;
 import com.emc.esu.api.ServiceInformation;
 import com.emc.esu.api.rest.DownloadHelper;
+import com.emc.esu.api.rest.EsuRestApi;
 import com.emc.esu.api.rest.UploadHelper;
 
 /**
@@ -137,6 +138,22 @@ public abstract class EsuApiTest {
         content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong when reading by id", "", content );
     }
+    
+    
+    /**
+     * Tests using some extended characters when creating on a path.  This particular test
+     * uses one cryllic, one accented, and one japanese character.
+     */
+    @Test
+    public void testUnicodePath() throws Exception {
+    	if( !(this.esu instanceof EsuRestApi) ) {
+	    	ObjectPath path = new ObjectPath( "/" + rand8char() + "/бöｼ.txt" );
+	    	ObjectId id = this.esu.createObjectOnPath(path, null, null, null, null);
+	        Assert.assertNotNull( "null ID returned", id );
+	        cleanup.add( id );
+    	}
+    }
+
 
     
     private String rand8char() {
@@ -317,7 +334,7 @@ public abstract class EsuApiTest {
     public void testReadAcl() {
         // Create an object with an ACL
         Acl acl = new Acl();
-        acl.addGrant( new Grant( new Grantee( uid, Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
+        acl.addGrant( new Grant( new Grantee( stripUid(uid), Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
         acl.addGrant( new Grant( Grantee.OTHER, Permission.READ ) );
         ObjectId id = this.esu.createObject( acl, null, null, null );
         Assert.assertNotNull( "null ID returned", id );
@@ -331,12 +348,26 @@ public abstract class EsuApiTest {
 
     }
     
+    /**
+     * Inside an ACL, you use the UID only, not SubtenantID/UID
+     * @param uid
+     * @return
+     */
+    private String stripUid( String uid ) {
+    	int slash = uid.indexOf('/');
+    	if( slash != -1 ) {
+    		return uid.substring( slash+1 );
+    	} else {
+    		return uid;
+    	}
+    }
+    
     @Test
     public void testReadAclByPath() {
     	ObjectPath op = new ObjectPath( "/" + rand8char() + ".tmp" );
         // Create an object with an ACL
         Acl acl = new Acl();
-        acl.addGrant( new Grant( new Grantee( uid, Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
+        acl.addGrant( new Grant( new Grantee( stripUid(uid), Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
         acl.addGrant( new Grant( Grantee.OTHER, Permission.READ ) );
         ObjectId id = this.esu.createObjectOnPath( op, acl, null, null, null );
         Assert.assertNotNull( "null ID returned", id );
@@ -862,7 +893,7 @@ public abstract class EsuApiTest {
     public void testUpdateObjectAcl() throws Exception {
         // Create an object with an ACL
         Acl acl = new Acl();
-        acl.addGrant( new Grant( new Grantee( uid, Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
+        acl.addGrant( new Grant( new Grantee( stripUid(uid), Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
         Grant other = new Grant( Grantee.OTHER, Permission.READ );
         acl.addGrant( other );
         ObjectId id = this.esu.createObject( acl, null, null, null );
@@ -1553,11 +1584,15 @@ public abstract class EsuApiTest {
         MetadataList mlist = new MetadataList();
         Metadata nbspValue = new Metadata("nbspvalue", "Nobreak\u00A0Value", false);
         Metadata nbspName = new Metadata("Nobreak\u00A0Name", "regular text here", false);
+        Metadata cryllic = new Metadata("cryllic", "спасибо", false);
         l4j.debug("NBSP Value: " + nbspValue);
         l4j.debug("NBSP Name: " + nbspName);
 
         mlist.addMetadata(nbspValue);
         mlist.addMetadata(nbspName);
+        if( !(this.esu instanceof EsuRestApi) ) {
+	        mlist.addMetadata(cryllic);
+        }
         ObjectId id = this.esu.createObject(null, mlist, null, null);
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -1568,6 +1603,9 @@ public abstract class EsuApiTest {
         l4j.debug("NBSP Value: " + meta.getMetadata("nbspvalue"));
         l4j.debug("NBSP Name: " + meta.getMetadata("Nobreak\u00A0Name"));
         Assert.assertEquals( "value of 'nobreakvalue' wrong", "Nobreak\u00A0Value", meta.getMetadata( "nbspvalue" ).getValue() );
+        if( !(this.esu instanceof EsuRestApi) ) {
+        	Assert.assertEquals("Value of cryllic wrong", "спасибо", meta.getMetadata("cryllic").getValue() );
+        }
     }
     
     @Test

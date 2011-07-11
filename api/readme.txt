@@ -15,6 +15,7 @@ Requirements
  * JDOM 1.0+  (included, see jdom-license.txt)
  * Apache Commons Codec v1.3+ (Included, Apache License.)
  * Apache Ant 1.7+ (for running build scripts only)
+ * Apache HTTP Client (optional, required to use EsuRestApiApache)
  
 Usage
 -----
@@ -24,7 +25,7 @@ your project's classpath.
 In order to use the API, you need to construct an instance of the EcuRestApi
 class.  This class contains the parameters used to connect to the server.
 
-EsuApi cesu= new EsuRestApi( "host", port, "uid", "shared secret" );
+EsuApi esu= new EsuRestApiApache( "host", port, "uid", "shared secret" );
 
 Where host is the hostname or IP address of an ESU node that you're authorized
 to access, port is the IP port number used to connect to the server (generally
@@ -106,5 +107,19 @@ In version 1.4 a new implementation is available: EsuRestApiApache.  This versio
 implements the same EsuApi interface, but uses the Apache Commons HTTP client 
 instead of the built-in Java HTTP client.  This version should offer more options
 with connection pooling and HTTP keep-alive requests for higher throughput than
-the standard client.  The only downside is that you'll need to include the JAR
-files in the commons-httpclient folder with your application.
+the standard client.  It also does a better job of handling URLs with unicode
+characters than the default Java client does.  The only downside is that you'll 
+need to include the JAR files in the commons-httpclient folder with your 
+application, adding about 1MB to your disk footprint.
+
+"Load Balanced" implementations
+--------------------------------
+There is also now a couple "Load Balanced" implementations available for 
+testing:  LBEsuRestApi and LBEsuRestApiApache.  These implementations accept a 
+List of hostnames in your Atmos cluster and will round-robin the requests 
+across those nodes.  When issuing many small requests in a highly threaded 
+environment, this can improve your application's performance dramatically.  Do 
+not use this code though when your application creates an object and then 
+updates it immediately (e.g. create/append like UploadHelper) since there is a 
+very small window after a create where other cluster nodes may not find the 
+newly created object.

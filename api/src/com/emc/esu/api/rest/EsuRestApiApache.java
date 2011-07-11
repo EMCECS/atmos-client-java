@@ -55,6 +55,8 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.AbstractHttpMessage;
+import org.apache.http.params.CoreProtocolPNames;
+import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 import org.jdom.Document;
 import org.jdom.JDOMException;
@@ -122,6 +124,11 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
         cm.setDefaultMaxPerRoute(200);
 
         httpClient = new DefaultHttpClient( cm, null );
+        
+        // In order to support Unicode metadata, we need to encode the request headers in UTF-8 not
+        // ASCII.
+        httpClient.getParams().setParameter( CoreProtocolPNames.HTTP_ELEMENT_CHARSET, "UTF-8" );
+        
     }
     
     /**
@@ -1866,7 +1873,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             } finally {
                 if( resp.getEntity() != null ) {
                     try {
-                        resp.getEntity().consumeContent();
+                    	EntityUtils.consume( resp.getEntity() );
                     } catch (IOException e) {
                         l4j.warn( "Error finishing error response", e );
                     }
@@ -1973,7 +1980,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
         
         return httpClient.execute( head );
     }
-
+    
     private void setHeaders( AbstractHttpMessage request, Map<String, String> headers ) {
         for( String headerName : headers.keySet() ) {
             request.addHeader( headerName, headers.get( headerName ) );
@@ -1995,7 +2002,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
 
     private void cleanup( HttpResponse response ) throws IOException {
     	if( response.getEntity() != null ) {
-    		response.getEntity().consumeContent();
+    		EntityUtils.consume( response.getEntity() );
     	}
     }
 

@@ -486,19 +486,24 @@ public abstract class AbstractEsuRestApi implements EsuApi {
      */
     public String sign( String input ) throws NoSuchAlgorithmException, InvalidKeyException, IllegalStateException, UnsupportedEncodingException {
         // Compute the signature hash
-        Mac mac = Mac.getInstance( "HmacSHA1" );
-        SecretKeySpec key = new SecretKeySpec( secret, "HmacSHA1" );
-        mac.init( key );
         l4j.debug( "Hashing: \n" + input.toString() );
 
-        byte[] hashData = mac.doFinal( input.toString().getBytes( "ISO-8859-1" ) );
-
-        // Encode the hash in Base64.
-        String hashOut = new String( Base64.encodeBase64( hashData ), "UTF-8" );
+        String hashOut = sign( input.getBytes("UTF-8") );
         
         l4j.debug( "Hash: " + hashOut );
 
         return hashOut;
+    }
+    
+    public String sign( byte[] input ) throws UnsupportedEncodingException, InvalidKeyException, NoSuchAlgorithmException {
+        Mac mac = Mac.getInstance( "HmacSHA1" );
+        SecretKeySpec key = new SecretKeySpec( secret, "HmacSHA1" );
+        mac.init( key );
+
+        byte[] hashData = mac.doFinal( input );
+
+        // Encode the hash in Base64.
+        return new String( Base64.encodeBase64( hashData ), "UTF-8" );
     }
 
     /**
@@ -1103,7 +1108,7 @@ public abstract class AbstractEsuRestApi implements EsuApi {
      * @param string
      * @return
      */
-    private String normalizeSpace(String str) {
+    protected String normalizeSpace(String str) {
 		int length = str.length();
 		while(true) {
 			str = str.replace( "  ", " " );

@@ -36,7 +36,9 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -73,6 +75,13 @@ import com.emc.esu.api.ServiceInformation;
  * perform object and metadata calls against the ESU server. All of the methods
  * that communicate with the server are atomic and stateless so the object can
  * be used safely in a multithreaded environment.
+ * 
+ * NOTE: When running on MacOS, it is highly recommended to set the platform
+ * encoding to ISO-8859-1 instead of the default MacRoman.  Java's internal
+ * HTTP layer does not translate characters properly and user metadata
+ * containing extended characters may not be handled properly.  You can set
+ * the encoding by passing the argument "-Dfile.encoding=ISO-8859-1" to the
+ * VM on startup.
  */
 public class EsuRestApi extends AbstractEsuRestApi {
     private static final Logger l4j = Logger.getLogger(EsuRestApi.class);
@@ -847,7 +856,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             String resource = getResourcePath(context, id);
             URL u = buildUrl(resource, "metadata/user");
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
-
+            
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
 
@@ -2022,19 +2031,107 @@ public class EsuRestApi extends AbstractEsuRestApi {
         for (Iterator<String> i = headers.keySet().iterator(); i.hasNext();) {
             String name = i.next();
             
-            // Convert values from platform charset to ISO-8859-1.  The string
-            // is created as ISO-8859-1 bytes but reread with platform encoding.
-            // This makes sure that when the header is re-serialized into bytes
-            // that it uses the bytes we want.
-            con.setRequestProperty(new String(name.getBytes("ISO-8859-1")), 
-            		new String(headers.get(name).getBytes("ISO-8859-1")));
+            con.setRequestProperty( name, headers.get(name) );
         }
 
         // Set the method.
         con.setRequestMethod(method);        
     }
-
+    
     /**
+     * Generates the HMAC-SHA1 signature used to authenticate the request using
+     * the Java security APIs.
+     * 
+     * @param con the connection object
+     * @param method the HTTP method used
+     * @param resource the resource path
+     * @param headers the HTTP headers for the request
+     * @throws IOException if character data cannot be encoded.
+     * @throws GeneralSecurityException If errors occur generating the HMAC-SHA1
+     *             signature.
+     */
+    protected void signRequest(String method, URL resource, Map<String, String> headers) throws IOException,
+            GeneralSecurityException {
+        // Build the string to hash.
+
+    	ByteArrayOutputStream out = new ByteArrayOutputStream();
+    	
+        appendBytes( out, method + "\n", null );
+
+        // If content type exists, add it. Otherwise add a blank line.
+        if (headers.containsKey("Content-Type")) {
+            l4j.debug("Content-Type: " + headers.get("Content-Type"));
+            appendBytes( out, headers.get("Content-Type").toLowerCase() + "\n", null );
+        } else {
+            appendBytes( out, "\n", null );
+        }
+
+        // If the range header exists, add it. Otherwise add a blank line.
+        if (headers.containsKey("Range")) {
+            appendBytes( out, headers.get("Range") + "\n", null);
+        } else if (headers.containsKey("Content-Range")) {
+            appendBytes( out, headers.get("Content-Range") + "\n", null );
+        } else {
+            appendBytes( out, "\n", null );
+        }
+
+        // Add the current date and the resource.
+        appendBytes( out, headers.get("Date") + "\n"
+                + URLDecoder.decode(resource.getPath(), "UTF-8").toLowerCase(), "UTF-8" );
+        if (resource.getQuery() != null) {
+            appendBytes( out,"?" + resource.getQuery() + "\n", "UTF-8" );
+        } else {
+            appendBytes( out, "\n", null );
+        }
+
+        // Do the 'x-emc' headers. The headers must be hashed in alphabetic
+        // order and the values must be stripped of whitespace and newlines.
+        List<String> keys = new ArrayList<String>();
+        Map<String, String> newheaders = new HashMap<String, String>();
+
+        // Extract the keys and values
+        for (Iterator<String> i = headers.keySet().iterator(); i.hasNext();) {
+            String key = i.next();
+            if (key.indexOf("x-emc") == 0) {
+                keys.add(key.toLowerCase());
+                newheaders.put(key.toLowerCase(), headers.get(key).replace(
+                        "\n", ""));
+            }
+        }
+
+        // Sort the keys and add the headers to the hash string.
+        Collections.sort(keys);
+        boolean first = true;
+        for (Iterator<String> i = keys.iterator(); i.hasNext();) {
+            String key = i.next();
+            if (!first) {
+                appendBytes( out, "\n", null );
+            } else {
+                first = false;
+            }
+            // this.trace( "xheader: " . k . "." . newheaders[k] );
+            appendBytes( out, key + ':' + normalizeSpace(newheaders.get(key)), null );
+        }
+
+        
+        byte[] data = out.toByteArray();
+        
+        String hashOut = sign( data );
+        
+        headers.put( "x-emc-signature", hashOut );
+
+    }
+
+    private void appendBytes(OutputStream out, String s,
+			String encoding) throws UnsupportedEncodingException, IOException {
+		if( encoding == null ) {
+			out.write( s.getBytes() );
+		} else {
+			out.write( s.getBytes( encoding ) );
+		}
+	}
+
+	/**
      * Attempts to generate a reasonable error message from from a request. If
      * the error is from the web service, there should be a message and code in
      * the response body encapsulated in XML.
