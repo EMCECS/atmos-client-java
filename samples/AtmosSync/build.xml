@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project AtmosSync">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <target name="create_run_jar">
+        <jar destfile="/Users/cwikj/AtmosSync.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="com.emc.atmos.sync.AtmosSync"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="/Users/cwikj/Documents/workspace/AtmosSync/bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/AtmosSync/lib/commons-cli-1.2.jar"/>
+            <fileset dir="/Users/cwikj/Documents/workspace/esujava/bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/lib/jdom.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/lib/log4j-1.2.15.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/lib/commons-codec-1.4.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/commons-httpclient/commons-logging-1.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/lib/security-1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/commons-httpclient/httpclient-4.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/commons-httpclient/httpclient-cache-4.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/commons-httpclient/httpcore-4.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/commons-httpclient/httpmime-4.1.1.jar"/>
+        </jar>
+    </target>
+</project>
