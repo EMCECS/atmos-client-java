@@ -35,17 +35,13 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -74,6 +70,7 @@ import com.emc.esu.api.EsuException;
 import com.emc.esu.api.Extent;
 import com.emc.esu.api.Grant;
 import com.emc.esu.api.Grantee;
+import com.emc.esu.api.Grantee.GRANT_TYPE;
 import com.emc.esu.api.Identifier;
 import com.emc.esu.api.ListOptions;
 import com.emc.esu.api.Metadata;
@@ -84,7 +81,6 @@ import com.emc.esu.api.ObjectId;
 import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.ObjectResult;
 import com.emc.esu.api.Permission;
-import com.emc.esu.api.Grantee.GRANT_TYPE;
 import com.emc.esu.api.ServiceInformation;
 
 /**
@@ -1023,84 +1019,6 @@ public abstract class AbstractEsuRestApi implements EsuApi {
         headers.put("x-emc-groupacl", groupGrants.toString());
     }
     
-    /**
-     * Generates the HMAC-SHA1 signature used to authenticate the request using
-     * the Java security APIs.
-     * 
-     * @param con the connection object
-     * @param method the HTTP method used
-     * @param resource the resource path
-     * @param headers the HTTP headers for the request
-     * @throws IOException if character data cannot be encoded.
-     * @throws GeneralSecurityException If errors occur generating the HMAC-SHA1
-     *             signature.
-     */
-    protected void signRequest(String method, URL resource, Map<String, String> headers) throws IOException,
-            GeneralSecurityException {
-        // Build the string to hash.
-        StringBuffer hashStr = new StringBuffer();
-        hashStr.append(method + "\n");
-
-        // If content type exists, add it. Otherwise add a blank line.
-        if (headers.containsKey("Content-Type")) {
-            l4j.debug("Content-Type: " + headers.get("Content-Type"));
-            hashStr.append(headers.get("Content-Type").toLowerCase() + "\n");
-        } else {
-            hashStr.append("\n");
-        }
-
-        // If the range header exists, add it. Otherwise add a blank line.
-        if (headers.containsKey("Range")) {
-            hashStr.append(headers.get("Range") + "\n");
-        } else if (headers.containsKey("Content-Range")) {
-            hashStr.append(headers.get("Content-Range") + "\n");
-        } else {
-            hashStr.append("\n");
-        }
-
-        // Add the current date and the resource.
-        hashStr.append(headers.get("Date") + "\n"
-                + URLDecoder.decode(resource.getPath(), "UTF-8").toLowerCase());
-        if (resource.getQuery() != null) {
-            hashStr.append("?" + resource.getQuery() + "\n");
-        } else {
-            hashStr.append("\n");
-        }
-
-        // Do the 'x-emc' headers. The headers must be hashed in alphabetic
-        // order and the values must be stripped of whitespace and newlines.
-        List<String> keys = new ArrayList<String>();
-        Map<String, String> newheaders = new HashMap<String, String>();
-
-        // Extract the keys and values
-        for (Iterator<String> i = headers.keySet().iterator(); i.hasNext();) {
-            String key = i.next();
-            if (key.indexOf("x-emc") == 0) {
-                keys.add(key.toLowerCase());
-                newheaders.put(key.toLowerCase(), headers.get(key).replace(
-                        "\n", ""));
-            }
-        }
-
-        // Sort the keys and add the headers to the hash string.
-        Collections.sort(keys);
-        boolean first = true;
-        for (Iterator<String> i = keys.iterator(); i.hasNext();) {
-            String key = i.next();
-            if (!first) {
-                hashStr.append("\n");
-            } else {
-                first = false;
-            }
-            // this.trace( "xheader: " . k . "." . newheaders[k] );
-            hashStr.append(key + ':' + normalizeSpace(newheaders.get(key)));
-        }
-
-        String hashOut = sign(hashStr.toString());
-        
-        headers.put( "x-emc-signature", hashOut );
-
-    }
 
 
     /**

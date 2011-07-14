@@ -31,8 +31,10 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -186,7 +188,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, null, headers);
 
             HttpResponse response = restPost( u, headers, data, length );
 
@@ -268,7 +270,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, null, headers);
 
             HttpResponse response = restPost( u, headers, data, length );
 
@@ -357,7 +359,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             }
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, null, headers);
             
             HttpResponse response = restPost( u, headers, data );
 
@@ -448,7 +450,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             }
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, null, headers);
             HttpResponse response = restPost( u, headers, data );
 
             // Check response
@@ -493,7 +495,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("DELETE", u, headers);
+            signRequest("DELETE", resource, null, headers);
             
             HttpResponse response = restDelete( u, headers );
             
@@ -520,7 +522,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public void deleteVersion(ObjectId id) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "versions");
+            String query = "versions";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -531,7 +534,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("DELETE", u, headers);
+            signRequest("DELETE", resource, query, headers);
             
             HttpResponse response = restDelete( u, headers );
             
@@ -562,7 +565,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
         }
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "metadata/user");
+            String query = "metadata/user";
+            URL u = buildUrl(resource, query );
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -578,7 +582,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("DELETE", u, headers);
+            signRequest("DELETE", resource, query, headers);
             
             HttpResponse response = restDelete( u, headers );
             
@@ -606,7 +610,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public Acl getAcl(Identifier id) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "acl");
+            String query = "acl";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -617,7 +622,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
             HttpResponse response = restGet( u, headers );
             
             handleError(response);
@@ -667,7 +672,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public MetadataTags getListableTags(String tag) {
         try {
             String resource = context + "/objects";
-            URL u = buildUrl(resource, "listabletags");
+            String query = "listabletags";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -683,7 +689,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
             
             HttpResponse response = restGet( u, headers );
             handleError( response );
@@ -717,7 +723,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public MetadataList getSystemMetadata(Identifier id, MetadataTags tags) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "metadata/system");
+            String query = "metadata/system";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -733,7 +740,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
 
             HttpResponse response = restGet( u, headers );
             handleError( response );
@@ -769,7 +776,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public MetadataList getUserMetadata(Identifier id, MetadataTags tags) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "metadata/user");
+            String query = "metadata/user";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -785,7 +793,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
 
             HttpResponse response = restGet( u, headers );
             handleError( response );
@@ -860,7 +868,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             
             HttpResponse response = restGet( u, headers );
             
@@ -922,7 +930,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public MetadataTags listUserMetadataTags(Identifier id) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "metadata/tags");
+            String query = "metadata/tags";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -933,7 +942,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
             
             HttpResponse response = restGet( u, headers );
             handleError( response );
@@ -970,7 +979,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public List<Identifier> listVersions(Identifier id) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "versions");
+            String query = "versions";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -981,7 +991,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
 
             HttpResponse response = restGet( u, headers );
             handleError( response );
@@ -1036,7 +1046,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             
             HttpResponse response = restGet( u, headers );
             handleError( response );
@@ -1100,16 +1110,13 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             }
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             HttpResponse response = restGet( u, headers );
 
             // The requested content is in the response body.
             byte[] data = readStream( response.getEntity().getContent(), 
                     (int) response.getEntity().getContentLength() );
 
-//            if( l4j.isDebugEnabled() ) {
-//                l4j.debug("Response: " + new String(data, "UTF-8"));
-//            }
             finishRequest( response );
             
             // See if a checksum was returned.
@@ -1170,7 +1177,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             }
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             
             HttpResponse response = restGet( u, headers );
             handleError( response );
@@ -1261,7 +1268,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             }
 
             // Sign request
-            signRequest("PUT", u, headers);
+            signRequest("PUT", resource, null, headers);
             
             HttpResponse response = restPut( u, headers, data );
             handleError( response );
@@ -1339,7 +1346,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("PUT", u, headers);
+            signRequest("PUT", resource, null, headers);
             
             HttpResponse response = restPut( u, headers, data, length );
             handleError( response );
@@ -1369,7 +1376,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public void setUserMetadata(Identifier id, MetadataList metadata) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "metadata/user");
+            String query = "metadata/user";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1385,7 +1393,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, query, headers);
             
             HttpResponse response = restPost( u, headers, null );
             handleError( response );
@@ -1412,7 +1420,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public void setAcl(Identifier id, Acl acl) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "acl");
+            String query = "acl";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1428,7 +1437,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, query, headers);
             
             HttpResponse response = restPost( u, headers, null );
             handleError( response );
@@ -1456,7 +1465,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public ObjectId versionObject(Identifier id) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "versions");
+            String query = "versions";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1467,7 +1477,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, query, headers);
             
             HttpResponse response = restPost( u, headers, null );
             handleError( response );
@@ -1542,7 +1552,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             HttpResponse response = restGet( u, headers );
 
             if( options != null ) {
@@ -1598,7 +1608,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("HEAD", u, headers);
+            signRequest("HEAD", resource, null, headers);
             
             HttpResponse response = restHead( u, headers );
             handleError( response );
@@ -1652,7 +1662,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             
             HttpResponse response = restGet( u, headers );
             handleError( response );
@@ -1693,7 +1703,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public void rename(ObjectPath source, ObjectPath destination, boolean force) {
         try {
             String resource = getResourcePath(context, source);
-            URL u = buildUrl(resource, "rename");
+            String query = "rename";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1715,7 +1726,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, query, headers);
             
             HttpResponse response = restPost( u, headers, null );
             handleError( response );
@@ -1743,7 +1754,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public void restoreVersion( ObjectId id, ObjectId vId ) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "versions");
+            String query = "versions";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1757,7 +1769,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("PUT", u, headers);
+            signRequest("PUT", resource, query, headers);
             
             HttpResponse response = restPut( u, headers, null );
             
@@ -1786,7 +1798,8 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     public ObjectInfo getObjectInfo( Identifier id ) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "info");
+            String query = "info";
+            URL u = buildUrl(resource, query);
 
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
@@ -1797,7 +1810,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
 
             HttpResponse response = restGet( u, headers );
             handleError( response );
@@ -2004,6 +2017,86 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     	if( response.getEntity() != null ) {
     		EntityUtils.consume( response.getEntity() );
     	}
+    }
+    
+    /**
+     * Generates the HMAC-SHA1 signature used to authenticate the request using
+     * the Java security APIs.
+     * 
+     * @param con the connection object
+     * @param method the HTTP method used
+     * @param resource the resource path
+     * @param headers the HTTP headers for the request
+     * @throws IOException if character data cannot be encoded.
+     * @throws GeneralSecurityException If errors occur generating the HMAC-SHA1
+     *             signature.
+     */
+    private void signRequest(String method, String resource, String query, Map<String, String> headers) throws IOException,
+            GeneralSecurityException {
+        // Build the string to hash.
+        StringBuffer hashStr = new StringBuffer();
+        hashStr.append(method + "\n");
+
+        // If content type exists, add it. Otherwise add a blank line.
+        if (headers.containsKey("Content-Type")) {
+            l4j.debug("Content-Type: " + headers.get("Content-Type"));
+            hashStr.append(headers.get("Content-Type").toLowerCase() + "\n");
+        } else {
+            hashStr.append("\n");
+        }
+
+        // If the range header exists, add it. Otherwise add a blank line.
+        if (headers.containsKey("Range")) {
+            hashStr.append(headers.get("Range") + "\n");
+        } else if (headers.containsKey("Content-Range")) {
+            hashStr.append(headers.get("Content-Range") + "\n");
+        } else {
+            hashStr.append("\n");
+        }
+
+        // Add the current date and the resource.
+        hashStr.append(headers.get("Date") + "\n" );
+        
+        hashStr.append( resource.toLowerCase() );
+        if ( query != null) {
+            hashStr.append("?" + query + "\n");
+        } else {
+            hashStr.append("\n");
+        }
+
+        // Do the 'x-emc' headers. The headers must be hashed in alphabetic
+        // order and the values must be stripped of whitespace and newlines.
+        List<String> keys = new ArrayList<String>();
+        Map<String, String> newheaders = new HashMap<String, String>();
+
+        // Extract the keys and values
+        for (Iterator<String> i = headers.keySet().iterator(); i.hasNext();) {
+            String key = i.next();
+            if (key.indexOf("x-emc") == 0) {
+                keys.add(key.toLowerCase());
+                newheaders.put(key.toLowerCase(), headers.get(key).replace(
+                        "\n", ""));
+            }
+        }
+
+        // Sort the keys and add the headers to the hash string.
+        Collections.sort(keys);
+        boolean first = true;
+        for (Iterator<String> i = keys.iterator(); i.hasNext();) {
+            String key = i.next();
+            if (!first) {
+                hashStr.append("\n");
+            } else {
+                first = false;
+            }
+            // this.trace( "xheader: " . k . "." . newheaders[k] );
+            hashStr.append(key + ':' + normalizeSpace(newheaders.get(key)));
+        }
+
+        String hashOut = sign(hashStr.toString());
+        
+        headers.put( "x-emc-signature", hashOut );
+
     }
 
 
