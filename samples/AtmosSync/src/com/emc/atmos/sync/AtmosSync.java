@@ -141,7 +141,7 @@ public class AtmosSync {
 			System.err.println("Parsing failed.  Reason: " + exp.getMessage());
 			// automatically generate the help statement
 			HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp("AtmosThreadedDownload", options);
+			formatter.printHelp("java -jar AtmosSync.jar", options);
 		} catch (InterruptedException e) {
 			l4j.error( "Execution interrupted " + e, e );
 			System.exit( 4 );
