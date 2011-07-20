@@ -40,14 +40,18 @@ import java.util.Map;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
@@ -131,6 +135,23 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
         // ASCII.
         httpClient.getParams().setParameter( CoreProtocolPNames.HTTP_ELEMENT_CHARSET, "UTF-8" );
         
+    }
+    
+    public void setProxy( String host, int port, boolean https ) {
+    	setProxy( host, port, https, null, null );
+    }
+    
+    public void setProxy( String host, int port, boolean https, String username, 
+    		String password ) {
+    	HttpHost proxyHost = new HttpHost( host, port, https?"https":"http" );
+    	httpClient.getParams().setParameter( ConnRoutePNames.DEFAULT_PROXY, 
+    			proxyHost );
+    	
+    	if( username != null ) {
+    		httpClient.getCredentialsProvider().setCredentials(
+    				new AuthScope(host, port),
+    				new UsernamePasswordCredentials(username, password));
+    	}
     }
     
     /**
