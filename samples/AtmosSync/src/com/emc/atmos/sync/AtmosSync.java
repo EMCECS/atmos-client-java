@@ -43,15 +43,19 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.Logger;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleDirectedGraph;
+import org.jgrapht.traverse.BreadthFirstIterator;
 
 import com.emc.esu.api.Acl;
 import com.emc.esu.api.EsuApi;
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.Grant;
 import com.emc.esu.api.Grantee;
-import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.Grantee.GRANT_TYPE;
-import com.emc.esu.api.rest.EsuRestApiApache;
+import com.emc.esu.api.Metadata;
+import com.emc.esu.api.MetadataList;
+import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.rest.LBEsuRestApiApache;
 
 /**
@@ -60,15 +64,77 @@ import com.emc.esu.api.rest.LBEsuRestApiApache;
  */
 public class AtmosSync {
 	
+	public static enum METADATA_MODE { BOTH, DIRECTORIES, FILES }
+	public static enum MODE { DOWNLOAD_ONLY, FULL_SYNC, UPLOAD_ONLY }
 	private static final Logger l4j = Logger.getLogger(AtmosSync.class);
 	public static final String MTIME_NAME = "atmossync_mtime";
 
+	
+	private Acl acl;
+	private long byteCount;
+	private int completedCount = 0;
+	private boolean delete;
+	private EsuApi esu;
+	private int failedCount = 0;
+	private Set<TaskNode> failedItems;
+	private int fileCount;
+	private boolean force;
+	private SimpleDirectedGraph<TaskNode, DefaultEdge> graph;
+	private String[] hosts;
+	private File localroot;
+	private MetadataList meta;
+	private METADATA_MODE metadataMode;
+	private MimetypesFileTypeMap mimeMap;
+	private ThreadPoolExecutor pool;
+	private int port;
+	private String proxyHost;
+	private boolean proxyHttps;
+	private String proxyPassword;
+	private int proxyPort;
+	private String proxyUser;
+	private LinkedBlockingQueue<Runnable> queue;
+	private String remoteroot;
+	private String secret;
+	private MODE syncMode;
+	private int threads;
+	private String uid;
+	
+
+
+	/**
+	 * Encode characters that Atmos doesn't support (specifically @ and ?)
+	 * @param op the path
+	 * @return the path with invalid characters replaced
+	 */
+	public static String encodeObjectPath( String op ) {
+		op = op.replace( "?", "." );
+		op = op.replace( "@", "." );
+		return op;
+	}
+
+	public static ObjectPath getParentDir(ObjectPath op) {
+		String ops = op.toString();
+		if( ops.endsWith( "/" ) ) {
+			ops = ops.substring( 0, ops.length()-1 );
+		}
+		int lastslash = ops.lastIndexOf( '/' );
+		if( lastslash == 0 ) {
+			// root
+			return null;
+		}
+		return new ObjectPath(ops.substring( 0, lastslash+1 ));
+	}
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		Options options = new Options();
+		
 		Option o = new Option("u", "uid", true, "Atmos UID");
+		o.setRequired(true);
+		options.addOption(o);
+		
+		o = new Option( "m", "mode", true, "Sync mode: upload_only|download_only|full_sync" );
 		o.setRequired(true);
 		options.addOption(o);
 
@@ -117,7 +183,47 @@ public class AtmosSync {
 		o = new Option("D", "delete", false, "Delete local files after successful upload" );
 		o.setRequired(false);
 		options.addOption( o );
+		
+		o = new Option( "um", "usermeta", true, "User Metadata (name=value).  May be used more than once." );
+		o.setRequired(false);
+		o.setArgs(Option.UNLIMITED_VALUES);
+		options.addOption(o);
+		
+		o = new Option( "lm", "listablemeta", true, "Listable Metadata (name=value).  May be used more than once.  You may omit the = or =value for an empty tag value" );
+		o.setRequired(false);
+		o.setArgs(Option.UNLIMITED_VALUES);
+		options.addOption(o);
+		
+		o = new Option( "F", "force", false, "Force upload even if files match.  Only applicable to upload_only or download_only modes." );
+		o.setRequired(false);
+		options.addOption(o);
+		
+		o = new Option( "M", "metadatamode", true, "Metadata application mode (files|directories|both) defaults to both." );
+		o.setRequired(false);
+		options.addOption(o);
+		
+		o = new Option( "ph", "proxyhost", true, "HTTP proxy host" );
+		o.setRequired(false);
+		options.addOption(o);
+		
+		o = new Option( "pp", "proxyport", true, "HTTP proxy port (default: 8080)" );
+		o.setRequired(false);
+		options.addOption(o);
+		
+		o = new Option( "pS", "proxyhttps", false, "If specified, HTTPS will " +
+				"be used when connecting to the proxy server" );
+		o.setRequired(false);
+		options.addOption(o);
+		
+		o = new Option( "pU", "proxyuser", true, "HTTP proxy username" );
+		o.setRequired(false);
+		options.addOption(o);
+		
+		o = new Option( "pP", "proxypassword", true, "HTTP proxy password" );
+		o.setRequired(false);
+		options.addOption(o);
 
+		
 		// create the parser
 		CommandLineParser parser = new GnuParser();
 		try {
@@ -133,8 +239,58 @@ public class AtmosSync {
 			String[] useracl = line.getOptionValues("useracl");
 			String[] groupacl = line.getOptionValues("groupacl");
 			boolean delete = line.hasOption( "delete" );
+			MODE mode = MODE.valueOf( line.getOptionValue("mode").toUpperCase() );
+			boolean force = line.hasOption( "force" );
+			String proxyHost = line.getOptionValue( "proxyhost" );
+			int proxyPort = Integer.parseInt( line.getOptionValue( "proxyPort", "8080" ) );
+			boolean proxyHttps = line.hasOption( "proxyhttps" );
+			String proxyUser = line.getOptionValue( "proxyuser" );
+			String proxyPassword = line.getOptionValue( "proxypassword" );
+			
+			String[] usermeta = line.getOptionValues("usermeta");
+			String[] listablemeta = line.getOptionValues( "listablemeta" );
+			MetadataList meta = new MetadataList();
+			if( usermeta != null ) {
+				parseMeta( usermeta, meta, false );
+			}
+			if( listablemeta != null ) {
+				parseMeta( listablemeta, meta, true );
+			}
+			METADATA_MODE mmode = METADATA_MODE.valueOf( line.getOptionValue("metadatamode", "both").toUpperCase() );
 
-			AtmosSync sync = new AtmosSync(uid, secret, host, port, remoteroot, localroot, threads, useracl, groupacl, delete);
+			Acl acl = null;
+			if( useracl != null || groupacl != null ) {
+				acl = new Acl();
+				if( useracl != null ) {
+					parseAcl(useracl, acl, GRANT_TYPE.USER);
+				}
+				if( groupacl != null ) {
+					parseAcl(groupacl, acl, GRANT_TYPE.GROUP);
+				}
+			}
+
+			
+			AtmosSync sync = new AtmosSync();
+			
+			sync.setUid( uid );
+			sync.setSecret( secret );
+			sync.setHosts( host );
+			sync.setPort( port );
+			sync.setRemoteRoot( remoteroot );
+			sync.setLocalRoot( localroot );
+			sync.setThreads( threads );
+			sync.setAcl( acl );
+			sync.setDelete( delete );
+			sync.setSyncMode( mode );
+			sync.setMeta( meta );
+			sync.setForce( force );
+			sync.setMetadataMode( mmode );
+			sync.setProxyHost( proxyHost );
+			sync.setProxyPort( proxyPort );
+			sync.setProxyHttps( proxyHttps );
+			sync.setProxyUsername( proxyUser );
+			sync.setProxyPassword( proxyPassword );
+			
 			sync.start();
 		} catch (ParseException exp) {
 			// oops, something went wrong
@@ -148,28 +304,189 @@ public class AtmosSync {
 		}
 		System.exit(0);
 	}
+	private static void parseAcl(String[] aclstrs, Acl acl, GRANT_TYPE gtype ) {
+		for( String str : aclstrs ) {
+			String[] parts = str.split( "=", 2 );
+			acl.addGrant( new Grant(new Grantee(parts[0], gtype), parts[1] ) );
+		}
+	}
+	private static void parseMeta(String[] usermeta, MetadataList mlist,
+			boolean listable) {
+		for( String val : usermeta ) {
+			String[] nvpair = val.split( "=", 2 );
+			String name = nvpair[0];
+			String value = nvpair.length>1?nvpair[1]:null;
+			mlist.addMetadata( new Metadata( name, value, listable ) );
+		}
+	}
 
-	private EsuApi esu;
-	private EsuApi esuSingle;
-	private File localroot;
-	private String remoteroot;
-	private int threads;
-	private Acl acl;
-	private String[] hosts;
 	
-	private long byteCount;
-	private int fileCount;
-	private int failedCount = 0;
-	private int completedCount = 0;
-	private LinkedBlockingQueue<Runnable> queue;
-	private ThreadPoolExecutor pool;
-	private Set<SyncItem> itemsRemaining;
-	private Set<SyncItem> failedItems;
+	public synchronized void failure(TaskNode task, File file, ObjectPath objectPath,
+			Exception e) {
+		
+		if( e instanceof EsuException ) {
+			l4j.error( "Failed to sync " + file + " to " + objectPath + ": " + e + " code: " + ((EsuException)e).getAtmosCode(), e );
+			
+		} else {
+			l4j.error( "Failed to sync " + file + " to " + objectPath + ": " + e, e );
+		}
+		failedCount++;
+		failedItems.add( task );
+
+	}
+	public Acl getAcl() {
+		return acl;
+	}
+	public EsuApi getEsu() {
+		return esu;
+	}
+	public SimpleDirectedGraph<TaskNode, DefaultEdge> getGraph() {
+		return graph;
+	}
 	
-	private MimetypesFileTypeMap mimeMap;
-	private boolean delete;
+	public File getLocalroot() {
+		return localroot;
+	}
+	public MetadataList getMeta() {
+		return meta;
+	}
+	public METADATA_MODE getMetadataMode() {
+		return metadataMode;
+	}
+	public MimetypesFileTypeMap getMimeMap() {
+		return mimeMap;
+	}
+	public MODE getSyncMode() {
+		return syncMode;
+	}
+	public void incrementFileCount() {
+		fileCount++;
+	}
+	public boolean isDelete() {
+		return delete;
+	}
+
+	public boolean isForce() {
+		return force;
+	}
+
+	private void mkdirs(ObjectPath dir, Acl acl) {
+		if( dir == null ) {
+			return;
+		}
+		
+		boolean exists = false;
+		try {
+			esu.getAllMetadata(dir);
+			exists = true;
+		} catch( EsuException e ) {
+			if( e.getHttpCode() == 404 ) {
+				// Doesn't exist
+				l4j.debug( "remote object " + dir + " doesn't exist" );
+			} else {
+				l4j.error( "mkdirs failed for " + dir + ": " + e , e );
+				return;
+			}
+		} catch( Exception e ) {
+			l4j.error( "mkdirs failed for " + dir + ": " + e , e );
+			return;
+		}
+		if( !exists ) {
+			l4j.info( "mkdirs: " + dir );
+			mkdirs( getParentDir(dir), acl );
+			esu.createObjectOnPath(dir, acl, null, null, null);
+		}
+	}
 	
+	public void setAcl(Acl acl) {
+		this.acl = acl;
+	}
+
+	public void setDelete(boolean delete) {
+		this.delete = delete;
+	}
+
+	public void setForce(boolean force) {
+		this.force = force;
+	}
+
+	private void setHosts(String[] hosts) {
+		this.hosts = hosts;
+	}
+
+	private void setLocalRoot(String localroot) {
+		this.localroot = new File( localroot );
+	}
+
+	public void setMeta(MetadataList meta) {
+		this.meta = meta;
+	}
+
+	public void setMetadataMode(METADATA_MODE metadataMode) {
+		this.metadataMode = metadataMode;
+	}
+
+	public void setMimeMap(MimetypesFileTypeMap mimeMap) {
+		this.mimeMap = mimeMap;
+	}
+
+	private void setPort(int port) {
+		this.port = port;
+	}
+
+
+	private void setProxyHost(String proxyHost) {
+		this.proxyHost = proxyHost;
+	}
+	
+	private void setProxyHttps(boolean proxyHttps) {
+		this.proxyHttps = proxyHttps;
+	}
+
+	private void setProxyPassword(String proxyPassword) {
+		this.proxyPassword = proxyPassword;
+	}
+
+	private void setProxyPort(int proxyPort) {
+		this.proxyPort = proxyPort;
+	}
+
+	private void setProxyUsername(String proxyUser) {
+		this.proxyUser = proxyUser;
+	}
+
+	private void setRemoteRoot(String remoteroot) {
+		this.remoteroot = remoteroot;
+	}
+
+	private void setSecret(String secret) {
+		this.secret = secret;
+	}
+	public void setSyncMode(MODE syncMode) {
+		this.syncMode = syncMode;
+	}
+
+	private void setThreads(int threads) {
+		this.threads = threads;
+	}
+
+	private void setUid(String uid) {
+		this.uid = uid;
+	}
+
 	private void start() throws InterruptedException {
+		this.esu = new LBEsuRestApiApache(Arrays.asList(hosts), port, uid, secret);
+		
+		if( proxyHost != null ) {
+			if( proxyUser != null ) {
+				((LBEsuRestApiApache)esu).setProxy( proxyHost, proxyPort, proxyHttps, proxyUser, proxyPassword);
+			} else {
+				((LBEsuRestApiApache)esu).setProxy( proxyHost, proxyPort, proxyHttps );
+			}
+		}
+		
+		mimeMap = new MimetypesFileTypeMap();
+		
 		// Make sure localroot exists
 		if( !localroot.exists() ) {
 			l4j.error( "The local root " + localroot + " does not exist!" );
@@ -204,19 +521,37 @@ public class AtmosSync {
 		
 		queue = new LinkedBlockingQueue<Runnable>();
 		pool = new ThreadPoolExecutor(threads, threads, 15, TimeUnit.SECONDS, queue);
-		itemsRemaining = Collections.synchronizedSet(new HashSet<SyncItem>());
-		failedItems = Collections.synchronizedSet( new HashSet<SyncItem>() );
+		failedItems = Collections.synchronizedSet( new HashSet<TaskNode>() );
+		
+		graph = new SimpleDirectedGraph<TaskNode, DefaultEdge>(DefaultEdge.class);
 
-		doSync( "" );
+		startSync();
 		
-		synchronized( this ) {
-			for( SyncItem s : itemsRemaining ) {
-				pool.submit(s);
+		while(true) {
+			synchronized (graph) {
+				if( graph.vertexSet().size() == 0 ) {
+					// We're done
+					pool.shutdownNow();
+					break;
+				}
+				
+				// Look for available unsubmitted tasks
+				BreadthFirstIterator<TaskNode, DefaultEdge> i = new BreadthFirstIterator<TaskNode, DefaultEdge>(graph);
+				while( i.hasNext() ) {
+					TaskNode t = i.next();
+					if( graph.inDegreeOf(t) == 0 && !t.isQueued() ) {
+						t.setQueued(true);
+						l4j.debug( "Submitting " + t );
+						pool.submit(t);
+					}
+				}
 			}
-		}
-		
-		while( itemsRemaining.size() > 0 ) {
-			Thread.sleep(500);
+			
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				// Ignore
+			}
 		}
 		
 		long end = System.currentTimeMillis();
@@ -226,171 +561,37 @@ public class AtmosSync {
 		}
 		
 		long rate = byteCount / secs;
-		System.out.println("Uploaded " + byteCount + " bytes in " + secs + " seconds (" + rate + " bytes/s)" );
+		System.out.println("Transferred " + byteCount + " bytes in " + secs + " seconds (" + rate + " bytes/s)" );
 		System.out.println("Successful Files: " + completedCount + " Failed Files: " + failedCount );
 		System.out.println("Failed Files: " + failedItems );
-
-	}
-
-	private void doSync(String relpath) {
-		File localsync = new File( localroot, relpath );
-		ObjectPath remotesync = new ObjectPath( remoteroot + relpath );
-		l4j.debug( "Synchronizing " + localsync + " to " + remotesync );
-		if( acl != null ) {
-			mkdirs( remotesync, acl );
-		}
 		
-		File[] files = localsync.listFiles();
-		for( File f : files ) {
-			if( f.isDirectory() ) {
-				doSync( relpath + f.getName() + "/" );
-			} else if( f.isFile() ) {
-				String mimeType = mimeMap.getContentType(f);
-				String objectPath = encodeObjectPath( remoteroot + relpath + f.getName() );
-				SyncItem item = new SyncItem( esu, this, f, new ObjectPath( objectPath ), acl, mimeType );
-				itemsRemaining.add(item);
-				fileCount++;
-			}
-		}
-		
-		if( files.length == 0 && delete ) {
-			localsync.delete();
-		}
-	}
-	
-	/**
-	 * Encode characters that Atmos doesn't support (specifically @ and ?)
-	 * @param op the path
-	 * @return the path with invalid characters replaced
-	 */
-	private String encodeObjectPath( String op ) {
-		op = op.replace( "?", "." );
-		op = op.replace( "@", "." );
-		return op;
-	}
-
-	public AtmosSync(String uid, String secret, String[] hosts, int port,
-			String remoteroot, String localroot, int threads, String[] useracl,
-			String[] groupacl, boolean delete) {
-		this.esu = new LBEsuRestApiApache(Arrays.asList(hosts), port, uid, secret);
-		this.esuSingle = new EsuRestApiApache(hosts[0], port, uid, secret);
-		
-		this.hosts = hosts;
-		this.remoteroot = remoteroot;
-		this.localroot = new File(localroot);
-		this.threads = threads;
-		this.mimeMap = new MimetypesFileTypeMap();
-		this.delete = delete;
-		
-		if( useracl != null || groupacl != null ) {
-			this.acl = new Acl();
-			if( useracl != null ) {
-				parseAcl(useracl, acl, GRANT_TYPE.USER);
-			}
-			if( groupacl != null ) {
-				parseAcl(groupacl, acl, GRANT_TYPE.GROUP);
-			}
-		}
-	}
-
-	public synchronized void failure(SyncItem syncItem, File file, ObjectPath objectPath,
-			Exception e) {
-		
-		if( e instanceof EsuException ) {
-			l4j.error( "Failed to sync " + file + " to " + objectPath + ": " + e + " code: " + ((EsuException)e).getAtmosCode(), e );
-			
+		if( failedCount > 0 ) {
+			System.exit(1);
 		} else {
-			l4j.error( "Failed to sync " + file + " to " + objectPath + ": " + e, e );
+			System.exit(0);
 		}
-		failedCount++;
-		failedItems.add( syncItem );
 
-		if( !itemsRemaining.remove(syncItem) ) {
-			l4j.error( "Failed to remove " + syncItem );
-		}		
 	}
 
-	public synchronized void success(SyncItem syncItem, File file, ObjectPath objectPath,
+	private void startSync() {
+		ObjectPath remotesync = new ObjectPath( remoteroot );
+		
+		if( acl != null ) {
+			// Make sure root directory exists.
+			mkdirs(remotesync, acl);
+		}
+		
+		// Create the initial task
+		SyncTask rootSync = new SyncTask(localroot, remotesync, this);
+		rootSync.addToGraph(graph);
+	}
+
+	public synchronized void success(TaskNode task, File file, ObjectPath objectPath,
 			long bytes) {
 		byteCount += bytes;
 		completedCount++;
 		int pct = completedCount*100 / fileCount;
 		l4j.info( pct + "% (" + completedCount + "/" + fileCount +") Completed: " + file );
-		if( !itemsRemaining.remove(syncItem) ) {
-			l4j.error( "Failed to remove " + syncItem );
-		}
-		
-		if( delete ) {
-			cleanup( syncItem.getFile() );
-		}
-	}
-
-	private void cleanup(File file) {
-		if( file.equals( localroot ) ) {
-			// Stop here
-			return;
-		}
-		l4j.info( "Deleting " + file );
-		if( !file.delete() ) {
-			l4j.warn( "Failed to delete " + file );
-			return;
-		}
-		
-		// If it's a directory, see if it's empty.
-		File parent = file.getParentFile();
-		if( parent.isDirectory() && parent.listFiles().length == 0 ) {
-			cleanup( parent );
-		}
 		
 	}
-
-	private void mkdirs(ObjectPath dir, Acl acl) {
-		if( dir == null ) {
-			return;
-		}
-		
-		boolean exists = false;
-		try {
-			esuSingle.getAllMetadata(dir);
-			exists = true;
-		} catch( EsuException e ) {
-			if( e.getHttpCode() == 404 ) {
-				// Doesn't exist
-				l4j.debug( "remote object " + dir + " doesn't exist" );
-			} else {
-				l4j.error( "mkdirs failed for " + dir + ": " + e , e );
-				return;
-			}
-		} catch( Exception e ) {
-			l4j.error( "mkdirs failed for " + dir + ": " + e , e );
-			return;
-		}
-		if( !exists ) {
-			l4j.info( "mkdirs: " + dir );
-			esuSingle.createObjectOnPath(dir, acl, null, null, null);
-			mkdirs( getParentDir(dir), acl );
-		}
-	}
-
-	private ObjectPath getParentDir(ObjectPath op) {
-		String ops = op.toString();
-		if( ops.endsWith( "/" ) ) {
-			ops = ops.substring( 0, ops.length()-1 );
-		}
-		int lastslash = ops.lastIndexOf( '/' );
-		if( lastslash == 0 ) {
-			// root
-			return null;
-		}
-		return new ObjectPath(ops.substring( 0, lastslash+1 ));
-	}
-
-
-	private void parseAcl(String[] aclstrs, Acl acl, GRANT_TYPE gtype ) {
-		for( String str : aclstrs ) {
-			String[] parts = str.split( "=", 2 );
-			acl.addGrant( new Grant(new Grantee(parts[0], gtype), parts[1] ) );
-		}
-	}
-
 }

@@ -7,6 +7,11 @@
 			<attribute name="javadoc_location" value="jar:platform:/resource/AtmosSync/lib/commons-cli-1.2-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="lib/jgrapht-0.8.2.jar" sourcepath="lib/jgrapht-0.8.2-src.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/AtmosSync/lib/jgrapht-0.8.2-doc.jar!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry combineaccessrules="false" kind="src" path="/esujava"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

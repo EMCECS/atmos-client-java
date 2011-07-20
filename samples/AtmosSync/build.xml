@@ -10,6 +10,7 @@
             </manifest>
             <fileset dir="/Users/cwikj/Documents/workspace/AtmosSync/bin"/>
             <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/AtmosSync/lib/commons-cli-1.2.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/AtmosSync/lib/jgrapht-0.8.2.jar"/>
             <fileset dir="/Users/cwikj/Documents/workspace/esujava/bin"/>
             <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/lib/jdom.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/lib/log4j-1.2.15.jar"/>
