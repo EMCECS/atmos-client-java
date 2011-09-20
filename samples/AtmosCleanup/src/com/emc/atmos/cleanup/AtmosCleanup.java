@@ -24,7 +24,15 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.cleanup;
 
-import java.util.List;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -34,12 +42,14 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.Logger;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleDirectedGraph;
+import org.jgrapht.traverse.BreadthFirstIterator;
 
-import com.emc.esu.api.DirectoryEntry;
 import com.emc.esu.api.EsuApi;
-import com.emc.esu.api.ListOptions;
+import com.emc.esu.api.EsuException;
 import com.emc.esu.api.ObjectPath;
-import com.emc.esu.api.rest.EsuRestApiApache;
+import com.emc.esu.api.rest.LBEsuRestApiApache;
 
 /**
  * Recursively deletes objects in the Atmos namespace (like rm -r).
@@ -48,20 +58,27 @@ import com.emc.esu.api.rest.EsuRestApiApache;
  */
 public class AtmosCleanup {
 	private static final Logger l4j = Logger.getLogger(AtmosCleanup.class);
-	private String host;
 	private String remoteroot;
 	private EsuApi esu;
 	private int dirCount;
 	private int fileCount;
+	private SimpleDirectedGraph<com.emc.atmos.cleanup.TaskNode, DefaultEdge> graph;
+	private Set<com.emc.atmos.cleanup.TaskNode> failedItems;
+	private BlockingQueue<Runnable> queue;
+	private int threads;
+	private ThreadPoolExecutor pool;
+	private String[] hosts;
+	private int port;
+	private String uid;
+	private String secret;
+	private int failedCount;
+	private int completedCount;
 	
-	public AtmosCleanup(String uid, String secret, String host, int port,
-			String remoteroot) {
-		this.host = host;
-		this.remoteroot = remoteroot;
-		this.esu = new EsuRestApiApache(host, port, uid, secret);
-		
+	public AtmosCleanup() {
 		dirCount = 0;
 		fileCount = 0;
+		failedCount = 0;
+		completedCount = 0;
 	}
 
 	/**
@@ -69,7 +86,7 @@ public class AtmosCleanup {
 	 */
 	public static void main(String[] args) {
 		Options options = new Options();
-		Option o = new Option("u", "uid", true, "Atmos UID");
+		Option o = new Option("u", "uid", true, "Atmos UID in the form of subtenantid/uid, e.g. 640f9a5cc636423fbc748566b397d1e1/uid1");
 		o.setRequired(true);
 		options.addOption(o);
 
@@ -78,8 +95,9 @@ public class AtmosCleanup {
 		options.addOption(o);
 
 		o = new Option("h", "host", true,
-				"Atmos Access Point Host");
+				"Atmos Access Point Host(s). You can repeat this option to load balance across multiple Atmos nodes.");
 		o.setRequired(true);
+		o.setArgs(Option.UNLIMITED_VALUES);
 		options.addOption(o);
 
 		o = new Option("p", "port", true,
@@ -91,6 +109,10 @@ public class AtmosCleanup {
 		o.setRequired(true);
 		options.addOption(o);
 
+		o = new Option("t", "threads", true, "Thread count.  Defaults to 8");
+		o.setRequired(false);
+		options.addOption(o);
+
 		// create the parser
 		CommandLineParser parser = new GnuParser();
 		try {
@@ -98,11 +120,19 @@ public class AtmosCleanup {
 			CommandLine line = parser.parse(options, args);
 			String uid = line.getOptionValue("uid");
 			String secret = line.getOptionValue("secret");
-			String host = line.getOptionValue("host");
+			String[] hosts = line.getOptionValues("host");
 			int port = Integer.parseInt(line.getOptionValue("port", "80"));
 			String remoteroot = line.getOptionValue("remoteroot");
+			int threads = Integer.parseInt(line.getOptionValue("threads", "8"));
 
-			AtmosCleanup cleanup = new AtmosCleanup(uid, secret, host, port, remoteroot);
+			AtmosCleanup cleanup = new AtmosCleanup();
+			cleanup.setUid(uid);
+			cleanup.setSecret(secret);
+			cleanup.setHosts(hosts);
+			cleanup.setPort(port);
+			cleanup.setRemoteroot(remoteroot);
+			cleanup.setThreads(threads);
+			
 			cleanup.start();
 		} catch (ParseException exp) {
 			// oops, something went wrong
@@ -125,10 +155,12 @@ public class AtmosCleanup {
 			remoteroot = remoteroot + "/";
 		}
 		
+		this.esu = new LBEsuRestApiApache(Arrays.asList(hosts), port, uid, secret);
+		
 		// Test connection to server
 		try {
 			String version = esu.getServiceInformation().getAtmosVersion();
-			l4j.info( "Connected to atmos " + version + " on host " + host );
+			l4j.info( "Connected to atmos " + version + " on host(s) " + Arrays.asList(hosts) );
 		} catch( Exception e ) {
 			l4j.error( "Error connecting to server: " + e, e );
 			System.exit( 3 );
@@ -136,40 +168,155 @@ public class AtmosCleanup {
 		
 		ObjectPath op = new ObjectPath( remoteroot );
 		
-		doCleanup(op);
+		queue = new LinkedBlockingQueue<Runnable>();
+		pool = new ThreadPoolExecutor(threads, threads, 15, TimeUnit.SECONDS, queue);
+		failedItems = Collections.synchronizedSet( new HashSet<TaskNode>() );
 		
-		l4j.info( "deleted " + fileCount + " files and " + dirCount + " directories" );
+		graph = new SimpleDirectedGraph<TaskNode, DefaultEdge>(DefaultEdge.class);
+
+		long start = System.currentTimeMillis();
+		
+		DeleteDirTask ddt = new DeleteDirTask();
+		ddt.setDirPath(op);
+		ddt.setCleanup(this);
+		increment(op);
+		ddt.addToGraph(graph);
+		
+		while(true) {
+			synchronized (graph) {
+				//l4j.debug("Vertexes: " + graph.vertexSet().size());
+				if( graph.vertexSet().size() == 0 ) {
+					// We're done
+					pool.shutdownNow();
+					break;
+				}
+				
+				// Look for available unsubmitted tasks
+				BreadthFirstIterator<TaskNode, DefaultEdge> i = new BreadthFirstIterator<TaskNode, DefaultEdge>(graph);
+				while( i.hasNext() ) {
+					TaskNode t = i.next();
+					if( graph.inDegreeOf(t) == 0 && !t.isQueued() ) {
+						t.setQueued(true);
+						//l4j.debug( "Submitting " + t );
+						pool.submit(t);
+					}
+				}
+			}
+			
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				// Ignore
+			}
+		}
+		
+		long end = System.currentTimeMillis();
+		long secs = ((end-start)/1000);
+		if( secs == 0 ) {
+			secs = 1;
+		}
+		
+		long rate = (fileCount+dirCount) / secs;
+		System.out.println("Deleted " + (fileCount+dirCount) + " objects in " + secs + " seconds (" + rate + " obj/s)" );
+		System.out.println("Files: " + fileCount + " Directories: " + dirCount + " Failed Objects: " + failedCount );
+		System.out.println("Failed Files: " + failedItems );
+		
+		if( failedCount > 0 ) {
+			System.exit(1);
+		} else {
+			System.exit(0);
+		}
 		
 		System.exit( 0 );
 	}
 
-	private void doCleanup(ObjectPath op) {
-		l4j.debug( "Descending into " + op );
-		ListOptions options = new ListOptions();
-		List<DirectoryEntry> ents = esu.listDirectory(op, options);
-		while( options.getToken() != null ) {
-			l4j.debug( "Continuing " + op + " on token " + options.getToken() );
-			ents.addAll( esu.listDirectory( op, options ) );
-		}
+	
+	
+	public synchronized void failure(TaskNode task, ObjectPath objectPath,
+			Exception e) {
 		
-		for( DirectoryEntry ent : ents ) {
-			if( ent.getPath().toString().equals( "/apache/" ) ) {
-				// Skip listable tags dir
-				continue;
-			}
-			if( "directory".equals( ent.getType() ) ) {
-				doCleanup( ent.getPath() );
-			} else {
-				esu.deleteObject( ent.getPath() );
-				fileCount++;
-			}
+		if( e instanceof EsuException ) {
+			l4j.error( "Failed to delete " + objectPath + ": " + e + " code: " + ((EsuException)e).getAtmosCode(), e );
+			
+		} else {
+			l4j.error( "Failed to delete " + objectPath + ": " + e, e );
 		}
-		
-		if( !op.toString().equals("/") ) {
-			// Delete directory
-			esu.deleteObject( op );
+		failedCount++;
+		failedItems.add( task );
+
+	}
+
+
+	public String getRemoteroot() {
+		return remoteroot;
+	}
+
+	public void setRemoteroot(String remoteroot) {
+		this.remoteroot = remoteroot;
+	}
+
+	public int getThreads() {
+		return threads;
+	}
+
+	public void setThreads(int threads) {
+		this.threads = threads;
+	}
+
+	public String[] getHosts() {
+		return hosts;
+	}
+
+	public void setHosts(String[] hosts) {
+		this.hosts = hosts;
+	}
+
+	public int getPort() {
+		return port;
+	}
+
+	public void setPort(int port) {
+		this.port = port;
+	}
+
+	public String getUid() {
+		return uid;
+	}
+
+	public void setUid(String uid) {
+		this.uid = uid;
+	}
+
+	public String getSecret() {
+		return secret;
+	}
+
+	public void setSecret(String secret) {
+		this.secret = secret;
+	}
+
+	public EsuApi getEsu() {
+		return esu;
+	}
+	
+	public synchronized void increment(ObjectPath objectPath) {
+		if(objectPath.isDirectory()) {
 			dirCount++;
+		} else {
+			fileCount++;
 		}
+	}
+
+	public synchronized void success(TaskNode task, ObjectPath objectPath) {
+		
+		completedCount++;
+		int pct = completedCount*100 / (fileCount+dirCount);
+		l4j.info( pct + "% (" + completedCount + "/" + (fileCount+dirCount) +") Completed: " + objectPath );
+		
+	}
+
+	public SimpleDirectedGraph<TaskNode, DefaultEdge> getGraph() {
+		return graph;
 	}
 
 }
