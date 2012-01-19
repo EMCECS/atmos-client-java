@@ -70,6 +70,11 @@ public class ObjectResult {
 			return ((ObjectResult)obj).getId().equals( id );
 		}
 	}
+	@Override
+	public String toString() {
+		return "ObjectResult [id=" + id + ", metadata=" + metadata + "]";
+	}
+	
 	
 	
 	

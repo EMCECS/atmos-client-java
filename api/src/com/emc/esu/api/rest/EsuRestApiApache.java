@@ -27,6 +27,7 @@ package com.emc.esu.api.rest;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -1696,8 +1697,10 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
                 l4j.debug("Response: " + new String(data, "UTF-8"));
             }
             finishRequest( response );
+            
+            Map<String, List<String>> rHeaders = getResponseHeaders(response);
 
-            return parseServiceInformation(data);
+            return parseServiceInformation(data, rHeaders);
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -1711,7 +1714,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
 	}
 	
 	
-    /**
+	/**
      * Renames a file or directory within the namespace.
      * @param source The file or directory to rename
      * @param destination The new path for the file or directory
@@ -2028,7 +2031,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
     }
 
     private void readMetadata(MetadataList meta, Header firstHeader,
-            boolean listable) {
+            boolean listable) throws UnsupportedEncodingException {
         if( firstHeader != null ) {
             super.readMetadata(meta, firstHeader.getValue(), listable );
         }
@@ -2061,7 +2064,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
         // If content type exists, add it. Otherwise add a blank line.
         if (headers.containsKey("Content-Type")) {
             l4j.debug("Content-Type: " + headers.get("Content-Type"));
-            hashStr.append(headers.get("Content-Type").toLowerCase() + "\n");
+            hashStr.append(headers.get("Content-Type") + "\n");
         } else {
             hashStr.append("\n");
         }
@@ -2119,6 +2122,29 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
         headers.put( "x-emc-signature", hashOut );
 
     }
+
+    /**
+     * Extracts the values of the response headers into a Map<String,<List<String>>
+     * @param response the HttpResponse to parse.
+     */
+    private Map<String, List<String>> getResponseHeaders(HttpResponse response) {
+    	Map<String, List<String>> rHeaders = new HashMap<String, List<String>>();
+		Header[] headers = response.getAllHeaders();
+		for(Header h : headers) {
+			String name = h.getName();
+			String value = h.getValue();
+			List<String> hValues = null;
+			if(rHeaders.containsKey(name)) {
+				hValues = rHeaders.get(name);
+			} else {
+				hValues = new ArrayList<String>();
+				rHeaders.put(name, hValues);
+			}
+			hValues.add(value);
+		}
+		
+		return Collections.unmodifiableMap(rHeaders);
+	}
 
 
 }

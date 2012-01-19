@@ -38,11 +38,15 @@ import org.apache.log4j.Logger;
  * threaded environment by distributing requests against a number of hosts.
  * @author cwikj
  */
-public class LBEsuRestApi extends EsuRestApi {
+public class LBEsuRestApi extends EsuRestApi20 {
 	private static final Logger l4j = Logger.getLogger(LBEsuRestApi.class);
+	
+	public static enum LBMode { ROUND_ROBIN, ROUND_ROBIN_THREADS };
 	
 	private List<String> hosts;
 	private long requestCount = 0L;
+	private LBMode mode = LBMode.ROUND_ROBIN_THREADS;
+	private ThreadLocal<String> threadHost = new ThreadLocal<String>();
 	
     public LBEsuRestApi(List<String> hosts, int port, String uid, String sharedSecret) {
         super(hosts.get(0), port, uid, sharedSecret);
@@ -61,14 +65,31 @@ public class LBEsuRestApi extends EsuRestApi {
 			uriport = port;
 		}
 		
-		String host = hosts.get( (int)(requestCount++ % hosts.size()) );
+		String host = null;
+		if( mode == LBMode.ROUND_ROBIN_THREADS ) {
+			// Bind thread to a specific host
+			if( threadHost.get() == null ) {
+				threadHost.set( hosts.get( (int)(requestCount++ % hosts.size()) ) );
+				l4j.info( "Thread bound to " + threadHost.get() );
+			}
+			host = threadHost.get();
+		} else {
+			host = hosts.get( (int)(requestCount++ % hosts.size()) );
+		}
 		
 	    URI uri = new URI( proto, null, host, uriport, resource, query, null );
-	    URL u = uri.toURL();
+	    l4j.debug("URI: " + uri);
+	    URL u = new URL(uri.toASCIIString());
 	    l4j.debug( "URL: " + u );
 	    return u;
 	}
     
+	public void setMode(LBMode mode) {
+		this.mode = mode;
+	}
     
+	public LBMode getMode() {
+		return mode;
+	}
 
 }

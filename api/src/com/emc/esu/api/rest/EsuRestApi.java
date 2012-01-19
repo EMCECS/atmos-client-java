@@ -159,7 +159,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
     		headers.put("Date", getDateHeader());
 
     		// Sign request
-    		signRequest("POST", u, headers);
+    		signRequest("POST", resource, null, headers);
     		configureRequest( con, "POST", headers );
 
     		con.connect();
@@ -266,7 +266,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, null, headers);
             configureRequest( con, "POST", headers );
 
             con.connect();
@@ -381,7 +381,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             }
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, null, headers);
             configureRequest( con, "POST", headers );
 
             con.connect();
@@ -487,7 +487,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             }
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, null, headers);
             configureRequest( con, "POST", headers );
 
             con.connect();
@@ -549,7 +549,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("DELETE", u, headers);
+            signRequest("DELETE", resource, null, headers);
             configureRequest( con, "DELETE", headers );
 
             con.connect();
@@ -579,7 +579,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public void deleteVersion(ObjectId id) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "versions");
+            String query = "versions";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -591,7 +592,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("DELETE", u, headers);
+            signRequest("DELETE", resource, query, headers);
             configureRequest( con, "DELETE", headers );
 
             con.connect();
@@ -625,7 +626,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
         }
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "metadata/user");
+            String query = "metadata/user";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -642,7 +644,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("DELETE", u, headers);
+            signRequest("DELETE", resource, query, headers);
             configureRequest( con, "DELETE", headers );
 
             con.connect();
@@ -673,7 +675,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public Acl getAcl(Identifier id) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "acl");
+            String query = "acl";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -685,7 +688,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -740,7 +743,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public MetadataTags getListableTags(String tag) {
         try {
             String resource = context + "/objects";
-            URL u = buildUrl(resource, "listabletags");
+            String query = "listabletags";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -757,7 +761,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -796,7 +800,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public MetadataList getSystemMetadata(Identifier id, MetadataTags tags) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "metadata/system");
+            String query = "metadata/system";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -813,7 +818,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -854,13 +859,18 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public MetadataList getUserMetadata(Identifier id, MetadataTags tags) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "metadata/user");
+            String query = "metadata/user";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
             
             // Build headers
             Map<String, String> headers = new HashMap<String, String>();
 
             headers.put("x-emc-uid", uid);
+            
+            if(unicodeEnabled) {
+            	headers.put("x-emc-utf8", "true");
+            }
 
             // process tags
             if (tags != null) {
@@ -871,7 +881,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -951,7 +961,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -1009,7 +1019,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public MetadataTags listUserMetadataTags(Identifier id) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "metadata/tags");
+            String query = "metadata/tags";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1021,7 +1032,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -1062,7 +1073,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public List<Identifier> listVersions(Identifier id) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "versions");
+            String query = "versions";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1074,7 +1086,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -1132,7 +1144,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -1200,7 +1212,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             }
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -1271,7 +1283,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             }
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -1369,7 +1381,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             }
 
             // Sign request
-            signRequest("PUT", u, headers);
+            signRequest("PUT", resource, null, headers);
             configureRequest( con, "PUT", headers );
 
             con.connect();
@@ -1467,7 +1479,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("PUT", u, headers);
+            signRequest("PUT", resource, null, headers);
             configureRequest( con, "PUT", headers );
 
             con.connect();
@@ -1522,7 +1534,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public void setUserMetadata(Identifier id, MetadataList metadata) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "metadata/user");
+            String query = "metadata/user";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1539,7 +1552,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, query, headers);
             configureRequest( con, "POST", headers );
 
             con.connect();
@@ -1574,7 +1587,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public void setAcl(Identifier id, Acl acl) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "acl");
+            String query = "acl";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1591,7 +1605,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, query, headers);
             configureRequest( con, "POST", headers );
 
             con.connect();
@@ -1626,7 +1640,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public ObjectId versionObject(Identifier id) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "versions");
+            String query = "versions";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1638,7 +1653,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, query, headers);
             configureRequest( con, "POST", headers );
 
             con.connect();
@@ -1718,7 +1733,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -1772,7 +1787,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("HEAD", u, headers);
+            signRequest("HEAD", resource, null, headers);
             configureRequest( con, "HEAD", headers );
 
             con.connect();
@@ -1830,7 +1845,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, null, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -1845,8 +1860,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             l4j.debug("Response: " + new String(response, "UTF-8"));
             con.disconnect();
-
-            return parseServiceInformation(response);
+            
+            return parseServiceInformation(response, con.getHeaderFields());
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);
@@ -1872,7 +1887,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public void rename(ObjectPath source, ObjectPath destination, boolean force) {
         try {
             String resource = getResourcePath(context, source);
-            URL u = buildUrl(resource, "rename");
+            String query = "rename";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1896,7 +1912,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             
             // Compute checksum
             // Sign request
-            signRequest("POST", u, headers);
+            signRequest("POST", resource, query, headers);
             configureRequest( con, "POST", headers );
 
             con.connect();
@@ -1929,7 +1945,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public void restoreVersion( ObjectId id, ObjectId vId ) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "versions");
+            String query = "versions";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1944,7 +1961,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("PUT", u, headers);
+            signRequest("PUT", resource, query, headers);
             configureRequest( con, "PUT", headers );
 
             con.connect();
@@ -1975,7 +1992,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
     public ObjectInfo getObjectInfo( Identifier id ) {
         try {
             String resource = getResourcePath(context, id);
-            URL u = buildUrl(resource, "info");
+            String query = "info";
+            URL u = buildUrl(resource, query);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
 
             // Build headers
@@ -1987,7 +2005,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             headers.put("Date", getDateHeader());
 
             // Sign request
-            signRequest("GET", u, headers);
+            signRequest("GET", resource, query, headers);
             configureRequest( con, "GET", headers );
 
             con.connect();
@@ -2026,7 +2044,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
 
     
-    private void configureRequest( HttpURLConnection con, String method, Map<String,String> headers ) throws ProtocolException, UnsupportedEncodingException {
+    protected void configureRequest( HttpURLConnection con, String method, Map<String,String> headers ) throws ProtocolException, UnsupportedEncodingException {
         // Can set all the headers, etc now.
         for (Iterator<String> i = headers.keySet().iterator(); i.hasNext();) {
             String name = i.next();
@@ -2050,7 +2068,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
      * @throws GeneralSecurityException If errors occur generating the HMAC-SHA1
      *             signature.
      */
-    protected void signRequest(String method, URL resource, Map<String, String> headers) throws IOException,
+    protected void signRequest(String method, String path, String query, Map<String, String> headers) throws IOException,
             GeneralSecurityException {
         // Build the string to hash.
 
@@ -2061,7 +2079,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
         // If content type exists, add it. Otherwise add a blank line.
         if (headers.containsKey("Content-Type")) {
             l4j.debug("Content-Type: " + headers.get("Content-Type"));
-            appendBytes( out, headers.get("Content-Type").toLowerCase() + "\n", null );
+            appendBytes( out, headers.get("Content-Type") + "\n", null );
         } else {
             appendBytes( out, "\n", null );
         }
@@ -2077,9 +2095,9 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
         // Add the current date and the resource.
         appendBytes( out, headers.get("Date") + "\n"
-                + URLDecoder.decode(resource.getPath(), "UTF-8").toLowerCase(), "UTF-8" );
-        if (resource.getQuery() != null) {
-            appendBytes( out,"?" + resource.getQuery() + "\n", "UTF-8" );
+                + path.toLowerCase(), "UTF-8" );
+        if (query != null) {
+            appendBytes( out,"?" + query + "\n", "UTF-8" );
         } else {
             appendBytes( out, "\n", null );
         }
@@ -2116,6 +2134,8 @@ public class EsuRestApi extends AbstractEsuRestApi {
         
         byte[] data = out.toByteArray();
         
+        l4j.debug("Hashing:\n" + new String(data, "UTF-8"));
+        
         String hashOut = sign( data );
         
         headers.put( "x-emc-signature", hashOut );
@@ -2138,7 +2158,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
      * 
      * @param con the connection from the failed request.
      */
-    private void handleError(HttpURLConnection con) {
+    protected void handleError(HttpURLConnection con) {
         int http_code = 0;
         // Try and read the response body.
         try {

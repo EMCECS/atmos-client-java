@@ -35,6 +35,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -102,6 +103,8 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 
     protected String context = "/rest";
     protected String proto;
+    
+    protected boolean unicodeEnabled = false;
     
     protected boolean readChecksum;
 
@@ -512,7 +515,7 @@ public abstract class AbstractEsuRestApi implements EsuApi {
      * @param expiration the expiration date of the URL
      * @return a URL that can be used to share the object's content
      */
-    public URL getShareableUrl(Identifier id, Date expiration) {
+    public URL getShareableUrl(Identifier id, Date expiration, String disposition) {
         try {
             String resource = getResourcePath( context, id );
             
@@ -521,10 +524,21 @@ public abstract class AbstractEsuRestApi implements EsuApi {
             sb.append( resource.toLowerCase() + "\n" );
             sb.append( uid + "\n" );
             sb.append( ""+(expiration.getTime()/1000) );
+            if(disposition != null) {
+            	sb.append("\n" + disposition);
+            }
             
             String signature = sign( sb.toString() );
             String query = "uid=" + URLEncoder.encode( uid, "UTF8" ) + "&expires=" + (expiration.getTime()/1000) +
                 "&signature=" + URLEncoder.encode( signature, "UTF8" );
+            if(disposition != null) {
+            	disposition = URLEncoder.encode(disposition, "UTF-8");
+            	// For some reason, Java uses the old-style + encoding for
+            	// spaces, but Apache expects the newer %20.
+            	disposition = disposition.replace("+", "%20");
+
+            	query += "&disposition=" + disposition;
+            }
             
             // We do this a little strangely here.  Technically, the trailing "=" in the Base-64 signature
             // should be encoded since it's a "reserved" character.  Atmos 1.2 is strict about this, but
@@ -551,6 +565,20 @@ public abstract class AbstractEsuRestApi implements EsuApi {
         } catch (URISyntaxException e) {
             throw new EsuException( "Invalid URL", e );
         }
+    }
+    
+    /**
+     * An Atmos user (UID) can construct a pre-authenticated URL to an 
+     * object, which may then be used by anyone to retrieve the 
+     * object (e.g., through a browser). This allows an Atmos user 
+     * to let a non-Atmos user download a specific object. The 
+     * entire object/file is read.
+     * @param id the object to generate the URL for
+     * @param expiration the expiration date of the URL
+     * @return a URL that can be used to share the object's content
+     */
+    public URL getShareableUrl(Identifier id, Date expiration) {
+    	return getShareableUrl(id, expiration, null);
     }
 
     /**
@@ -582,7 +610,8 @@ public abstract class AbstractEsuRestApi implements EsuApi {
     		uriport = port;
     	}
         URI uri = new URI( proto, null, host, uriport, resource, query, null );
-        URL u = uri.toURL();
+        l4j.debug("URI: " + uri);
+        URL u = new URL(uri.toASCIIString());
         l4j.debug( "URL: " + u );
         return u;
     }
@@ -607,8 +636,9 @@ public abstract class AbstractEsuRestApi implements EsuApi {
      * @param meta the metadata list to append to
      * @param header the metadata header to parse
      * @param listable true if the header being parsed contains listable metadata.
+     * @throws UnsupportedEncodingException 
      */
-    protected void readMetadata(MetadataList meta, String header, boolean listable) {
+    protected void readMetadata(MetadataList meta, String header, boolean listable) throws UnsupportedEncodingException {
         if (header == null) {
             return;
         }
@@ -620,6 +650,10 @@ public abstract class AbstractEsuRestApi implements EsuApi {
             String value = nvpair.length>1?nvpair[1]:null;
 
             name = name.trim();
+            
+            if(unicodeEnabled) {
+            	value = URLDecoder.decode(value, "UTF-8");
+            }
 
             Metadata m = new Metadata(name, value, listable);
             l4j.debug("Meta: " + m);
@@ -943,12 +977,17 @@ public abstract class AbstractEsuRestApi implements EsuApi {
      * 
      * @param metadata the metadata to add
      * @param headers the map of request headers.
+     * @throws UnsupportedEncodingException 
      */
     protected void processMetadata(MetadataList metadata,
-            Map<String, String> headers) {
+            Map<String, String> headers) throws UnsupportedEncodingException {
 
         StringBuffer listable = new StringBuffer();
         StringBuffer nonListable = new StringBuffer();
+        
+        if(unicodeEnabled) {
+        	headers.put("x-emc-utf8", "true");
+        }
 
         l4j.debug("Processing " + metadata.count() + " metadata entries");
 
@@ -979,15 +1018,30 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 
     /**
      * Formats a tag value for passing in the header.
+     * @throws UnsupportedEncodingException 
      */
-    protected String formatTag(Metadata meta) {
-    	if( meta.getValue() == null ) {
-    		return meta.getName() + "=";
-    	}
+    protected String formatTag(Metadata meta) throws UnsupportedEncodingException {
         // strip commas and newlines for now.
-        String fixed = meta.getValue().replace("\n", "");
-        fixed = fixed.replace( ",", "" );
-        return meta.getName() + "=" + fixed;
+    	if(unicodeEnabled) {
+    		String name = URLEncoder.encode(meta.getName(), "UTF-8");
+    		// Use %20, not +
+    		name = name.replace("+", "%20");
+    		
+        	if( meta.getValue() == null ) {
+        		return name + "=";
+        	}
+    		String value = URLEncoder.encode(meta.getValue(), "UTF-8");
+    		// Use %20, not +
+    		value = value.replace("+", "%20");
+    		return name + "=" + value;
+    	} else {
+        	if( meta.getValue() == null ) {
+        		return meta.getName() + "=";
+        	}
+	        String fixed = meta.getValue().replace("\n", "");
+	        fixed = fixed.replace( ",", "" );
+	        return meta.getName() + "=" + fixed;
+    	}
     }
 
     /**
@@ -1114,7 +1168,7 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 
     }
     
-    protected ServiceInformation parseServiceInformation( byte[] response ) {
+    protected ServiceInformation parseServiceInformation( byte[] response, Map<String, List<String>> map ) {
         // Use JDOM to parse the XML
         SAXBuilder sb = new SAXBuilder();
         try {
@@ -1130,6 +1184,26 @@ public abstract class AbstractEsuRestApi implements EsuApi {
             Element atmos = ver.getChild( "Atmos", esuNs );
             
             si.setAtmosVersion( atmos.getTextNormalize() );
+            
+            // Check for UTF8 support
+            for(String key : map.keySet()) {
+            	if("x-emc-support-utf8".equalsIgnoreCase(key)) {
+            		for(String val : map.get(key)) {
+            			if("true".equalsIgnoreCase(val)) {
+            				si.setUnicodeMetadataSupported(true);
+            			}
+            		}
+            	}
+            	if("x-emc-features".equalsIgnoreCase(key)) {
+            		for(String val : map.get(key)) {
+            			String[] features = val.split(",");
+            			for(String feature : features) {
+            				si.addFeature(feature.trim());
+            			}
+            		}
+            		
+            	}
+            }
             
             return si;
         } catch (JDOMException e) {
@@ -1191,5 +1265,20 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 	 */
 	public void setReadChecksum(boolean readChecksum) {
 		this.readChecksum = readChecksum;
+	}
+
+	/**
+	 * Returns true if unicode metadata processing is enabled.
+	 */
+	public boolean isUnicodeEnabled() {
+		return unicodeEnabled;
+	}
+
+	/**
+	 * Set to true to enable Unicode metadata processing.  
+	 * @param unicodeEnabled
+	 */
+	public void setUnicodeEnabled(boolean unicodeEnabled) {
+		this.unicodeEnabled = unicodeEnabled;
 	}
 }
