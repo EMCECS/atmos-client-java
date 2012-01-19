@@ -85,6 +85,7 @@ public class EsuRestApiTest extends EsuApiTest {
     @Before
     public void setUp() throws Exception {
         esu = new EsuRestApi( host, port, uid2, secret );
+        ((EsuRestApi)esu).setUnicodeEnabled(true);
         uid = uid2;
     }
 

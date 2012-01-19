@@ -84,7 +84,7 @@ public abstract class EsuApiTest {
     protected EsuApi esu;
     protected String uid;
     
-    private List<Identifier> cleanup = new ArrayList<Identifier>();
+    protected List<Identifier> cleanup = new ArrayList<Identifier>();
 
     /**
      * Tear down after a test is run.  Cleans up objects that were created
@@ -146,17 +146,43 @@ public abstract class EsuApiTest {
      */
     @Test
     public void testUnicodePath() throws Exception {
-    	if( !(this.esu instanceof EsuRestApi) ) {
-	    	ObjectPath path = new ObjectPath( "/" + rand8char() + "/бöｼ.txt" );
-	    	ObjectId id = this.esu.createObjectOnPath(path, null, null, null, null);
-	        Assert.assertNotNull( "null ID returned", id );
-	        cleanup.add( id );
-    	}
+    	String dirName = rand8char();
+    	ObjectPath path = new ObjectPath( "/" + dirName + "/бöｼ.txt" );
+    	ObjectId id = this.esu.createObjectOnPath(path, null, null, null, null);
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+        
+        ObjectPath parent = new ObjectPath("/" + dirName + "/");
+        List<DirectoryEntry> ents = this.esu.listDirectory(parent, null);
+        boolean found = false;
+        for(DirectoryEntry ent : ents) {
+        	if(ent.getPath().equals(path)) {
+        		found = true;
+        	}
+        }
+        Assert.assertTrue("Did not find unicode file in dir", found);
+        
+        // Check read
+        this.esu.readObject(path, null, null);
+        
     }
 
+    /**
+     * Tests using some extra characters that might break URIs
+     */
+    @Test
+    public void testExtraPath() throws Exception {
+    	ObjectPath path = new ObjectPath( "/" + rand8char() + "/a+=-  _!#$%^&*(),.z.txt" );
+		//ObjectPath path = new ObjectPath("/zimbramailbox/c8b4/511a-63c4-4ac9-8ff7+1c578de044be/stage/3r0sFrgUgL2ApCSkl3pobSX9D+k-1");
+		byte[] data = "Hello World".getBytes("UTF-8");
+		InputStream in = new ByteArrayInputStream(data);
+    	ObjectId id = this.esu.createObjectFromStreamOnPath(path, null, null, in, data.length, null);
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+    }
 
     
-    private String rand8char() {
+    protected String rand8char() {
 		Random r = new Random();
 		StringBuffer sb = new StringBuffer( 8 );
 		for( int i=0; i<8; i++ ) {
@@ -1590,9 +1616,8 @@ public abstract class EsuApiTest {
 
         mlist.addMetadata(nbspValue);
         mlist.addMetadata(nbspName);
-        if( !(this.esu instanceof EsuRestApi) ) {
-	        mlist.addMetadata(cryllic);
-        }
+        mlist.addMetadata(cryllic);
+ 
         ObjectId id = this.esu.createObject(null, mlist, null, null);
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -1603,9 +1628,8 @@ public abstract class EsuApiTest {
         l4j.debug("NBSP Value: " + meta.getMetadata("nbspvalue"));
         l4j.debug("NBSP Name: " + meta.getMetadata("Nobreak\u00A0Name"));
         Assert.assertEquals( "value of 'nobreakvalue' wrong", "Nobreak\u00A0Value", meta.getMetadata( "nbspvalue" ).getValue() );
-        if( !(this.esu instanceof EsuRestApi) ) {
-        	Assert.assertEquals("Value of cryllic wrong", "спасибо", meta.getMetadata("cryllic").getValue() );
-        }
+        Assert.assertEquals("Value of cryllic wrong", "спасибо", meta.getMetadata("cryllic").getValue() );
+        
     }
     
     @Test
