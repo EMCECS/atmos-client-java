@@ -118,5 +118,10 @@ public class EsuRestApiApacheTest extends EsuApiTest {
         
     }
 
+    @Test
+    public void testServerOffset() throws Exception {
+    	long offset = ((EsuRestApiApache)esu).calculateServerOffset();
+    	l4j.info("Server offset: " + offset + " milliseconds");
+    }
 
 }
