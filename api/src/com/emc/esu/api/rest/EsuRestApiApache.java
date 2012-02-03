@@ -34,6 +34,7 @@ import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +42,7 @@ import java.util.Map;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -61,6 +63,8 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.impl.cookie.DateParseException;
+import org.apache.http.impl.cookie.DateUtils;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.util.EntityUtils;
@@ -1862,6 +1866,50 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
         }
     	
     }
+
+	@Override
+	public long calculateServerOffset() {
+		try {
+	        String resource = context + "/service";
+	        URL u = buildUrl(resource, null);
+	
+	        // Build headers
+	        Map<String, String> headers = new HashMap<String, String>();
+	
+	        headers.put("x-emc-uid", uid);
+	
+	        // Add date
+	        headers.put("Date", getDateHeader());
+	
+	        // Sign request
+	        signRequest("GET", resource, null, headers);
+	        
+	        HttpResponse response = restGet( u, headers );
+	        Header responseDate = response.getFirstHeader(HttpHeaders.DATE);
+	        if(responseDate == null) {
+	        	throw new EsuException("Could not get date from response: " + 
+	        			response.getStatusLine().getStatusCode() + ": " + 
+	        			response.getStatusLine().getReasonPhrase());
+	        }
+
+	        Date serverDate = null;
+	        try {
+				serverDate = DateUtils.parseDate(responseDate.getValue());
+			} catch (DateParseException e) {
+				throw new EsuException("Failed to parse date: " + responseDate.getValue(), e);
+			}
+	        
+	        return System.currentTimeMillis() - serverDate.getTime();
+        } catch (MalformedURLException e) {
+            throw new EsuException("Invalid URL", e);
+        } catch (IOException e) {
+            throw new EsuException("Error connecting to server", e);
+        } catch (GeneralSecurityException e) {
+            throw new EsuException("Error computing request signature", e);
+        } catch (URISyntaxException e) {
+            throw new EsuException("Invalid URL", e);
+        }
+	}
 
 
     

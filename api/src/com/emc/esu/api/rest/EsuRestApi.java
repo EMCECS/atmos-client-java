@@ -36,8 +36,8 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.security.GeneralSecurityException;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1221,6 +1221,13 @@ public class EsuRestApi extends AbstractEsuRestApi {
             if (con.getResponseCode() > 299) {
                 handleError(con);
             }
+            
+            if(buffer != null && extent != null) {
+            	if(extent.getSize() > (long)buffer.length) {
+            		throw new IllegalArgumentException(
+            				"The buffer is smaller than the requested extent");
+            	}
+            }
 
             // The requested content is in the response body.
             byte[] data = readResponse(con, buffer);
@@ -2035,6 +2042,37 @@ public class EsuRestApi extends AbstractEsuRestApi {
         }
     	
     }
+    
+	@Override
+	public long calculateServerOffset() {
+        try {
+            String resource = context + "/";
+            URL u = buildUrl(resource, null);
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            con.connect();
+
+            // Check response
+            Date serverDate = new Date(con.getHeaderFieldDate("Date", 0));
+        	if(serverDate.getTime() == 0) {
+        		EsuException e = new EsuException(
+        				"Unable to get date from server request: " + 
+        						con.getResponseMessage(), 
+        						con.getResponseCode());
+        		throw(e);
+        	}
+        	
+        	return System.currentTimeMillis()-serverDate.getTime();
+        } catch (MalformedURLException e) {
+            throw new EsuException("Invalid URL", e);
+        } catch (IOException e) {
+            throw new EsuException("Error connecting to server", e);
+        } catch (URISyntaxException e) {
+            throw new EsuException("Invalid URL", e);
+        }
+	}
+
+
 
 
 
@@ -2264,6 +2302,19 @@ public class EsuRestApi extends AbstractEsuRestApi {
                 }
 
                 return output;
+            } else if(buffer != null) {
+            	// Content length is indeterminate.  For the sake of
+            	// performance, assume that the buffer is big enough since
+            	// the only place that currently passes a buffer in here is
+            	// the readObject method.
+            	int c = 0;
+            	int pos = 0;
+            	while(c != -1) {
+            		c = in.read(buffer, pos, buffer.length-pos);
+            		pos += c;
+            	}
+            	
+            	return buffer;
             } else {
                 l4j.debug("Content length is unknown.  Buffering output.");
                 // Else, use a ByteArrayOutputStream to collect the response.

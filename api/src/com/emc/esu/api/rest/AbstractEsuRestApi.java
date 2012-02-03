@@ -107,6 +107,8 @@ public abstract class AbstractEsuRestApi implements EsuApi {
     protected boolean unicodeEnabled = false;
     
     protected boolean readChecksum;
+    
+    private long serverOffset;
 
     /**
      * Creates a new AbstractEsuRestApi
@@ -1108,7 +1110,7 @@ public abstract class AbstractEsuRestApi implements EsuApi {
         TimeZone tz = TimeZone.getTimeZone("GMT");
         l4j.debug("TZ: " + tz);
         HEADER_FORMAT.setTimeZone(tz);
-        String dateHeader = HEADER_FORMAT.format(new Date());
+        String dateHeader = HEADER_FORMAT.format(new Date(System.currentTimeMillis()-serverOffset));
         l4j.debug("Date: " + dateHeader);
         return dateHeader;
     }
@@ -1281,4 +1283,33 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 	public void setUnicodeEnabled(boolean unicodeEnabled) {
 		this.unicodeEnabled = unicodeEnabled;
 	}
+
+	/**
+	 * Gets the current server offset in milliseconds.  This value can be used
+	 * to adjust for clock skew between the client and server.
+	 * @return the serverOffset
+	 */
+	public long getServerOffset() {
+		return serverOffset;
+	}
+
+	/**
+	 * Sets the server offset in millesconds.  This value can be used to
+	 * adjust for clock skew between the client and the server.
+	 * @param serverOffset the serverOffset to set
+	 */
+	public void setServerOffset(long serverOffset) {
+		this.serverOffset = serverOffset;
+	}
+	
+	/**
+	 * Makes a request to the server to get the value of the response Date
+	 * header.  Compares this date with the local system time to calculate
+	 * the offset between the client and the server.  You can pass this value
+	 * to the setServerOffset method to adjust for clock skew.
+	 * @return the offset between the client and server in milliseconds.  If
+	 * the client is ahead of the server, this will be positive.  If the server
+	 * is ahead of the client, it will be negative.
+	 */
+	public abstract long calculateServerOffset();
 }
