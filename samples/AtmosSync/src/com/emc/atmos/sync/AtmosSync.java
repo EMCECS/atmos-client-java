@@ -53,6 +53,7 @@ import com.emc.esu.api.EsuException;
 import com.emc.esu.api.Grant;
 import com.emc.esu.api.Grantee;
 import com.emc.esu.api.Grantee.GRANT_TYPE;
+import com.emc.esu.api.Identifier;
 import com.emc.esu.api.Metadata;
 import com.emc.esu.api.MetadataList;
 import com.emc.esu.api.ObjectPath;
@@ -68,6 +69,7 @@ public class AtmosSync {
 	public static enum MODE { DOWNLOAD_ONLY, FULL_SYNC, UPLOAD_ONLY }
 	private static final Logger l4j = Logger.getLogger(AtmosSync.class);
 	public static final String MTIME_NAME = "atmossync_mtime";
+	public static final String META_DIR = ".atmosmeta";
 
 	
 	private Acl acl;
@@ -98,6 +100,7 @@ public class AtmosSync {
 	private MODE syncMode;
 	private int threads;
 	private String uid;
+	private boolean syncingMetadata;
 	
 
 
@@ -202,6 +205,10 @@ public class AtmosSync {
 		o.setRequired(false);
 		options.addOption(o);
 		
+		o = new Option( "MS", "metadatasync", false, "If specified, metadata will be synchronized as well.  On a filesystem, there will be a hidden directory called '.atmosmeta' with a file of the same name containing serialized JSON metadata and ACL information." );
+		o.setRequired(false);
+		options.addOption(o);
+		
 		o = new Option( "ph", "proxyhost", true, "HTTP proxy host" );
 		o.setRequired(false);
 		options.addOption(o);
@@ -257,6 +264,8 @@ public class AtmosSync {
 				parseMeta( listablemeta, meta, true );
 			}
 			METADATA_MODE mmode = METADATA_MODE.valueOf( line.getOptionValue("metadatamode", "both").toUpperCase() );
+			
+			boolean metadatasync = line.hasOption("metadatasync");
 
 			Acl acl = null;
 			if( useracl != null || groupacl != null ) {
@@ -290,6 +299,7 @@ public class AtmosSync {
 			sync.setProxyHttps( proxyHttps );
 			sync.setProxyUsername( proxyUser );
 			sync.setProxyPassword( proxyPassword );
+			sync.setSyncingMetadata(metadatasync);
 			
 			sync.start();
 		} catch (ParseException exp) {
@@ -321,14 +331,14 @@ public class AtmosSync {
 	}
 
 	
-	public synchronized void failure(TaskNode task, File file, ObjectPath objectPath,
+	public synchronized void failure(TaskNode task, File file, Identifier id,
 			Exception e) {
 		
 		if( e instanceof EsuException ) {
-			l4j.error( "Failed to sync " + file + " to " + objectPath + ": " + e + " code: " + ((EsuException)e).getAtmosCode(), e );
+			l4j.error( "Failed to sync " + file + " to " + id + ": " + e + " code: " + ((EsuException)e).getAtmosCode(), e );
 			
 		} else {
-			l4j.error( "Failed to sync " + file + " to " + objectPath + ": " + e, e );
+			l4j.error( "Failed to sync " + file + " to " + id + ": " + e, e );
 		}
 		failedCount++;
 		failedItems.add( task );
@@ -593,5 +603,13 @@ public class AtmosSync {
 		int pct = completedCount*100 / fileCount;
 		l4j.info( pct + "% (" + completedCount + "/" + fileCount +") Completed: " + file );
 		
+	}
+
+	public boolean isSyncingMetadata() {
+		return syncingMetadata;
+	}
+
+	public void setSyncingMetadata(boolean syncingMetadata) {
+		this.syncingMetadata = syncingMetadata;
 	}
 }

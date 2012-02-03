@@ -12,7 +12,7 @@ import com.emc.esu.api.ObjectPath;
 
 public class SyncTask extends TaskNode {
 	public static final Logger l4j = Logger.getLogger(SyncTask.class);
-	
+
 	private File localDir;
 	private ObjectPath remoteDir;
 	private AtmosSync sync;
@@ -85,6 +85,14 @@ public class SyncTask extends TaskNode {
 						ent, sync );
 				sync.incrementFileCount();
 				download.addToGraph( sync.getGraph() );
+				
+				if(sync.isSyncingMetadata()) {
+					AtmosDownloadMetaTask mdownload = new AtmosDownloadMetaTask(
+							ent.getPath(),
+							new File(new File(localDir, AtmosSync.META_DIR), ent.getPath().getName()),
+							sync );
+					mdownload.addToGraph( sync.getGraph() );
+				}
 			}
 		}
 	}
