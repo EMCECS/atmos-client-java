@@ -37,6 +37,10 @@ public class CommonOptions extends SyncPlugin {
 	public static final String HELP_OPTION = "help";
 	public static final String HELP_DESC = "Displays this help content";
 	
+	public static final String SPRING_CONFIG_OPTION = "spring-config";
+	public static final String SPRING_CONFIG_DESC = "Specifies a Spring bean configuration file.  In this mode, Spring is used to initialize the application configuration from a spring context XML file.  It is assumed that there is a bean named 'chain' containing an AtmosSync2 object.  This object will be initialized and executed.  In this mode all other CLI arguments are ignored.";
+	public static final String SPRING_CONFIG_ARG_NAME = "path-to-spring-file";
+	
 	public static final String RECURSIVE_OPTION = "recursive";
 	public static final String RECURSIVE_DESC = "Makes source plugins recursive, specifically the Atmos source when using namespaces and the filesystem source.";
 
@@ -59,15 +63,18 @@ public class CommonOptions extends SyncPlugin {
 		opts.addOption(OptionBuilder.withDescription(HELP_DESC)
 				.withLongOpt(HELP_OPTION).create());
 		opts.addOption(OptionBuilder.withDescription(SOURCE_DESC)
-				.withLongOpt(SOURCE_OPTION).isRequired()
+				.withLongOpt(SOURCE_OPTION)
 				.hasArg().withArgName(SOURCE_ARG_NAME).create());
 		opts.addOption(OptionBuilder.withDescription(DESTINATION_DESC)
-				.withLongOpt(DESTINATION_OPTION).isRequired()
+				.withLongOpt(DESTINATION_OPTION)
 				.hasArg().withArgName(DESTINATION_ARG_NAME).create());
 		opts.addOption(OptionBuilder.withDescription(DELETE_DESC)
 				.withLongOpt(DELETE_OPTION).create());
 		opts.addOption(OptionBuilder.withDescription(RECURSIVE_DESC)
 				.withLongOpt(RECURSIVE_OPTION).create());
+		opts.addOption(OptionBuilder.withLongOpt(SPRING_CONFIG_OPTION)
+				.withDescription(SPRING_CONFIG_DESC).hasArg()
+				.withArgName(SPRING_CONFIG_ARG_NAME).create());
 		return opts;
 	}
 

@@ -42,9 +42,11 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;
+import org.springframework.beans.factory.InitializingBean;
 
 import com.emc.esu.api.EsuApi;
 import com.emc.esu.api.EsuException;
+import com.emc.esu.api.Identifier;
 import com.emc.esu.api.Metadata;
 import com.emc.esu.api.MetadataList;
 import com.emc.esu.api.ObjectId;
@@ -57,7 +59,7 @@ import com.emc.esu.api.rest.LBEsuRestApiApache;
  * Stores objects into an Atmos system.
  * @author cwikj
  */
-public class AtmosDestination extends DestinationPlugin {
+public class AtmosDestination extends DestinationPlugin implements InitializingBean {
 	/**
 	 * This pattern is used to activate this plugin.
 	 */
@@ -169,56 +171,7 @@ public class AtmosDestination extends DestinationPlugin {
 						}
 						
 					} else {
-						// Exists.  Check timestamps
-						Date srcMtime = obj.getMetadata().getMtime();
-						Date dstMtime = parseDate(destMeta.getMetadata().getMetadata("mtime"));
-						Date srcCtime = obj.getMetadata().getMtime();
-						Date dstCtime = parseDate(destMeta.getMetadata().getMetadata("ctime"));
-						if((srcMtime != null && dstMtime != null && srcMtime.after(dstMtime)) || force) {
-							// Update the object
-							InputStream in = null;
-							try {
-								in = obj.getInputStream();
-								if(in == null) {
-									// Metadata only
-									if(obj.getMetadata().getMetadata() != null && obj.getMetadata().getMetadata().count()>0) {
-										LogMF.debug(l4j, "Updating metadata on {0}", destPath);
-										atmos.setUserMetadata(destPath, obj.getMetadata().getMetadata());
-									}
-									if(obj.getMetadata().getAcl() != null) {
-										LogMF.debug(l4j, "Updating ACL on {0}", destPath);
-										atmos.setAcl(destPath, obj.getMetadata().getAcl());
-									}
-								} else {
-									LogMF.debug(l4j, "Updating {0}", destPath);
-									atmos.updateObjectFromStream(destPath, 
-											obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), 
-											null, in, obj.getSize(), 
-											obj.getMetadata().getContentType());
-								}
-							} finally {
-								if(in != null) {
-									in.close();
-								}
-							}
-							
-						} else if(srcCtime != null && dstCtime != null && srcCtime.after(dstCtime)) {
-							// Metadata update required.
-							if(obj.getMetadata().getMetadata() != null && obj.getMetadata().getMetadata().count()>0) {
-								LogMF.debug(l4j, "Updating metadata on {0}", destPath);
-								atmos.setUserMetadata(destPath, obj.getMetadata().getMetadata());
-							}
-							if(obj.getMetadata().getAcl() != null) {
-								LogMF.debug(l4j, "Updating ACL on {0}", destPath);
-								atmos.setAcl(destPath, obj.getMetadata().getAcl());
-							}
-						} else {
-							// No updates
-							LogMF.debug(l4j, "No changes from source {0} to dest {1}", 
-									obj.getSourceURI(), 
-									obj.getDestURI());
-							return;
-						}
+						checkUpdate(obj, destPath, destMeta);
 					}
 				}
 			} else {
@@ -232,22 +185,33 @@ public class AtmosDestination extends DestinationPlugin {
 						id = ((DestinationAtmosId)anns.iterator().next()).getId();
 					}
 					
-					in = obj.getInputStream();
-					if(in == null) {
-						// Usually some sort of directory
-						id = atmos.createObject(obj.getMetadata().getAcl(), 
-								obj.getMetadata().getMetadata(), null, 
-								obj.getMetadata().getContentType());
-					} else {
-						id = atmos.createObjectFromStream(obj.getMetadata().getAcl(), 
-								obj.getMetadata().getMetadata(), 
-								in, obj.getSize(), obj.getMetadata().getContentType());
+					if(id != null) {
+						ObjectMetadata destMeta = getMetadata(id);
+						if(destMeta == null) {
+							// Destination ID not found!
+							throw new RuntimeException("The destination object ID " + id + " was not found!");
+						}
+						obj.setDestURI(new URI(protocol, uid + ":"+ secret, 
+								hosts.get(0), port, "/"+id.toString(), null, null));
+						checkUpdate(obj, id, destMeta);
+					} else {					
+						in = obj.getInputStream();
+						if(in == null) {
+							// Usually some sort of directory
+							id = atmos.createObject(obj.getMetadata().getAcl(), 
+									obj.getMetadata().getMetadata(), null, 
+									obj.getMetadata().getContentType());
+						} else {
+							id = atmos.createObjectFromStream(obj.getMetadata().getAcl(), 
+									obj.getMetadata().getMetadata(), 
+									in, obj.getSize(), obj.getMetadata().getContentType());
+						}
+						obj.setDestURI(new URI(protocol, uid + ":"+ secret, 
+								hosts.get(0), port, "/"+id.toString(), null, null));
+						DestinationAtmosId destId = new DestinationAtmosId();
+						destId.setId(id);
+						obj.addAnnotation(destId);
 					}
-					obj.setDestURI(new URI(protocol, uid + ":"+ secret, 
-							hosts.get(0), port, id.toString(), null, null));
-					DestinationAtmosId destId = new DestinationAtmosId();
-					destId.setId(id);
-					obj.addAnnotation(destId);
 				} finally {
 					try {
 						if(in != null) {
@@ -268,16 +232,78 @@ public class AtmosDestination extends DestinationPlugin {
 		}
 	}
 
+	
+	/**
+	 * If the destination exists, we perform some checks and update only what
+	 * needs to be updated (metadata and/or content)
+	 * @param obj
+	 * @param destId
+	 * @param destMeta
+	 * @throws IOException
+	 */
+	private void checkUpdate(SyncObject obj, Identifier destId, ObjectMetadata destMeta) throws IOException {
+		// Exists.  Check timestamps
+		Date srcMtime = obj.getMetadata().getMtime();
+		Date dstMtime = parseDate(destMeta.getMetadata().getMetadata("mtime"));
+		Date srcCtime = obj.getMetadata().getMtime();
+		Date dstCtime = parseDate(destMeta.getMetadata().getMetadata("ctime"));
+		if((srcMtime != null && dstMtime != null && srcMtime.after(dstMtime)) || force) {
+			// Update the object
+			InputStream in = null;
+			try {
+				in = obj.getInputStream();
+				if(in == null) {
+					// Metadata only
+					if(obj.getMetadata().getMetadata() != null && obj.getMetadata().getMetadata().count()>0) {
+						LogMF.debug(l4j, "Updating metadata on {0}", destId);
+						atmos.setUserMetadata(destId, obj.getMetadata().getMetadata());
+					}
+					if(obj.getMetadata().getAcl() != null) {
+						LogMF.debug(l4j, "Updating ACL on {0}", destId);
+						atmos.setAcl(destId, obj.getMetadata().getAcl());
+					}
+				} else {
+					LogMF.debug(l4j, "Updating {0}", destId);
+					atmos.updateObjectFromStream(destId, 
+							obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), 
+							null, in, obj.getSize(), 
+							obj.getMetadata().getContentType());
+				}
+			} finally {
+				if(in != null) {
+					in.close();
+				}
+			}
+			
+		} else if(srcCtime != null && dstCtime != null && srcCtime.after(dstCtime)) {
+			// Metadata update required.
+			if(obj.getMetadata().getMetadata() != null && obj.getMetadata().getMetadata().count()>0) {
+				LogMF.debug(l4j, "Updating metadata on {0}", destId);
+				atmos.setUserMetadata(destId, obj.getMetadata().getMetadata());
+			}
+			if(obj.getMetadata().getAcl() != null) {
+				LogMF.debug(l4j, "Updating ACL on {0}", destId);
+				atmos.setAcl(destId, obj.getMetadata().getAcl());
+			}
+		} else {
+			// No updates
+			LogMF.debug(l4j, "No changes from source {0} to dest {1}", 
+					obj.getSourceURI(), 
+					obj.getDestURI());
+			return;
+		}
+	}
+
 	/**
 	 * Gets the metadata for an object.  IFF the object does not exist, null
 	 * is returned.  If any other error condition exists, the exception is
 	 * thrown.
-	 * @param destPath The object to get metadata for.
+	 * @param destId The object to get metadata for.
 	 * @return the object's metadata or null.
 	 */
-	private ObjectMetadata getMetadata(ObjectPath destPath) {
+	private ObjectMetadata getMetadata(Identifier destId) {
 		try {
-			return atmos.getAllMetadata(destPath);
+			return atmos.getAllMetadata(destId);
 		} catch(EsuException e) {
 			if(e.getHttpCode() == 404) {
 				// Object not found
@@ -397,7 +423,7 @@ public class AtmosDestination extends DestinationPlugin {
 	/**
 	 * Initialize the Atmos connection object and validate the credentials.
 	 */
-	private void afterPropertiesSet() {
+	public void afterPropertiesSet() {
 		atmos = new LBEsuRestApiApache(hosts, port, uid, secret);
 		
 		ServiceInformation info = atmos.getServiceInformation();

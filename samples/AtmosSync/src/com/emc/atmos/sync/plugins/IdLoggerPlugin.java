@@ -24,6 +24,7 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -52,7 +53,7 @@ public class IdLoggerPlugin extends SyncPlugin {
 	public synchronized void filter(SyncObject obj) {
 		try {
 			if(out == null) {
-				out = new PrintWriter(new FileWriter(new File(filename)));
+				out = new PrintWriter(new BufferedWriter(new FileWriter(new File(filename))));
 			}
 		} catch(IOException e) {
 			throw new RuntimeException("Error writing to ID log file: " + e.getMessage(), e);

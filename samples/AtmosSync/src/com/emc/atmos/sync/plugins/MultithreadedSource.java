@@ -136,6 +136,48 @@ public abstract class MultithreadedSource extends SourcePlugin {
 		System.out.println("Successful Files: " + completedCount + " Failed Files: " + failedCount );
 		System.out.println("Failed Files: " + failedItems );
 	}
+
+	/**
+	 * @return the threadCount
+	 */
+	public int getThreadCount() {
+		return threadCount;
+	}
+
+	/**
+	 * @param threadCount the threadCount to set
+	 */
+	public void setThreadCount(int threadCount) {
+		this.threadCount = threadCount;
+	}
+
+	/**
+	 * @return the failedItems
+	 */
+	public Set<SyncObject> getFailedItems() {
+		return failedItems;
+	}
+
+	/**
+	 * @return the byteCount
+	 */
+	public long getByteCount() {
+		return byteCount;
+	}
+
+	/**
+	 * @return the completedCount
+	 */
+	public int getCompletedCount() {
+		return completedCount;
+	}
+
+	/**
+	 * @return the failedCount
+	 */
+	public int getFailedCount() {
+		return failedCount;
+	}
 	
 
 }

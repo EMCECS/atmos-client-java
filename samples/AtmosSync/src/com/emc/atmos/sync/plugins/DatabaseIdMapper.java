@@ -25,8 +25,11 @@
 package com.emc.atmos.sync.plugins;
 
 import java.beans.PropertyVetoException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 
@@ -40,6 +43,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
+import com.emc.esu.api.ObjectId;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 /**
@@ -63,29 +67,34 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 	public static final String JDBC_DRIVER_DESC = "The JDBC database driver class";
 	public static final String JDBC_DRIVER_ARG_NAME = "java-class-name";
 	
-	public static final String JDBC_USER_OPT = "id-map-jdbc-user";
+	public static final String JDBC_USER_OPT = "id-map-user";
 	public static final String JDBC_USER_DESC = "The database userid";
 	public static final String JDBC_USER_ARG_NAME = "userid";
 	
-	public static final String JDBC_PASSWORD_OPT = "id-map-jdbc-password";
+	public static final String JDBC_PASSWORD_OPT = "id-map-password";
 	public static final String JDBC_PASSWORD_DESC = "The database password";
 	public static final String JDBC_PASSWORD_ARG_NAME = "password";
 	
-	public static final String JDBC_MAP_OPT = "id-map-jdbc-query";
+	public static final String JDBC_SELECT_OPT = "id-map-select-sql";
+	public static final String JDBC_SELECT_DESC = "The SQL statement to lookup a destination ID, e.g. \"SELECT dest FROM id_map WHERE src=?\".  It is assumed that the query will have one argument: the source ID.  If the query does not return a row, a new object will be created in the destination.  Optional.  If omitted, all objects will be created new in the destination.";
+	public static final String JDBC_SELECT_ARG_NAME = "sql-statement";
+	
+	public static final String JDBC_MAP_OPT = "id-map-insert-sql";
 	public static final String JDBC_MAP_DESC = "The SQL statement to insert mapped IDs, e.g. \"INSERT INTO id_map(src,dest) VALUES(?,?)\".  It is assumed that the query will have two arguments: source and destination in that order.";
 	public static final String JDBC_MAP_ARG_NAME = "sql-statement";
 	
-	public static final String JDBC_ERROR_OPT = "id-map-jdbc-error-query";
+	public static final String JDBC_ERROR_OPT = "id-map-error-sql";
 	public static final String JDBC_ERROR_DESC = "The SQL statement to insert error messages, e.g. \"INSERT INTO id_error(src,msg) VALUES(?,?)\".  This is optional.  If not specified, errors will not be logged to the database.";
 	public static final String JDBC_ERROR_ARG_NAME = "sql-statement";
 	
-	public static final String JDBC_RAW_IDS_OPT = "id-map-jdbc-raw-ids";
+	public static final String JDBC_RAW_IDS_OPT = "id-map-raw-ids";
 	public static final String JDBC_RAW_IDS_DESC = "If specified, the 'raw' Atmos identifiers (ObjectID or Namespace Path) will be inserted into the database instead of the full URIs.";
 	
 	
 	private DataSource dataSource;
 	private String mapQuery;
 	private String errorQuery;
+	private String selectQuery;
 	private boolean rawIds;
 	
 
@@ -113,13 +122,56 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 		Connection con = null;
 		PreparedStatement stmt = null;
 		try {
+			boolean alreadyMapped = false;
+			if(selectQuery != null) {
+				// Check to see if ID mapping exists.
+				con = getDataSource().getConnection();
+				stmt = con.prepareStatement(selectQuery);
+				stmt.setString(1, getSource(obj));
+				ResultSet rs = stmt.executeQuery();
+				if(rs.next()) {
+					// Looks like an ID already exists.
+					String id = rs.getString(1);
+					ObjectId oid = null;
+					if(rawIds) {
+						oid = new ObjectId(id);
+					} else {
+						// Parse out of the URI.
+						try {
+							URI uri = new URI(id);
+							id = uri.getPath();
+							if(id.startsWith("/")) {
+								id = id.substring(1);
+							}
+							oid = new ObjectId(id);
+						} catch (URISyntaxException e) {
+							throw new RuntimeException("Could not parse Atmos ID from URI: " + id, e);
+						}
+						
+					}
+					DestinationAtmosId dai = new DestinationAtmosId(oid);
+					obj.addAnnotation(dai);
+					alreadyMapped = true;
+				}
+				rs.close();
+				stmt.close();
+				stmt = null;
+			}
+			
 			getNext().filter(obj);
 			
-			con = getDataSource().getConnection();
-			stmt = con.prepareStatement(mapQuery);
-			stmt.setString(1, getSource(obj));
-			stmt.setString(2, getDest(obj));
-			stmt.execute();
+			if(!alreadyMapped) {
+				// Insert the new mapping.
+				if(con == null) {
+					con = getDataSource().getConnection();
+				}
+				stmt = con.prepareStatement(mapQuery);
+				stmt.setString(1, getSource(obj));
+				stmt.setString(2, getDest(obj));
+				stmt.execute();
+				stmt.close();
+				stmt = null;
+			}
 			
 		} catch(RuntimeException e) {
 			if(errorQuery != null) {
@@ -245,6 +297,10 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 				.withLongOpt(JDBC_MAP_OPT).hasArg()
 				.withArgName(JDBC_MAP_ARG_NAME).create());
 		
+		opts.addOption(OptionBuilder.withDescription(JDBC_SELECT_DESC)
+				.withLongOpt(JDBC_SELECT_OPT).hasArg()
+				.withArgName(JDBC_SELECT_ARG_NAME).create());
+		
 		opts.addOption(OptionBuilder.withDescription(JDBC_ERROR_DESC)
 				.withLongOpt(JDBC_ERROR_OPT).hasArg()
 				.withArgName(JDBC_ERROR_ARG_NAME).create());
@@ -279,6 +335,9 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 			mapQuery = line.getOptionValue(JDBC_MAP_OPT);
 			if(line.hasOption(JDBC_ERROR_OPT)) {
 				errorQuery = line.getOptionValue(JDBC_ERROR_OPT);
+			}
+			if(line.hasOption(JDBC_SELECT_OPT)) {
+				selectQuery = line.getOptionValue(JDBC_SELECT_OPT);
 			}
 			
 			if(line.hasOption(JDBC_RAW_IDS_OPT)) {
@@ -399,6 +458,20 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 	 */
 	public void setRawIds(boolean rawIds) {
 		this.rawIds = rawIds;
+	}
+
+	/**
+	 * @return the selectQuery
+	 */
+	public String getSelectQuery() {
+		return selectQuery;
+	}
+
+	/**
+	 * @param selectQuery the selectQuery to set
+	 */
+	public void setSelectQuery(String selectQuery) {
+		this.selectQuery = selectQuery;
 	}
 
 }

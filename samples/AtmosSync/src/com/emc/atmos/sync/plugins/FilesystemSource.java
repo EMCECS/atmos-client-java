@@ -86,8 +86,6 @@ public class FilesystemSource extends MultithreadedSource {
 			// We were terminated
 			pool.shutdownNow();
 		}
-		
-		printStats();
 
 	}
 

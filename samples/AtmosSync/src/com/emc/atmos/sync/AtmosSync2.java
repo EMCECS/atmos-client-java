@@ -24,6 +24,7 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,6 +43,7 @@ import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.support.FileSystemXmlApplicationContext;
 import org.springframework.util.Assert;
 
 import com.emc.atmos.sync.plugins.AtmosDestination;
@@ -69,6 +71,7 @@ import com.emc.atmos.sync.plugins.SyncPlugin;
  */
 public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 	private static final Logger l4j = Logger.getLogger(AtmosSync2.class);
+	private static final String ROOT_SPRING_BEAN = "sync";
 
 	/**
 	 * @param args
@@ -126,23 +129,76 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 			System.exit(0);
 		}
 		
-		// Let the plugins parse the options and decide whether they want to
-		// be included.
-		AtmosSync2 sync = new AtmosSync2();
-		for(SyncPlugin plugin : plugins) {
-			if(plugin.parseOptions(line)) {
-				sync.addPlugin(plugin);
+		
+		AtmosSync2 sync = null;
+		// Special check for Spring configuration
+		if(line.hasOption(CommonOptions.SPRING_CONFIG_OPTION)) {
+			sync = springBootstrap(line.getOptionValue(CommonOptions.SPRING_CONFIG_OPTION));
+		} else {
+			// Let the plugins parse the options and decide whether they want to
+			// be included.
+			sync = new AtmosSync2();
+			for(SyncPlugin plugin : plugins) {
+				if(plugin.parseOptions(line)) {
+					sync.addPlugin(plugin);
+				}
 			}
+			
+			// do the sanity check (Spring will do this too)
+			sync.afterPropertiesSet();
 		}
 		
-		// do the sanity check (Spring will do this too)
-		sync.afterPropertiesSet();
+		try {
+			sync.run();
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
 		
-		sync.run();
+		sync.printStats();
+
+		try {
+			sync.destroy();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		
 		System.exit(0);
 	}
 	
+	/**
+	 * Prints the stats from the source.
+	 */
+	private void printStats() {
+		source.printStats();
+	}
+
+	/**
+	 * Initializes a Spring Application Context from the given file and
+	 * bootstraps the AtmosSync2 object from there.
+	 * @param pathToSpringXml
+	 * @return 
+	 */
+	private static AtmosSync2 springBootstrap(String pathToSpringXml) {
+		File springXml = new File(pathToSpringXml);
+		if(!springXml.exists()) {
+			System.err.println("The Spring XML file: " + springXml + " does not exist");
+			System.exit(1);
+		}
+		
+		l4j.info("Loading configuration from Spring XML file: " + springXml);
+		FileSystemXmlApplicationContext ctx = 
+				new FileSystemXmlApplicationContext(pathToSpringXml);
+		
+		if(!ctx.containsBean(ROOT_SPRING_BEAN)) {
+			System.err.println("Your Spring XML file: " + springXml + 
+					" must contain one bean named '" + ROOT_SPRING_BEAN +
+					"' that initializes an AtmosSync2 object");
+			System.exit(1);
+		}
+		
+		return ctx.getBean(ROOT_SPRING_BEAN, AtmosSync2.class);
+	}
+
 	private static void help(Set<SyncPlugin> plugins) {
 		HelpFormatter fmt = new HelpFormatter();
 		
@@ -188,6 +244,10 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 		return source;
 	}
 
+	/**
+	 * Sets the source plugin.
+	 * @param source
+	 */
 	public void setSource(SourcePlugin source) {
 		if(this.source != null) {
 			throw new IllegalStateException(
@@ -201,6 +261,10 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 		return destination;
 	}
 
+	/**
+	 * Sets the destination plugin.
+	 * @param destination
+	 */
 	public void setDestination(DestinationPlugin destination) {
 		if(this.destination != null) {
 			throw new IllegalStateException(
@@ -214,19 +278,24 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 		return pluginChain;
 	}
 
+	/**
+	 * Sets the chain of plugins to insert between the source and destination.
+	 * This is used for Spring configuration.  Don't put the source and
+	 * destination in the chain; the afterPropertiesSet() method will do this
+	 * for you.
+	 * @param pluginChain a list of plugins to execute in between the source
+	 * and destination.
+	 */
 	public void setPluginChain(List<SyncPlugin> pluginChain) {
 		this.pluginChain = pluginChain;
 	}
 
+	/**
+	 * Executes the current plugin chain and prints statistics when complete.
+	 */
 	@Override
 	public void run() {
-		try {
-			source.run();
-			
-			source.printStats();
-		} catch(Throwable t) {
-			t.printStackTrace();
-		}
+		source.run();
 	}
 	
 	private void cleanup() {

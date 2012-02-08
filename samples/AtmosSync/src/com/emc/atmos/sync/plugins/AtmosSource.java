@@ -355,8 +355,6 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 			// We were terminated
 			pool.shutdownNow();
 		}
-		
-		printStats();
 	}
 	
 	
@@ -510,7 +508,7 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 				
 			} else {
 				setSourceURI(new URI(protocol, uid + ":" + secret, 
-						hosts.get(0), port, sourceId.toString(), null, null));	
+						hosts.get(0), port, "/" + sourceId.toString(), null, null));	
 				ann.setId((ObjectId) sourceId);
 				relativePath = sourceId.toString();
 			}
@@ -596,6 +594,48 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 		public String getRelativePath() {
 			return relativePath;
 		}
+	}
+
+	/**
+	 * @return the namespaceRoot
+	 */
+	public String getNamespaceRoot() {
+		return namespaceRoot;
+	}
+
+	/**
+	 * @param namespaceRoot the namespaceRoot to set
+	 */
+	public void setNamespaceRoot(String namespaceRoot) {
+		this.namespaceRoot = namespaceRoot;
+	}
+
+	/**
+	 * @return the oidFile
+	 */
+	public String getOidFile() {
+		return oidFile;
+	}
+
+	/**
+	 * @param oidFile the oidFile to set
+	 */
+	public void setOidFile(String oidFile) {
+		this.oidFile = oidFile;
+	}
+
+	/**
+	 * @return the query
+	 */
+	public String getQuery() {
+		return query;
+	}
+
+	/**
+	 * @param query the query to set
+	 */
+	public void setQuery(String query) {
+		this.query = query;
 	}
 
 
