@@ -568,7 +568,7 @@ public interface EsuApi {
      * @return the list of objects matching the query.  If no objects
      * are found, the array will be empty.
      */
-    List<Identifier> queryObjects( String xquery );
+    List<ObjectId> queryObjects( String xquery );
 
     /**
      * Lists the contents of a directory.

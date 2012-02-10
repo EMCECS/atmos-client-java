@@ -1122,7 +1122,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
      * @return the list of objects matching the query. If no objects are found,
      *         the array will be empty.
      */
-    public List<Identifier> queryObjects(String xquery) {
+    public List<ObjectId> queryObjects(String xquery) {
         try {
             String resource = context + "/objects";
             URL u = buildUrl(resource, null);
@@ -1155,9 +1155,14 @@ public class EsuRestApi extends AbstractEsuRestApi {
             }
 
             // Get object id list from response
+            Map<String,List<String>> responseHeaders = con.getHeaderFields();
+            l4j.debug("Response headers: " + responseHeaders);
             byte[] response = readResponse(con, null);
 
-            l4j.debug("Response: " + new String(response, "UTF-8"));
+            if(l4j.isDebugEnabled()) {
+            	String responseBody = new String(response, "UTF-8");
+            	l4j.debug("Response: " + responseBody);
+            }
 
             con.disconnect();
             return parseObjectList(response);

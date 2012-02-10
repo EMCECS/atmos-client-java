@@ -1051,7 +1051,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
      * @return the list of objects matching the query. If no objects are found,
      *         the array will be empty.
      */
-    public List<Identifier> queryObjects(String xquery) {
+    public List<ObjectId> queryObjects(String xquery) {
         try {
             String resource = context + "/objects";
             URL u = buildUrl(resource, null);

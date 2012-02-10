@@ -727,8 +727,8 @@ public abstract class AbstractEsuRestApi implements EsuApi {
      * @return the list of object IDs contained in the response.
      */
     @SuppressWarnings("rawtypes")
-    protected List<Identifier> parseObjectList( byte[] response ) {
-        List<Identifier> objs = new ArrayList<Identifier>();
+    protected List<ObjectId> parseObjectList( byte[] response ) {
+        List<ObjectId> objs = new ArrayList<ObjectId>();
         
         // Use JDOM to parse the XML
         SAXBuilder sb = new SAXBuilder();
@@ -739,14 +739,13 @@ public abstract class AbstractEsuRestApi implements EsuApi {
             // the namespace to identify the elements.
             Namespace esuNs = Namespace.getNamespace( "http://www.emc.com/cos/" );
 
-            List children = d.getRootElement().getChildren( "Object", esuNs );
+            List children = d.getRootElement().getChildren( "ObjectID", esuNs );
             
             l4j.debug( "Found " + children.size() + " objects" );
             for( Iterator i=children.iterator(); i.hasNext(); ) {
                 Object o = i.next();
                 if( o instanceof Element ) {
-                    Element objectIdElement = (Element)((Element)o).getChildren( "ObjectID", esuNs ).get(0);
-                    ObjectId oid = new ObjectId( objectIdElement.getText() );
+                    ObjectId oid = new ObjectId( ((Element)o).getText() );
                     l4j.debug( oid.toString() );
                     objs.add( oid );
                 } else {
