@@ -12,10 +12,10 @@
  	</logger>
  	
 	<logger name="com.emc.atmos.sync">
- 		<level value="DEBUG"></level>
+ 		<level value="INFO"></level>
  	</logger>
 	<logger name="com.emc.atmos.plugins">
- 		<level value="DEBUG"></level>
+ 		<level value="INFO"></level>
  	</logger>
  	<logger name="com.emc.esu.api">
  		<level value="WARN"></level>

@@ -56,6 +56,7 @@ import com.emc.atmos.sync.util.AtmosMetadata;
 import com.emc.atmos.sync.util.CountingInputStream;
 import com.emc.esu.api.DirectoryEntry;
 import com.emc.esu.api.EsuApi;
+import com.emc.esu.api.EsuException;
 import com.emc.esu.api.Identifier;
 import com.emc.esu.api.ListOptions;
 import com.emc.esu.api.ObjectId;
@@ -260,10 +261,13 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 		
 		// Check authentication
 		ServiceInformation info = atmos.getServiceInformation();
+		LogMF.info(l4j, "Connected to Atmos {0} on {1}", info.getAtmosVersion(),
+				hosts);
 		
 		// Check to see if UTF-8 is supported.
 		if(info.isUnicodeMetadataSupported()) {
 			((LBEsuRestApi)atmos).setUnicodeEnabled(true);
+			l4j.info("Unicode metadata enabled");
 		}
 		
 		if(namespaceRoot != null) {
@@ -278,8 +282,72 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 	}
 
 	private void readQuery() {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Reading via Search is not yet supported");
+		initQueue();
+		
+		ObjectId lastItem = null;
+		while(running) {
+			// Look for available unsubmitted tasks
+			synchronized(graph) {
+				BreadthFirstIterator<TaskNode, DefaultEdge> i = new BreadthFirstIterator<TaskNode, DefaultEdge>(graph);
+				while( i.hasNext() ) {
+					TaskNode t = i.next();
+					if( graph.inDegreeOf(t) == 0 && !t.isQueued() ) {
+						t.setQueued(true);
+						l4j.debug( "Submitting " + t );
+						pool.submit(t);
+					}
+				}
+			}
+			if(queue.size() > threadCount*100) {
+				// Sleep a bit.  There could be billions of objects to read
+				// and we don't want to run out of memory by reading too
+				// much up front.
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// Ignore.
+				}
+				continue;
+			}
+			
+			String token = "0";
+			if(lastItem != null) {
+				LogMF.info(l4j, "Getting more results starting with {0}", lastItem);
+				token = lastItem.toString();
+			}
+			List<ObjectId> ids = queryItems(query, token);
+			if(ids.size()==0) {
+				l4j.info("No more results");
+				break;
+			}
+			LogMF.info(l4j, "Found {0} results", ids.size());
+			for(ObjectId id : ids) {
+				ReadAtmosTask task = new ReadAtmosTask(id);
+				task.addToGraph(graph);
+				lastItem = id;
+			}
+			
+		}
+		
+		// We've read all of our data; go into the normal loop now and
+		// run until we're out of tasks.
+		runQueue();
+	}
+	
+	private List<ObjectId> queryItems(String query, String token) {
+		query += "|||token:" + token;
+		LogMF.info(l4j, "Executing query: {0}", query);
+		List<ObjectId> ids = null;
+		try {
+			ids = atmos.queryObjects(query);
+		} catch(EsuException e) {
+			if(e.getAtmosCode() == 1009) {
+				throw new RuntimeException("Your Atmos is not configured to accept queries.  Please call support.");
+			} else {
+				throw e;
+			}
+		}
+		return ids;
 	}
 
 	private void readOIDs() {
