@@ -1840,8 +1840,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             throw new EsuException("Invalid URL", e);
         }
     }
-    
-	@Override
+
 	public ServiceInformation getServiceInformation() {
         try {
             String resource = context + "/service";
@@ -2103,9 +2102,9 @@ public class EsuRestApi extends AbstractEsuRestApi {
      * Generates the HMAC-SHA1 signature used to authenticate the request using
      * the Java security APIs.
      * 
-     * @param con the connection object
      * @param method the HTTP method used
-     * @param resource the resource path
+     * @param path the resource path
+     * @param query the URL querystring (if present)
      * @param headers the HTTP headers for the request
      * @throws IOException if character data cannot be encoded.
      * @throws GeneralSecurityException If errors occur generating the HMAC-SHA1
