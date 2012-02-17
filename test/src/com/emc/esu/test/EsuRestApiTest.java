@@ -27,6 +27,7 @@ package com.emc.esu.test;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.emc.esu.api.EsuApi;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,15 +50,15 @@ public class EsuRestApiTest extends EsuApiTest {
      * Hostname or IP of ESU server.  Set in atmos.properties or -Datmos.host
      */
     private String host;
-    
+
     /**
      * Port of ESU server (usually 80 or 443). Set in atmos.properties or -Datmos.port
      */
     private int port = 80;
-    	
+
     public EsuRestApiTest() {
     	super();
-    	
+
     	InputStream in = ClassLoader.getSystemResourceAsStream("atmos.properties");
     	if( in != null ) {
     		try {
@@ -66,7 +67,7 @@ public class EsuRestApiTest extends EsuApiTest {
 				throw new RuntimeException( "Could not load atmos.properties", e);
 			}
     	}
-    	
+
     	uid2 = System.getProperty( "atmos.uid" );
     	if( uid2 == null ) {
     		throw new RuntimeException( "atmos.uid is null.  Set in atmos.properties or on command line with -Datmos.uid" );
@@ -81,7 +82,7 @@ public class EsuRestApiTest extends EsuApiTest {
     	}
     	port = Integer.parseInt( System.getProperty( "atmos.port" ) );
     }
-       
+
     /**
      * @see junit.framework.TestCase#setUp()
      */
@@ -99,14 +100,17 @@ public class EsuRestApiTest extends EsuApiTest {
      */
     @Test
     public void testSignatureFailure() throws Exception {
+       EsuApi tempEsu = esu;
        try {
            // Fiddle with the secret key
            esu = new EsuRestApi( host, port, uid, secret.toUpperCase() );
            testCreateEmptyObject();
            Assert.fail( "Expected exception to be thrown" );
        } catch( EsuException e ) {
-           Assert.assertEquals( "Expected error code 1032 for signature failure", 
+           Assert.assertEquals( "Expected error code 1032 for signature failure",
                    1032, e.getAtmosCode() );
+       } finally {
+           esu = tempEsu;
        }
     }
 
@@ -121,12 +125,12 @@ public class EsuRestApiTest extends EsuApiTest {
             testCreateEmptyObject();
             Assert.fail( "Expected exception to be thrown" );
         } catch( EsuException e ) {
-            Assert.assertEquals( "Expected error code 404 for bad context root", 
+            Assert.assertEquals( "Expected error code 404 for bad context root",
                     404, e.getHttpCode() );
         }
-        
+
     }
-    
+
     @Test
     public void testServerOffset() throws Exception {
     	long offset = ((EsuRestApi)esu).calculateServerOffset();

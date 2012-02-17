@@ -24,66 +24,40 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.esu.test;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-
+import com.emc.esu.api.*;
+import com.emc.esu.api.Checksum.Algorithm;
+import com.emc.esu.api.rest.DownloadHelper;
+import com.emc.esu.api.rest.UploadHelper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.emc.esu.api.Acl;
-import com.emc.esu.api.Checksum;
-import com.emc.esu.api.Checksum.Algorithm;
-import com.emc.esu.api.DirectoryEntry;
-import com.emc.esu.api.EsuApi;
-import com.emc.esu.api.Extent;
-import com.emc.esu.api.Grant;
-import com.emc.esu.api.Grantee;
-import com.emc.esu.api.Identifier;
-import com.emc.esu.api.ListOptions;
-import com.emc.esu.api.Metadata;
-import com.emc.esu.api.MetadataList;
-import com.emc.esu.api.MetadataTag;
-import com.emc.esu.api.MetadataTags;
-import com.emc.esu.api.ObjectId;
-import com.emc.esu.api.ObjectInfo;
-import com.emc.esu.api.ObjectMetadata;
-import com.emc.esu.api.ObjectPath;
-import com.emc.esu.api.ObjectResult;
-import com.emc.esu.api.Permission;
-import com.emc.esu.api.ServiceInformation;
-import com.emc.esu.api.rest.DownloadHelper;
-import com.emc.esu.api.rest.EsuRestApi;
-import com.emc.esu.api.rest.UploadHelper;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.*;
 
 /**
  * Implements testcases that are independent of the protocol (REST vs. SOAP).
- * Note that this class does not implement TestCase; it is called by the 
+ * Note that this class does not implement TestCase; it is called by the
  * REST and SOAP testcases.
  */
 public abstract class EsuApiTest {
     public static Logger l4j = Logger.getLogger( EsuApiTest.class );
-    
+
+    /**
+     * Use this as a prefix for namespace object paths and you won't have to clean up after yourself.
+     * This also keeps all test objects under one folder, which is easy to delete should something go awry.
+     */
+    protected static final String TESTDIR = "/test_" + EsuApiTest.class.getSimpleName() + "/";
+
     protected EsuApi esu;
     protected String uid;
-    
+
     protected List<Identifier> cleanup = new ArrayList<Identifier>();
 
     /**
@@ -92,19 +66,48 @@ public abstract class EsuApiTest {
      */
     @After
     public void tearDown() {
-        for( Iterator<Identifier> i = cleanup.iterator(); i.hasNext(); ) {
-        	Identifier cleanItem = i.next();
+        for ( Iterator<Identifier> i = cleanup.iterator(); i.hasNext(); ) {
+            Identifier cleanItem = i.next();
             try {
                 this.esu.deleteObject( cleanItem );
-            } catch( Exception e ) {
+            } catch ( Exception e ) {
                 System.out.println( "Failed to delete " + cleanItem + ": " + e.getMessage() );
             }
         }
+        try { // if the test directory exists, recursively delete it
+            this.esu.getSystemMetadata( new ObjectPath( TESTDIR ), null );
+            deleteRecursively( new ObjectPath( TESTDIR ) );
+        } catch ( EsuException e ) {
+            if ( e.getHttpCode() != 404 ) throw e;
+        }
+    }
+
+    protected void deleteRecursively( ObjectPath path ) {
+        if ( path.isDirectory() ) {
+            for ( DirectoryEntry entry : this.esu.listDirectory( path, null ) ) {
+                deleteRecursively( entry.getPath() );
+            }
+        }
+        this.esu.deleteObject( path );
     }
 
     //
     // TESTS START HERE
     //
+
+    @Test
+    public void testUtf8JavaEncoding() throws Exception {
+        String oneByteCharacters = "Hello";
+        String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
+        String twoByteEscaped = "%D0%90%D0%91%D0%92%D0%93";
+        String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
+        String fourByteEscaped = "%F0%A0%9C%8E%F0%A0%9C%B1%F0%A0%9D%B9%F0%A0%B1%93";
+        Assert.assertEquals( "2-byte characters failed", URLEncoder.encode( twoByteCharacters, "UTF-8" ), twoByteEscaped );
+        Assert.assertEquals( "4-byte characters failed", URLEncoder.encode( fourByteCharacters, "UTF-8" ), fourByteEscaped );
+        Assert.assertEquals( "2-byte/4-byte mix failed", URLEncoder.encode( twoByteCharacters + fourByteCharacters, "UTF-8" ), twoByteEscaped + fourByteEscaped );
+        Assert.assertEquals( "1-byte/2-byte mix failed", URLEncoder.encode( oneByteCharacters + twoByteCharacters, "UTF-8" ), oneByteCharacters + twoByteEscaped );
+        Assert.assertEquals( "1-4 byte mix failed", URLEncoder.encode( oneByteCharacters + twoByteCharacters + fourByteCharacters, "UTF-8" ), oneByteCharacters + twoByteEscaped + fourByteEscaped );
+    }
 
     /**
      * Test creating one empty object.  No metadata, no content.
@@ -126,7 +129,7 @@ public abstract class EsuApiTest {
      */
     @Test
     public void testCreateEmptyObjectOnPath() throws Exception {
-    	ObjectPath op = new ObjectPath( "/" + rand8char() );
+        ObjectPath op = new ObjectPath( "/" + rand8char() );
         ObjectId id = this.esu.createObjectOnPath( op, null, null, null, null );
         cleanup.add( op );
         l4j.debug( "Path: " + op + " ID: " + id );
@@ -138,33 +141,33 @@ public abstract class EsuApiTest {
         content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong when reading by id", "", content );
     }
-    
-    
+
+
     /**
      * Tests using some extended characters when creating on a path.  This particular test
      * uses one cryllic, one accented, and one japanese character.
      */
     @Test
     public void testUnicodePath() throws Exception {
-    	String dirName = rand8char();
-    	ObjectPath path = new ObjectPath( "/" + dirName + "/бöｼ.txt" );
-    	ObjectId id = this.esu.createObjectOnPath(path, null, null, null, null);
+        String dirName = rand8char();
+        ObjectPath path = new ObjectPath( "/" + dirName + "/бöｼ.txt" );
+        ObjectId id = this.esu.createObjectOnPath( path, null, null, null, null );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
-        
-        ObjectPath parent = new ObjectPath("/" + dirName + "/");
-        List<DirectoryEntry> ents = this.esu.listDirectory(parent, null);
+
+        ObjectPath parent = new ObjectPath( "/" + dirName + "/" );
+        List<DirectoryEntry> ents = this.esu.listDirectory( parent, null );
         boolean found = false;
-        for(DirectoryEntry ent : ents) {
-        	if(ent.getPath().equals(path)) {
-        		found = true;
-        	}
+        for ( DirectoryEntry ent : ents ) {
+            if ( ent.getPath().equals( path ) ) {
+                found = true;
+            }
         }
-        Assert.assertTrue("Did not find unicode file in dir", found);
-        
+        Assert.assertTrue( "Did not find unicode file in dir", found );
+
         // Check read
-        this.esu.readObject(path, null, null);
-        
+        this.esu.readObject( path, null, null );
+
     }
 
     /**
@@ -172,26 +175,66 @@ public abstract class EsuApiTest {
      */
     @Test
     public void testExtraPath() throws Exception {
-    	ObjectPath path = new ObjectPath( "/" + rand8char() + "/a+=-  _!#$%^&*(),.z.txt" );
-		//ObjectPath path = new ObjectPath("/zimbramailbox/c8b4/511a-63c4-4ac9-8ff7+1c578de044be/stage/3r0sFrgUgL2ApCSkl3pobSX9D+k-1");
-		byte[] data = "Hello World".getBytes("UTF-8");
-		InputStream in = new ByteArrayInputStream(data);
-    	ObjectId id = this.esu.createObjectFromStreamOnPath(path, null, null, in, data.length, null);
+        ObjectPath path = new ObjectPath( "/" + rand8char() + "/a+=-  _!#$%^&*(),.z.txt" );
+        //ObjectPath path = new ObjectPath("/zimbramailbox/c8b4/511a-63c4-4ac9-8ff7+1c578de044be/stage/3r0sFrgUgL2ApCSkl3pobSX9D+k-1");
+        byte[] data = "Hello World".getBytes( "UTF-8" );
+        InputStream in = new ByteArrayInputStream( data );
+        ObjectId id = this.esu.createObjectFromStreamOnPath( path, null, null, in, data.length, null );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
     }
 
-    
-    protected String rand8char() {
-		Random r = new Random();
-		StringBuffer sb = new StringBuffer( 8 );
-		for( int i=0; i<8; i++ ) {
-			sb.append((char)('a' + r.nextInt(26)));
-		}
-		return sb.toString();
-	}
+    @Test
+    public void testUtf8Path() throws Exception {
+        String oneByteCharacters = "Hello! ,";
+        String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
+        String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
+        String crazyName = oneByteCharacters + twoByteCharacters + fourByteCharacters;
+        byte[] content = "Crazy name creation test.".getBytes( "UTF-8" );
+        ObjectPath path = new ObjectPath( TESTDIR + crazyName );
 
-	/**
+        // create crazy-name object
+        this.esu.createObjectOnPath( path, null, null, content, "text/plain" );
+
+        // verify name in directory list
+        boolean found = false;
+        for ( DirectoryEntry entry : this.esu.listDirectory( new ObjectPath( TESTDIR ), null ) ) {
+            if ( entry.getPath().toString().equals( path.toString() ) ) {
+                found = true;
+                break;
+            }
+        }
+        Assert.assertTrue( "crazyName not found in directory listing", found );
+
+        // verify content
+        Assert.assertTrue( "content does not match", Arrays.equals( content, this.esu.readObject( path, null, null ) ) );
+    }
+
+    @Test
+    public void testUtf8Content() throws Exception {
+        String oneByteCharacters = "Hello! ,";
+        String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
+        String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
+        byte[] content = (oneByteCharacters + twoByteCharacters + fourByteCharacters).getBytes( "UTF-8" );
+        ObjectPath path = new ObjectPath( TESTDIR + "utf8Content.txt" );
+
+        // create object with multi-byte UTF-8 content
+        this.esu.createObjectOnPath( path, null, null, content, "text/plain" );
+
+        // verify content
+        Assert.assertTrue( "content does not match", Arrays.equals( content, this.esu.readObject( path, null, null ) ) );
+    }
+
+    protected String rand8char() {
+        Random r = new Random();
+        StringBuffer sb = new StringBuffer( 8 );
+        for ( int i = 0; i < 8; i++ ) {
+            sb.append( (char) ('a' + r.nextInt( 26 )) );
+        }
+        return sb.toString();
+    }
+
+    /**
      * Test creating an object with content but without metadata
      */
     @Test
@@ -204,10 +247,10 @@ public abstract class EsuApiTest {
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
     }
-    
+
     @Test
-	public void testCreateObjectWithContentStream() throws Exception {
-		InputStream in = new ByteArrayInputStream( "hello".getBytes( "UTF-8" ) );
+    public void testCreateObjectWithContentStream() throws Exception {
+        InputStream in = new ByteArrayInputStream( "hello".getBytes( "UTF-8" ) );
         ObjectId id = this.esu.createObjectFromStream( null, null, in, 5, "text/plain" );
         in.close();
         Assert.assertNotNull( "null ID returned", id );
@@ -216,12 +259,12 @@ public abstract class EsuApiTest {
         // Read back the content
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
-	}
-    
+    }
+
     @Test
-	public void testCreateObjectWithContentStreamOnPath() throws Exception {
-    	ObjectPath op = new ObjectPath( "/" + rand8char() + ".tmp" );
-		InputStream in = new ByteArrayInputStream( "hello".getBytes( "UTF-8" ) );
+    public void testCreateObjectWithContentStreamOnPath() throws Exception {
+        ObjectPath op = new ObjectPath( "/" + rand8char() + ".tmp" );
+        InputStream in = new ByteArrayInputStream( "hello".getBytes( "UTF-8" ) );
         ObjectId id = this.esu.createObjectFromStreamOnPath( op, null, null, in, 5, "text/plain" );
         in.close();
         Assert.assertNotNull( "null ID returned", id );
@@ -230,14 +273,14 @@ public abstract class EsuApiTest {
         // Read back the content
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
-	}
+    }
 
     /**
      * Test creating an object with metadata but no content.
      */
     @Test
     public void testCreateObjectWithMetadataOnPath() {
-    	ObjectPath op = new ObjectPath( "/" + rand8char() + ".tmp" );
+        ObjectPath op = new ObjectPath( "/" + rand8char() + ".tmp" );
         MetadataList mlist = new MetadataList();
         Metadata listable = new Metadata( "listable", "foo", true );
         Metadata unlistable = new Metadata( "unlistable", "bar", false );
@@ -257,19 +300,19 @@ public abstract class EsuApiTest {
         Assert.assertNotNull( "value of 'listable' missing", meta.getMetadata( "listable" ) );
         Assert.assertNotNull( "value of 'listable2' missing", meta.getMetadata( "listable2" ) );
         Assert.assertNotNull( "value of 'unlistable' missing", meta.getMetadata( "unlistable" ) );
-        Assert.assertNotNull( "value of 'unlistable2' missing", meta.getMetadata( "unlistable2" ));
-        
+        Assert.assertNotNull( "value of 'unlistable2' missing", meta.getMetadata( "unlistable2" ) );
+
         Assert.assertEquals( "value of 'listable' wrong", "foo", meta.getMetadata( "listable" ).getValue() );
         Assert.assertEquals( "value of 'listable2' wrong", "foo2 foo2", meta.getMetadata( "listable2" ).getValue() );
         Assert.assertEquals( "value of 'unlistable' wrong", "bar", meta.getMetadata( "unlistable" ).getValue() );
         Assert.assertEquals( "value of 'unlistable2' wrong", "bar2 bar2", meta.getMetadata( "unlistable2" ).getValue() );
         // Check listable flags
-        Assert.assertEquals( "'listable' is not listable", true, meta.getMetadata( "listable" ).isListable()  );
+        Assert.assertEquals( "'listable' is not listable", true, meta.getMetadata( "listable" ).isListable() );
         Assert.assertEquals( "'listable2' is not listable", true, meta.getMetadata( "listable2" ).isListable() );
-        Assert.assertEquals( "'unlistable' is listable" , false, meta.getMetadata( "unlistable" ).isListable() );
+        Assert.assertEquals( "'unlistable' is listable", false, meta.getMetadata( "unlistable" ).isListable() );
         Assert.assertEquals( "'unlistable2' is listable", false, meta.getMetadata( "unlistable2" ).isListable() );
     }
-    
+
     /**
      * Test creating an object with metadata but no content.
      */
@@ -301,19 +344,19 @@ public abstract class EsuApiTest {
         Assert.assertEquals( "value of 'unlistable' wrong", "bar", meta.getMetadata( "unlistable" ).getValue() );
         Assert.assertEquals( "value of 'unlistable2' wrong", "bar2 bar2", meta.getMetadata( "unlistable2" ).getValue() );
         Assert.assertNotNull( "listable3 missing", meta.getMetadata( "listable3" ) );
-        Assert.assertTrue( "Value of listable3 should be empty", meta.getMetadata( "listable3" ).getValue() == null || meta.getMetadata( "listable3" ).getValue().length()==0);
+        Assert.assertTrue( "Value of listable3 should be empty", meta.getMetadata( "listable3" ).getValue() == null || meta.getMetadata( "listable3" ).getValue().length() == 0 );
         //Assert.assertEquals( "Value of withcommas wrong", "I, Robot", meta.getMetadata( "withcommas" ).getValue() );
         //Assert.assertEquals( "Value of withequals wrong", "name=value", meta.getMetadata( "withequals" ).getValue() );
-        
+
         // Check listable flags
-        Assert.assertEquals( "'listable' is not listable", true, meta.getMetadata( "listable" ).isListable()  );
+        Assert.assertEquals( "'listable' is not listable", true, meta.getMetadata( "listable" ).isListable() );
         Assert.assertEquals( "'listable2' is not listable", true, meta.getMetadata( "listable2" ).isListable() );
         Assert.assertEquals( "'listable3' is not listable", true, meta.getMetadata( "listable3" ).isListable() );
-        Assert.assertEquals( "'unlistable' is listable" , false, meta.getMetadata( "unlistable" ).isListable() );
+        Assert.assertEquals( "'unlistable' is listable", false, meta.getMetadata( "unlistable" ).isListable() );
         Assert.assertEquals( "'unlistable2' is listable", false, meta.getMetadata( "unlistable2" ).isListable() );
 
     }
-    
+
     /**
      * Test creating an object with metadata but no content.
      */
@@ -330,7 +373,7 @@ public abstract class EsuApiTest {
         MetadataList meta = this.esu.getUserMetadata( id, null );
         Assert.assertEquals( "value of 'unlistable' wrong", "bar  bar   bar    bar", meta.getMetadata( "unlistable" ).getValue() );
         // Check listable flags
-        Assert.assertEquals( "'unlistable' is listable" , false, meta.getMetadata( "unlistable" ).isListable() );
+        Assert.assertEquals( "'unlistable' is listable", false, meta.getMetadata( "unlistable" ).isListable() );
 
     }
 
@@ -350,7 +393,7 @@ public abstract class EsuApiTest {
         // Read back only 2 bytes
         Extent extent = new Extent( 1, 2 );
         content = new String( this.esu.readObject( id, extent, null ), "UTF-8" );
-        Assert.assertEquals( "partial object content wrong", "el", content );               
+        Assert.assertEquals( "partial object content wrong", "el", content );
     }
 
     /**
@@ -360,7 +403,7 @@ public abstract class EsuApiTest {
     public void testReadAcl() {
         // Create an object with an ACL
         Acl acl = new Acl();
-        acl.addGrant( new Grant( new Grantee( stripUid(uid), Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
+        acl.addGrant( new Grant( new Grantee( stripUid( uid ), Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
         acl.addGrant( new Grant( Grantee.OTHER, Permission.READ ) );
         ObjectId id = this.esu.createObject( acl, null, null, null );
         Assert.assertNotNull( "null ID returned", id );
@@ -373,27 +416,28 @@ public abstract class EsuApiTest {
         Assert.assertEquals( "ACLs don't match", acl, newacl );
 
     }
-    
+
     /**
      * Inside an ACL, you use the UID only, not SubtenantID/UID
+     *
      * @param uid
      * @return
      */
     private String stripUid( String uid ) {
-    	int slash = uid.indexOf('/');
-    	if( slash != -1 ) {
-    		return uid.substring( slash+1 );
-    	} else {
-    		return uid;
-    	}
+        int slash = uid.indexOf( '/' );
+        if ( slash != -1 ) {
+            return uid.substring( slash + 1 );
+        } else {
+            return uid;
+        }
     }
-    
+
     @Test
     public void testReadAclByPath() {
-    	ObjectPath op = new ObjectPath( "/" + rand8char() + ".tmp" );
+        ObjectPath op = new ObjectPath( "/" + rand8char() + ".tmp" );
         // Create an object with an ACL
         Acl acl = new Acl();
-        acl.addGrant( new Grant( new Grantee( stripUid(uid), Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
+        acl.addGrant( new Grant( new Grantee( stripUid( uid ), Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
         acl.addGrant( new Grant( Grantee.OTHER, Permission.READ ) );
         ObjectId id = this.esu.createObjectOnPath( op, acl, null, null, null );
         Assert.assertNotNull( "null ID returned", id );
@@ -404,7 +448,7 @@ public abstract class EsuApiTest {
         l4j.info( "Comparing " + newacl + " with " + acl );
 
         Assert.assertEquals( "ACLs don't match", acl, newacl );
-    	
+
     }
 
     /**
@@ -495,8 +539,8 @@ public abstract class EsuApiTest {
         ObjectId vid = this.esu.versionObject( id );
         cleanup.add( vid );
         Assert.assertNotNull( "null version ID returned", vid );
-        
-        Assert.assertFalse( "Version ID shoudn't be same as original ID", id.equals(vid) );
+
+        Assert.assertFalse( "Version ID shoudn't be same as original ID", id.equals( vid ) );
 
         // Fetch the version and read its data
         MetadataList meta = this.esu.getUserMetadata( vid, null );
@@ -569,34 +613,34 @@ public abstract class EsuApiTest {
         Assert.assertEquals( "Wrong number of versions returned", 2, versions.size() );
         Assert.assertTrue( "version 1 not found in version list", versions.contains( vid1 ) );
         Assert.assertTrue( "version 2 not found in version list", versions.contains( vid2 ) );
-        
+
         // Delete a version
         this.esu.deleteVersion( vid1 );
         versions = this.esu.listVersions( id );
         Assert.assertEquals( "Wrong number of versions returned", 1, versions.size() );
         Assert.assertFalse( "version 1 found in version list", versions.contains( vid1 ) );
         Assert.assertTrue( "version 2 not found in version list", versions.contains( vid2 ) );
-        
+
     }
-    
+
     @Test
     public void testRestoreVersion() throws UnsupportedEncodingException {
-        ObjectId id = this.esu.createObject(null, null, "Base Version Content".getBytes("UTF-8"), "text/plain");
-        Assert.assertNotNull("null ID returned", id);
-        cleanup.add(id);
+        ObjectId id = this.esu.createObject( null, null, "Base Version Content".getBytes( "UTF-8" ), "text/plain" );
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
 
         // Version the object
-        ObjectId vId = this.esu.versionObject(id);
+        ObjectId vId = this.esu.versionObject( id );
 
         // Update the object content
-        this.esu.updateObject(id, null, null, null, "Child Version Content -- You should never see me".getBytes("UTF-8"), "text/plain");
+        this.esu.updateObject( id, null, null, null, "Child Version Content -- You should never see me".getBytes( "UTF-8" ), "text/plain" );
 
         // Restore the original version
-        this.esu.restoreVersion(id, vId);
+        this.esu.restoreVersion( id, vId );
 
         // Read back the content
-        String content = new String(this.esu.readObject(id, null, null), "UTF-8");
-        Assert.assertEquals("object content wrong", "Base Version Content", content );
+        String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
+        Assert.assertEquals( "object content wrong", "Base Version Content", content );
 
     }
 
@@ -630,16 +674,16 @@ public abstract class EsuApiTest {
         Assert.assertNull( "value of 'gid' should not have been returned", meta.getMetadata( "gid" ) );
         Assert.assertNull( "value of 'listable' should not have been returned", meta.getMetadata( "listable" ) );
     }
-    
+
     /**
      * Test listing objects by a tag that doesn't exist
      */
     @Test
     public void testListObjectsNoExist() {
-    	ListOptions options = new ListOptions();
-    	List<ObjectResult> objects = this.esu.listObjects("this_tag_should_not_exist", options);
-    	Assert.assertNotNull("object list should be not null", objects);
-    	Assert.assertEquals("No objects should be returned", 0, objects.size());
+        ListOptions options = new ListOptions();
+        List<ObjectResult> objects = this.esu.listObjects( "this_tag_should_not_exist", options );
+        Assert.assertNotNull( "object list should be not null", objects );
+        Assert.assertEquals( "No objects should be returned", 0, objects.size() );
     }
 
     /**
@@ -664,10 +708,10 @@ public abstract class EsuApiTest {
         // List the objects.  Make sure the one we created is in the list
         List<ObjectResult> objects = this.esu.listObjects( "listable", null );
         Assert.assertTrue( "No objects returned", objects.size() > 0 );
-        Assert.assertTrue( "object not found in list" , objects.contains( id ) );
+        Assert.assertTrue( "object not found in list", objects.contains( id ) );
 
     }
-    
+
     /**
      * Test listing objects by a tag
      */
@@ -692,21 +736,21 @@ public abstract class EsuApiTest {
         options.setIncludeMetadata( true );
         List<ObjectResult> objects = this.esu.listObjects( "listable", options );
         Assert.assertTrue( "No objects returned", objects.size() > 0 );
-        
+
         // Find the item.
         boolean found = false;
-        for( Iterator<ObjectResult> i = objects.iterator(); i.hasNext(); ) {
+        for ( Iterator<ObjectResult> i = objects.iterator(); i.hasNext(); ) {
             ObjectResult or = i.next();
-            if( or.getId().equals( id ) ) {
+            if ( or.getId().equals( id ) ) {
                 found = true;
                 // check metadata
-                Assert.assertEquals( "Wrong value on metadata", 
+                Assert.assertEquals( "Wrong value on metadata",
                         or.getMetadata().getMetadata( "listable" ).getValue(), "foo" );
             }
         }
-        Assert.assertTrue( "object not found in list" , found );
+        Assert.assertTrue( "object not found in list", found );
     }
-    
+
     /**
      * Test listing objects by a tag, with only some of the metadata
      */
@@ -729,28 +773,28 @@ public abstract class EsuApiTest {
         // List the objects.  Make sure the one we created is in the list
         ListOptions options = new ListOptions();
         options.setIncludeMetadata( true );
-        options.setUserMetadata( Arrays.asList( new String[] { "listable" } ) );
+        options.setUserMetadata( Arrays.asList( new String[]{"listable"} ) );
         List<ObjectResult> objects = this.esu.listObjects( "listable", options );
         Assert.assertTrue( "No objects returned", objects.size() > 0 );
-        
+
         // Find the item.
         boolean found = false;
-        for( Iterator<ObjectResult> i = objects.iterator(); i.hasNext(); ) {
+        for ( Iterator<ObjectResult> i = objects.iterator(); i.hasNext(); ) {
             ObjectResult or = i.next();
-            if( or.getId().equals( id ) ) {
+            if ( or.getId().equals( id ) ) {
                 found = true;
                 // check metadata
-                Assert.assertEquals( "Wrong value on metadata", 
+                Assert.assertEquals( "Wrong value on metadata",
                         or.getMetadata().getMetadata( "listable" ).getValue(), "foo" );
-                
+
                 // Other metadata should not be present
-                Assert.assertNull( "unlistable should be missing",  
-                		or.getMetadata().getMetadata( "unlistable" ) );
+                Assert.assertNull( "unlistable should be missing",
+                        or.getMetadata().getMetadata( "unlistable" ) );
             }
         }
-        Assert.assertTrue( "object not found in list" , found );
+        Assert.assertTrue( "object not found in list", found );
     }
-    
+
     /**
      * Test listing objects by a tag, paging the results
      */
@@ -774,19 +818,18 @@ public abstract class EsuApiTest {
         List<ObjectResult> objects = this.esu.listObjects( "listable", options );
         Assert.assertTrue( "No objects returned", objects.size() > 0 );
         Assert.assertNotNull( "Token should be present", options.getToken() );
-        
-    	l4j.debug( "listObjectsPaged, Token: " + options.getToken() );
-        while( options.getToken() != null ) {
-        	// Subsequent pages
-        	objects.addAll( this.esu.listObjects( "listable", options) );
-        	l4j.debug( "listObjectsPaged, Token: " + options.getToken() );
+
+        l4j.debug( "listObjectsPaged, Token: " + options.getToken() );
+        while ( options.getToken() != null ) {
+            // Subsequent pages
+            objects.addAll( this.esu.listObjects( "listable", options ) );
+            l4j.debug( "listObjectsPaged, Token: " + options.getToken() );
         }
-        
+
         // Ensure our IDs exist
         Assert.assertTrue( "First object not found", objects.contains( id1 ) );
         Assert.assertTrue( "Second object not found", objects.contains( id2 ) );
     }
-
 
 
     /**
@@ -811,7 +854,7 @@ public abstract class EsuApiTest {
         this.esu.updateObject( id, null, mlist, null, null, null );
 
         // List tags.  Ensure our object's tags are in the list.
-        MetadataTags tags = this.esu.getListableTags( (String)null );
+        MetadataTags tags = this.esu.getListableTags( (String) null );
         Assert.assertTrue( "listable tag not returned", tags.contains( "listable" ) );
         Assert.assertTrue( "list/able/2 root tag not returned", tags.contains( "list" ) );
         Assert.assertFalse( "list/able/not tag returned", tags.contains( "list/able/not" ) );
@@ -908,18 +951,18 @@ public abstract class EsuApiTest {
         // Re-read the metadata
         MetadataList meta = this.esu.getUserMetadata( id, null );
         Assert.assertEquals( "value of 'unlistable' wrong", "bar", meta.getMetadata( "unlistable" ).getValue() );
-        
+
         // Check that content was not modified
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
 
     }
-    
+
     @Test
     public void testUpdateObjectAcl() throws Exception {
         // Create an object with an ACL
         Acl acl = new Acl();
-        acl.addGrant( new Grant( new Grantee( stripUid(uid), Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
+        acl.addGrant( new Grant( new Grantee( stripUid( uid ), Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
         Grant other = new Grant( Grantee.OTHER, Permission.READ );
         acl.addGrant( other );
         ObjectId id = this.esu.createObject( acl, null, null, null );
@@ -931,13 +974,13 @@ public abstract class EsuApiTest {
         l4j.info( "Comparing " + newacl + " with " + acl );
 
         Assert.assertEquals( "ACLs don't match", acl, newacl );
-        
+
         // Change the ACL and update the object.
         acl.removeGrant( other );
         Grant o2 = new Grant( Grantee.OTHER, Permission.NONE );
         acl.addGrant( o2 );
         this.esu.setAcl( id, acl );
-        
+
         // Read the ACL back and check it
         newacl = this.esu.getAcl( id );
         l4j.info( "Comparing " + newacl + " with " + acl );
@@ -955,8 +998,8 @@ public abstract class EsuApiTest {
         cleanup.add( id );
 
         // Update part of the content
-        Extent extent = new Extent( 1,1 );
-        this.esu.updateObject( id, null, null, extent, "u".getBytes( "UTF-8" ), null ); 
+        Extent extent = new Extent( 1, 1 );
+        this.esu.updateObject( id, null, null, extent, "u".getBytes( "UTF-8" ), null );
 
         // Read back the content and check it
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
@@ -964,22 +1007,22 @@ public abstract class EsuApiTest {
     }
 
     @Test
-	public void testUpdateObjectContentStream() throws Exception {
+    public void testUpdateObjectContentStream() throws Exception {
         // Create an object
         ObjectId id = this.esu.createObject( null, null, "hello".getBytes( "UTF-8" ), "text/plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
 
         // Update part of the content
-        Extent extent = new Extent( 1,1 );
+        Extent extent = new Extent( 1, 1 );
         InputStream in = new ByteArrayInputStream( "u".getBytes( "UTF-8" ) );
-        this.esu.updateObjectFromStream( id, null, null, extent, in, 1, null ); 
+        this.esu.updateObjectFromStream( id, null, null, extent, in, 1, null );
         in.close();
 
         // Read back the content and check it
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hullo", content );
-	}
+    }
 
     /**
      * Test replacing an object's entire contents
@@ -992,11 +1035,11 @@ public abstract class EsuApiTest {
         cleanup.add( id );
 
         // Update all of the content
-        this.esu.updateObject( id, null, null, null, "bonjour".getBytes( "UTF-8" ), null ); 
+        this.esu.updateObject( id, null, null, null, "bonjour".getBytes( "UTF-8" ), null );
 
         // Read back the content and check it
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
-        Assert.assertEquals( "object content wrong", "bonjour", content  );
+        Assert.assertEquals( "object content wrong", "bonjour", content );
     }
 
     /**
@@ -1010,7 +1053,7 @@ public abstract class EsuApiTest {
         baos.write( "hello".getBytes( "UTF-8" ) );
 
         // Create an object from our file stream
-        ObjectId id = uploadHelper.createObject( 
+        ObjectId id = uploadHelper.createObject(
                 new ByteArrayInputStream( baos.toByteArray() ),
                 null, null, true );
         cleanup.add( id );
@@ -1038,12 +1081,12 @@ public abstract class EsuApiTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         baos.write( "hello".getBytes( "UTF-8" ) );
 
-        uploadHelper.updateObject( id, 
+        uploadHelper.updateObject( id,
                 new ByteArrayInputStream( baos.toByteArray() ), null, null, true );
 
         // Read contents back and check them
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
-        Assert.assertEquals( "object content wrong", "hello", content );            
+        Assert.assertEquals( "object content wrong", "hello", content );
     }
 
     /**
@@ -1063,7 +1106,7 @@ public abstract class EsuApiTest {
 
         // Check the download
         String data = new String( baos.toByteArray(), "UTF-8" );
-        Assert.assertEquals( "object content wrong", "Four score and twenty years ago", data );                                             
+        Assert.assertEquals( "object content wrong", "Four score and twenty years ago", data );
 
         // Download again 1 byte in a request
         downloadHelper = new DownloadHelper( this.esu, new byte[1] );
@@ -1072,9 +1115,9 @@ public abstract class EsuApiTest {
 
         // Check the download
         data = new String( baos.toByteArray(), "UTF-8" );
-        Assert.assertEquals( "object content wrong", "Four score and twenty years ago", data );                                             
+        Assert.assertEquals( "object content wrong", "Four score and twenty years ago", data );
     }
-    
+
 //    @Test
 //    public void testUploadDownload() throws Exception {
 //        // Create a byte array to test
@@ -1106,15 +1149,15 @@ public abstract class EsuApiTest {
 //    }
 
     @Test
-	public void testListDirectory() throws Exception {
-		String dir = rand8char();
-		String file = rand8char();
-		String dir2 = rand8char();
+    public void testListDirectory() throws Exception {
+        String dir = rand8char();
+        String file = rand8char();
+        String dir2 = rand8char();
         ObjectPath dirPath = new ObjectPath( "/" + dir + "/" );
-    	ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
-    	ObjectPath dirPath2 = new ObjectPath( "/" + dir + "/" + dir2 + "/" );
-    	
-    	ObjectId dirId = this.esu.createObjectOnPath( dirPath, null, null, null, null );
+        ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
+        ObjectPath dirPath2 = new ObjectPath( "/" + dir + "/" + dir2 + "/" );
+
+        ObjectId dirId = this.esu.createObjectOnPath( dirPath, null, null, null, null );
         ObjectId id = this.esu.createObjectOnPath( op, null, null, null, null );
         this.esu.createObjectOnPath( dirPath2, null, null, null, null );
         cleanup.add( op );
@@ -1129,24 +1172,24 @@ public abstract class EsuApiTest {
         Assert.assertEquals( "object content wrong", "", content );
         content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong when reading by id", "", content );
-        
+
         // List the parent path
         List<DirectoryEntry> dirList = esu.listDirectory( dirPath, null );
         l4j.debug( "Dir content: " + content );
         Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
         Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );
-	}
-    
+    }
+
     @Test
-	public void testListDirectoryPaged() throws Exception {
-		String dir = rand8char();
-		String file = rand8char();
-		String dir2 = rand8char();
+    public void testListDirectoryPaged() throws Exception {
+        String dir = rand8char();
+        String file = rand8char();
+        String dir2 = rand8char();
         ObjectPath dirPath = new ObjectPath( "/" + dir + "/" );
-    	ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
-    	ObjectPath dirPath2 = new ObjectPath( "/" + dir + "/" + dir2 + "/" );
-    	
-    	ObjectId dirId = this.esu.createObjectOnPath( dirPath, null, null, null, null );
+        ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
+        ObjectPath dirPath2 = new ObjectPath( "/" + dir + "/" + dir2 + "/" );
+
+        ObjectId dirId = this.esu.createObjectOnPath( dirPath, null, null, null, null );
         ObjectId id = this.esu.createObjectOnPath( op, null, null, null, null );
         this.esu.createObjectOnPath( dirPath2, null, null, null, null );
         cleanup.add( op );
@@ -1160,26 +1203,26 @@ public abstract class EsuApiTest {
         ListOptions options = new ListOptions();
         options.setLimit( 1 );
         List<DirectoryEntry> dirList = esu.listDirectory( dirPath, options );
-        
+
         Assert.assertNotNull( "Token should have been returned", options.getToken() );
         l4j.debug( "listDirectoryPaged, token: " + options.getToken() );
-        while( options.getToken() != null ) {
-        	dirList.addAll( esu.listDirectory( dirPath, options ) );
+        while ( options.getToken() != null ) {
+            dirList.addAll( esu.listDirectory( dirPath, options ) );
         }
-        
+
         Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
         Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );
-	}
-    
+    }
+
     @Test
-	public void testListDirectoryWithMetadata() throws Exception {
-		String dir = rand8char();
-		String file = rand8char();
-		String dir2 = rand8char();
+    public void testListDirectoryWithMetadata() throws Exception {
+        String dir = rand8char();
+        String file = rand8char();
+        String dir2 = rand8char();
         ObjectPath dirPath = new ObjectPath( "/" + dir + "/" );
-    	ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
-    	ObjectPath dirPath2 = new ObjectPath( "/" + dir + "/" + dir2 + "/" );
-    	
+        ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
+        ObjectPath dirPath2 = new ObjectPath( "/" + dir + "/" + dir2 + "/" );
+
         MetadataList mlist = new MetadataList();
         Metadata listable = new Metadata( "listable", "foo", true );
         Metadata unlistable = new Metadata( "unlistable", "bar", false );
@@ -1199,36 +1242,36 @@ public abstract class EsuApiTest {
         l4j.debug( "Path: " + op + " ID: " + id );
         Assert.assertNotNull( id );
         Assert.assertNotNull( dirId );
-       
+
         // List the parent path
         ListOptions options = new ListOptions();
         options.setIncludeMetadata( true );
         List<DirectoryEntry> dirList = esu.listDirectory( dirPath, options );
         Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
         Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );
-        
-		for( Iterator<DirectoryEntry> i = dirList.iterator(); i.hasNext(); ) {
-			DirectoryEntry de = i.next();
-			if( de.getPath().equals( op ) ) {
-				// Check the metadata
-                Assert.assertEquals( "Wrong value on metadata", 
+
+        for ( Iterator<DirectoryEntry> i = dirList.iterator(); i.hasNext(); ) {
+            DirectoryEntry de = i.next();
+            if ( de.getPath().equals( op ) ) {
+                // Check the metadata
+                Assert.assertEquals( "Wrong value on metadata",
                         de.getUserMetadata().getMetadata( "listable" ).getValue(), "foo" );
-				
-			}
-		}
+
+            }
+        }
         Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
-        Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );        
-	}
-    
+        Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );
+    }
+
     @Test
-	public void testListDirectoryWithSomeMetadata() throws Exception {
-		String dir = rand8char();
-		String file = rand8char();
-		String dir2 = rand8char();
+    public void testListDirectoryWithSomeMetadata() throws Exception {
+        String dir = rand8char();
+        String file = rand8char();
+        String dir2 = rand8char();
         ObjectPath dirPath = new ObjectPath( "/" + dir + "/" );
-    	ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
-    	ObjectPath dirPath2 = new ObjectPath( "/" + dir + "/" + dir2 + "/" );
-    	
+        ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
+        ObjectPath dirPath2 = new ObjectPath( "/" + dir + "/" + dir2 + "/" );
+
         MetadataList mlist = new MetadataList();
         Metadata listable = new Metadata( "listable", "foo", true );
         Metadata unlistable = new Metadata( "unlistable", "bar", false );
@@ -1248,74 +1291,121 @@ public abstract class EsuApiTest {
         l4j.debug( "Path: " + op + " ID: " + id );
         Assert.assertNotNull( id );
         Assert.assertNotNull( dirId );
-       
+
         // List the parent path
         ListOptions options = new ListOptions();
         options.setIncludeMetadata( true );
-        options.setUserMetadata( Arrays.asList( new String[] { "listable" } ) );
+        options.setUserMetadata( Arrays.asList( new String[]{"listable"} ) );
         List<DirectoryEntry> dirList = esu.listDirectory( dirPath, options );
         Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
         Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );
-        
-		for( Iterator<DirectoryEntry> i = dirList.iterator(); i.hasNext(); ) {
-			DirectoryEntry de = i.next();
-			if( de.getPath().equals( op ) ) {
-				// Check the metadata
-                Assert.assertEquals( "Wrong value on metadata", 
+
+        for ( Iterator<DirectoryEntry> i = dirList.iterator(); i.hasNext(); ) {
+            DirectoryEntry de = i.next();
+            if ( de.getPath().equals( op ) ) {
+                // Check the metadata
+                Assert.assertEquals( "Wrong value on metadata",
                         de.getUserMetadata().getMetadata( "listable" ).getValue(), "foo" );
                 // Other metadata should not be present
-                Assert.assertNull( "unlistable should be missing",  
-                		de.getUserMetadata().getMetadata( "unlistable" ) );
-			}
-		}
+                Assert.assertNull( "unlistable should be missing",
+                        de.getUserMetadata().getMetadata( "unlistable" ) );
+            }
+        }
         Assert.assertTrue( "File not found in directory", directoryContains( dirList, op ) );
-        Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );        
-	}
+        Assert.assertTrue( "subdirectory not found in directory", directoryContains( dirList, dirPath2 ) );
+    }
 
-	
-	private boolean directoryContains( List<DirectoryEntry> dir, ObjectPath path ) {
-		for( Iterator<DirectoryEntry> i = dir.iterator(); i.hasNext(); ) {
-			DirectoryEntry de = i.next();
-			if( de.getPath().equals( path ) ) {
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * This method tests various legal and illegal pathnames
-	 * @throws Exception
-	 */
+
+    private boolean directoryContains( List<DirectoryEntry> dir, ObjectPath path ) {
+        for ( Iterator<DirectoryEntry> i = dir.iterator(); i.hasNext(); ) {
+            DirectoryEntry de = i.next();
+            if ( de.getPath().equals( path ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * This method tests various legal and illegal pathnames
+     *
+     * @throws Exception
+     */
     @Test
-	public void testPathNaming() throws Exception {
-		ObjectPath path = new ObjectPath( "/some/file" );
-		Assert.assertFalse( "File should not be directory", path.isDirectory() );
-		path = new ObjectPath( "/some/file.txt" );
-		Assert.assertFalse( "File should not be directory", path.isDirectory() );
-		ObjectPath path2 = new ObjectPath( "/some/file.txt" );
-		Assert.assertEquals( "Equal paths should be equal", path, path2 );
-		
-		path = new ObjectPath( "/some/file/with/long.path/extra.stuff.here.zip" );
-		Assert.assertFalse( "File should not be directory", path.isDirectory() );
-		
-		path = new ObjectPath( "/" );
-		Assert.assertTrue( "Directory should be directory", path.isDirectory() );
-		
-		path = new ObjectPath( "/long/path/with/lots/of/elements/" );
-		Assert.assertTrue( "Directory should be directory", path.isDirectory() );
-		
-	}
-	
-	/**
-	 * Tests the 'get all metadata' call using a path
-	 * @param uid
-	 * @throws Exception
-	 */
+    public void testPathNaming() throws Exception {
+        ObjectPath path = new ObjectPath( "/some/file" );
+        Assert.assertFalse( "File should not be directory", path.isDirectory() );
+        path = new ObjectPath( "/some/file.txt" );
+        Assert.assertFalse( "File should not be directory", path.isDirectory() );
+        ObjectPath path2 = new ObjectPath( "/some/file.txt" );
+        Assert.assertEquals( "Equal paths should be equal", path, path2 );
+
+        path = new ObjectPath( "/some/file/with/long.path/extra.stuff.here.zip" );
+        Assert.assertFalse( "File should not be directory", path.isDirectory() );
+
+        path = new ObjectPath( "/" );
+        Assert.assertTrue( "Directory should be directory", path.isDirectory() );
+
+        path = new ObjectPath( "/long/path/with/lots/of/elements/" );
+        Assert.assertTrue( "Directory should be directory", path.isDirectory() );
+
+    }
+
+    /**
+     * Tests dot directories (you should be able to create them even though they break the URL specification.)
+     *
+     * @throws Exception
+     */
     @Test
-	public void testGetAllMetadataByPath() throws Exception {
-    	ObjectPath op = new ObjectPath( "/" + rand8char() + ".tmp" );
+    public void testDotDirectories() throws Exception {
+        String parentPath = "/dottest/";
+        String dotPath = parentPath + "./";
+        String dotdotPath = parentPath + "../";
+        String filename = "test.txt";
+        byte[] content = "Hello World!".getBytes( "UTF-8" );
+
+        // isolate this test in the namespace
+        ObjectId parentId = this.esu.createObjectOnPath( new ObjectPath( parentPath ), null, null, null, null );
+
+        // test single dot path (./)
+        ObjectId fileId = this.esu.createObjectOnPath( new ObjectPath( parentPath + "hidden.txt" ), null, null, content, "text/plain" );
+        cleanup.add( fileId );
+        ObjectId dirId = this.esu.createObjectOnPath( new ObjectPath( dotPath ), null, null, null, null );
+        Assert.assertNotNull( "null ID returned on dot path creation", dirId );
+        fileId = this.esu.createObjectOnPath( new ObjectPath( dotPath + filename ), null, null, content, "text/plain" );
+
+        // make sure we only see one file (the "." path is its own directory and not a synonym for the current directory)
+        List<DirectoryEntry> entries = this.esu.listDirectory( new ObjectPath( dotPath ), null );
+        Assert.assertEquals( "dot path listing was not 1", entries.size(), 1 );
+        Assert.assertTrue( "dot path listing did not contain a dot in the path", entries.get( 0 ).getPath().toString().contains( dotPath ) );
+        Assert.assertEquals( "dot path listing did not contain test file", entries.get( 0 ).getPath().getName(), filename );
+        cleanup.add( fileId );
+        cleanup.add( dirId );
+
+        // test double dot path (../)
+        dirId = this.esu.createObjectOnPath( new ObjectPath( dotdotPath ), null, null, null, null );
+        Assert.assertNotNull( "null ID returned on dotdot path creation", dirId );
+        fileId = this.esu.createObjectOnPath( new ObjectPath( dotdotPath + filename ), null, null, content, "text/plain" );
+
+        // make sure we only see one file (the ".." path is its own directory and not a synonym for the parent directory)
+        entries = this.esu.listDirectory( new ObjectPath( dotdotPath ), null );
+        Assert.assertEquals( "dotdot path listing was not 1", entries.size(), 1 );
+        Assert.assertTrue( "dotdot path listing did not contain a dotdot in the path", entries.get( 0 ).getPath().toString().contains( dotdotPath ) );
+        Assert.assertEquals( "dotdot path listing did not contain test file", entries.get( 0 ).getPath().getName(), filename );
+        cleanup.add( fileId );
+        cleanup.add( dirId );
+        cleanup.add( parentId );
+    }
+
+    /**
+     * Tests the 'get all metadata' call using a path
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testGetAllMetadataByPath() throws Exception {
+        ObjectPath op = new ObjectPath( "/" + rand8char() + ".tmp" );
         // Create an object with an ACL
         Acl acl = new Acl();
         acl.addGrant( new Grant( new Grantee( uid, Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
@@ -1333,11 +1423,11 @@ public abstract class EsuApiTest {
         String mimeType = "test/mimetype";
         String content = "test";
 
-        ObjectId id = this.esu.createObjectOnPath( op, acl, null, content.getBytes("UTF-8"), mimeType );
+        ObjectId id = this.esu.createObjectOnPath( op, acl, null, content.getBytes( "UTF-8" ), mimeType );
         this.esu.updateObject( op, null, mlist, null, null, mimeType );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( op );
-        
+
         // Read it back with HEAD call
         ObjectMetadata om = this.esu.getAllMetadata( op );
         Assert.assertNotNull( "value of 'listable' missing", om.getMetadata().getMetadata( "listable" ) );
@@ -1353,10 +1443,10 @@ public abstract class EsuApiTest {
         // during the create calls by path.
         //Assert.assertEquals( "ACLs don't match", acl, om.getAcl() );
 
-	}
-	
+    }
+
     @Test
-	public void testGetAllMetadataById() throws Exception {
+    public void testGetAllMetadataById() throws Exception {
         // Create an object with an ACL
         Acl acl = new Acl();
         acl.addGrant( new Grant( new Grantee( uid, Grantee.GRANT_TYPE.USER ), Permission.FULL_CONTROL ) );
@@ -1370,15 +1460,15 @@ public abstract class EsuApiTest {
         mlist.addMetadata( unlistable );
         mlist.addMetadata( listable2 );
         mlist.addMetadata( unlistable2 );
-        
+
         String mimeType = "test/mimetype";
         String content = "test";
 
         ObjectId id = this.esu.createObject( acl, mlist, content.getBytes( "UTF-8" ), mimeType );
-        
+
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
-        
+
         // Read it back with HEAD call
         ObjectMetadata om = this.esu.getAllMetadata( id );
         Assert.assertNotNull( "value of 'listable' missing", om.getMetadata().getMetadata( "listable" ) );
@@ -1391,33 +1481,33 @@ public abstract class EsuApiTest {
 
         // Check the ACL
         //Assert.assertEquals( "ACLs don't match", acl, om.getAcl() );
-		
-	}
 
-	/**
-	 * Tests getting object replica information.
-	 */
+    }
+
+    /**
+     * Tests getting object replica information.
+     */
     @Test
-	public void testGetObjectReplicaInfo() throws Exception {
+    public void testGetObjectReplicaInfo() throws Exception {
         ObjectId id = this.esu.createObject( null, null, "hello".getBytes( "UTF-8" ), "text/plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
-        
+
         MetadataTags mt = new MetadataTags();
         mt.addTag( new MetadataTag( "user.maui.lso", false ) );
         MetadataList meta = this.esu.getUserMetadata( id, mt );
         Assert.assertNotNull( meta.getMetadata( "user.maui.lso" ) );
         l4j.debug( "Replica info: " + meta.getMetadata( "user.maui.lso" ) );
-	}
+    }
 
     @Test
-	public void testCreateHelperWithPath() throws Exception {
-		String dir = rand8char();
-		String file = rand8char();
+    public void testCreateHelperWithPath() throws Exception {
+        String dir = rand8char();
+        String file = rand8char();
 
-    	ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
+        ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
 
-    	// use a blocksize of 1 to test multiple transfers.
+        // use a blocksize of 1 to test multiple transfers.
         UploadHelper uploadHelper = new UploadHelper( this.esu, new byte[1] );
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         baos.write( "hello".getBytes( "UTF-8" ) );
@@ -1431,17 +1521,17 @@ public abstract class EsuApiTest {
         // Read contents back and check them
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
-		
-	}
+
+    }
 
     @Test
-	public void testUpdateHelperWithPath() throws Exception {
-		String dir = rand8char();
-		String file = rand8char();
+    public void testUpdateHelperWithPath() throws Exception {
+        String dir = rand8char();
+        String file = rand8char();
 
-    	ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
+        ObjectPath op = new ObjectPath( "/" + dir + "/" + file );
 
-    	// use a blocksize of 1 to test multiple transfers.
+        // use a blocksize of 1 to test multiple transfers.
         UploadHelper uploadHelper = new UploadHelper( this.esu, new byte[1] );
         uploadHelper.setMimeType( "text/plain" );
 
@@ -1454,13 +1544,13 @@ public abstract class EsuApiTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         baos.write( "hello".getBytes( "UTF-8" ) );
 
-        uploadHelper.updateObject( op, 
+        uploadHelper.updateObject( op,
                 new ByteArrayInputStream( baos.toByteArray() ), null, null, true );
 
         // Read contents back and check them
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
-        Assert.assertEquals( "object content wrong", "hello", content );            
-	}
+        Assert.assertEquals( "object content wrong", "hello", content );
+    }
 
     @Test
     public void testGetShareableUrl() throws Exception {
@@ -1474,17 +1564,17 @@ public abstract class EsuApiTest {
         c.add( Calendar.HOUR, 4 );
         Date expiration = c.getTime();
         URL u = esu.getShareableUrl( id, expiration );
-        
+
         l4j.debug( "Sharable URL: " + u );
-        
-        InputStream stream = (InputStream)u.getContent();
+
+        InputStream stream = (InputStream) u.getContent();
         BufferedReader br = new BufferedReader( new InputStreamReader( stream ) );
         String content = br.readLine();
         l4j.debug( "Content: " + content );
-        Assert.assertEquals( "URL does not contain proper content", 
+        Assert.assertEquals( "URL does not contain proper content",
                 str, content.toString() );
     }
-    
+
     @Test
     public void testGetShareableUrlWithPath() throws Exception {
         // Create an object with content.
@@ -1498,22 +1588,22 @@ public abstract class EsuApiTest {
         c.add( Calendar.HOUR, 4 );
         Date expiration = c.getTime();
         URL u = esu.getShareableUrl( op, expiration );
-        
+
         l4j.debug( "Sharable URL: " + u );
-        
-        InputStream stream = (InputStream)u.getContent();
+
+        InputStream stream = (InputStream) u.getContent();
         BufferedReader br = new BufferedReader( new InputStreamReader( stream ) );
         String content = br.readLine();
         l4j.debug( "Content: " + content );
-        Assert.assertEquals( "URL does not contain proper content", 
+        Assert.assertEquals( "URL does not contain proper content",
                 str, content.toString() );
     }
-    
+
     @Test
     public void testExpiredSharableUrl() throws Exception {
         // Create an object with content.
         String str = "Four score and twenty years ago";
-        ObjectId id = this.esu.createObject( null, null, 
+        ObjectId id = this.esu.createObject( null, null,
                 str.getBytes( "UTF-8" ), "text/plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -1522,22 +1612,22 @@ public abstract class EsuApiTest {
         c.add( Calendar.HOUR, -4 );
         Date expiration = c.getTime();
         URL u = esu.getShareableUrl( id, expiration );
-        
+
         l4j.debug( "Sharable URL: " + u );
-        
+
         try {
-            InputStream stream = (InputStream)u.getContent();
+            InputStream stream = (InputStream) u.getContent();
             BufferedReader br = new BufferedReader( new InputStreamReader( stream ) );
             String content = br.readLine();
             l4j.debug( "Content: " + content );
             Assert.fail( "Request should have failed" );
-        } catch( Exception e ) {
+        } catch ( Exception e ) {
             l4j.debug( "Error (expected): " + e );
         }
     }
 
     @Test
-	public void testReadObjectStream() throws Exception {
+    public void testReadObjectStream() throws Exception {
         ObjectId id = this.esu.createObject( null, null, "hello".getBytes( "UTF-8" ), "text/plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -1555,138 +1645,251 @@ public abstract class EsuApiTest {
         br = new BufferedReader( new InputStreamReader( in, "UTF-8" ) );
         content = br.readLine();
         br.close();
-        Assert.assertEquals( "partial object content wrong", "el", content );               
-	}
+        Assert.assertEquals( "partial object content wrong", "el", content );
+    }
 
     @Test
-	public void testCreateChecksum() throws Exception {
-		Checksum ck = new Checksum( Algorithm.SHA0 );
+    public void testCreateChecksum() throws Exception {
+        Checksum ck = new Checksum( Algorithm.SHA0 );
         ObjectId id = this.esu.createObject( null, null, "hello".getBytes( "UTF-8" ), "text/plain", ck );
-		l4j.debug( "Checksum: " + ck );
-		cleanup.add( id );
-	}
-    
+        l4j.debug( "Checksum: " + ck );
+        cleanup.add( id );
+    }
+
     /**
      * Note, to test read checksums, see comment in testReadChecksum
+     *
      * @throws Exception
      */
     @Test
     public void testUploadDownloadChecksum() throws Exception {
         // Create a byte array to test
-        int size=10*1024*1024;
+        int size = 10 * 1024 * 1024;
         byte[] testData = new byte[size];
-        for( int i=0; i<size; i++ ) {
-            testData[i] = (byte)(i%0x93);
+        for ( int i = 0; i < size; i++ ) {
+            testData[i] = (byte) (i % 0x93);
         }
-    	MetadataList mlist = new MetadataList();
-    	Metadata policy = new Metadata( "policy", "erasure", false );
-    	mlist.addMetadata( policy );
+        MetadataList mlist = new MetadataList();
+        Metadata policy = new Metadata( "policy", "erasure", false );
+        mlist.addMetadata( policy );
         UploadHelper uh = new UploadHelper( this.esu, null );
         uh.setChecksumming( true );
-        
+
         ObjectId id = uh.createObject( new ByteArrayInputStream( testData ), null, mlist, true );
         cleanup.add( id );
-        
+
         ByteArrayOutputStream baos = new ByteArrayOutputStream( size );
-        
-        DownloadHelper dl = new DownloadHelper( this.esu, new byte[4*1024*1024] );
+
+        DownloadHelper dl = new DownloadHelper( this.esu, new byte[4 * 1024 * 1024] );
         dl.setChecksumming( true );
         dl.readObject( id, baos, true );
-        
+
         Assert.assertFalse( "Download should have been OK", dl.isFailed() );
         Assert.assertNull( "Error should have been null", dl.getError() );
-        
+
         byte[] outData = baos.toByteArray();
-        
+
         // Check the files
         Assert.assertEquals( "File lengths differ", testData.length, outData.length );
 
         Assert.assertArrayEquals( "Data contents differ", testData, outData );
-        
+
     }
-    
+
     @Test
     public void testUnicodeMetadata() throws Exception {
         MetadataList mlist = new MetadataList();
-        Metadata nbspValue = new Metadata("nbspvalue", "Nobreak\u00A0Value", false);
-        Metadata nbspName = new Metadata("Nobreak\u00A0Name", "regular text here", false);
-        Metadata cryllic = new Metadata("cryllic", "спасибо", false);
-        l4j.debug("NBSP Value: " + nbspValue);
-        l4j.debug("NBSP Name: " + nbspName);
+        Metadata nbspValue = new Metadata( "nbspvalue", "Nobreak\u00A0Value", false );
+        Metadata nbspName = new Metadata( "Nobreak\u00A0Name", "regular text here", false );
+        Metadata cryllic = new Metadata( "cryllic", "спасибо", false );
+        l4j.debug( "NBSP Value: " + nbspValue );
+        l4j.debug( "NBSP Name: " + nbspName );
 
-        mlist.addMetadata(nbspValue);
-        mlist.addMetadata(nbspName);
-        mlist.addMetadata(cryllic);
- 
-        ObjectId id = this.esu.createObject(null, mlist, null, null);
+        mlist.addMetadata( nbspValue );
+        mlist.addMetadata( nbspName );
+        mlist.addMetadata( cryllic );
+
+        ObjectId id = this.esu.createObject( null, mlist, null, null );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
 
         // Read and validate the metadata
-        MetadataList meta = this.esu.getUserMetadata(id, null);
-        l4j.debug("Read Back:");
-        l4j.debug("NBSP Value: " + meta.getMetadata("nbspvalue"));
-        l4j.debug("NBSP Name: " + meta.getMetadata("Nobreak\u00A0Name"));
+        MetadataList meta = this.esu.getUserMetadata( id, null );
+        l4j.debug( "Read Back:" );
+        l4j.debug( "NBSP Value: " + meta.getMetadata( "nbspvalue" ) );
+        l4j.debug( "NBSP Name: " + meta.getMetadata( "Nobreak\u00A0Name" ) );
         Assert.assertEquals( "value of 'nobreakvalue' wrong", "Nobreak\u00A0Value", meta.getMetadata( "nbspvalue" ).getValue() );
-        Assert.assertEquals("Value of cryllic wrong", "спасибо", meta.getMetadata("cryllic").getValue() );
-        
+        Assert.assertEquals( "Value of cryllic wrong", "спасибо", meta.getMetadata( "cryllic" ).getValue() );
     }
-    
+
+    @Test
+    public void testUtf8Metadata() throws Exception {
+        String oneByteCharacters = "Hello! ,";
+        String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
+        String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
+        String utf8String = oneByteCharacters + twoByteCharacters + fourByteCharacters;
+
+        MetadataList metaList = new MetadataList();
+        metaList.addMetadata( new Metadata( "utf8Key", utf8String, false ) );
+        metaList.addMetadata( new Metadata( utf8String, "utf8Value", false ) );
+
+        ObjectId id = this.esu.createObject( null, metaList, null, null );
+        cleanup.add( id );
+
+        metaList = this.esu.getUserMetadata( id, null );
+        Metadata meta = metaList.getMetadata( utf8String );
+        Assert.assertEquals( "UTF8 key does not match", meta.getName(), utf8String );
+        Assert.assertEquals( "UTF8 key value does not match", meta.getValue(), "utf8Value" );
+        Assert.assertEquals( "UTF8 value does not match", metaList.getMetadata( "utf8Key" ).getValue(), utf8String );
+    }
+
+    @Test
+    public void testUtf8ListableMetadata() throws Exception {
+        String oneByteCharacters = "Hello! ";
+        String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
+        String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
+        String utf8String = oneByteCharacters + twoByteCharacters + fourByteCharacters;
+
+        MetadataList metaList = new MetadataList();
+        metaList.addMetadata( new Metadata( utf8String, "utf8Value", true ) );
+
+        ObjectId id = this.esu.createObject( null, metaList, null, null );
+        cleanup.add( id );
+
+        metaList = this.esu.getUserMetadata( id, null );
+        Metadata meta = metaList.getMetadata( utf8String );
+        Assert.assertEquals( "UTF8 key does not match", meta.getName(), utf8String );
+        Assert.assertEquals( "UTF8 key value does not match", meta.getValue(), "utf8Value" );
+        Assert.assertTrue( "UTF8 metadata is not listable", meta.isListable() );
+
+        boolean found = false;
+        for ( ObjectResult result : this.esu.listObjects( utf8String, null ) ) {
+            if ( result.getId().equals( id ) ) {
+                found = true;
+                break;
+            }
+        }
+        Assert.assertTrue( "UTF8 key listing did not contain the correct object ID", found );
+    }
+
+    @Test
+    public void testUtf8ListableTagWithComma() {
+        String stringWithComma = "Hello, you!";
+
+        MetadataList metaList = new MetadataList();
+        metaList.addMetadata( new Metadata( stringWithComma, "value", true ) );
+
+        ObjectId id = this.esu.createObject( null, metaList, null, null );
+        cleanup.add( id );
+
+        metaList = this.esu.getUserMetadata( id, null );
+        Metadata meta = metaList.getMetadata( stringWithComma );
+        Assert.assertEquals( "key does not match", meta.getName(), stringWithComma );
+        Assert.assertTrue( "metadata is not listable", meta.isListable() );
+
+        boolean found = false;
+        for ( ObjectResult result : this.esu.listObjects( stringWithComma, null ) ) {
+            if ( result.getId().equals( id ) ) {
+                found = true;
+                break;
+            }
+        }
+        Assert.assertTrue( "listing did not contain the correct object ID", found );
+    }
+
     @Test
     public void testRename() throws Exception {
-        ObjectPath op1 = new ObjectPath("/" + rand8char() + ".tmp");
-        ObjectPath op2 = new ObjectPath("/" + rand8char() + ".tmp");
+        ObjectPath op1 = new ObjectPath( "/" + rand8char() + ".tmp" );
+        ObjectPath op2 = new ObjectPath( "/" + rand8char() + ".tmp" );
 
         ObjectId id = this.esu.createObjectOnPath( op1, null, null, "Four score and seven years ago".getBytes( "UTF-8" ), "text/plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
-        
+
         // Rename
         this.esu.rename( op1, op2, false );
 
         // Read back the content
         String content = new String( this.esu.readObject( op2, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "Four score and seven years ago", content );
-   	
+
     }
-    
+
     @Test
     public void testRenameOverwrite() throws Exception {
-        ObjectPath op1 = new ObjectPath("/" + rand8char() + ".tmp");
-        ObjectPath op2 = new ObjectPath("/" + rand8char() + ".tmp");
+        ObjectPath op1 = new ObjectPath( "/" + rand8char() + ".tmp" );
+        ObjectPath op2 = new ObjectPath( "/" + rand8char() + ".tmp" );
 
         ObjectId id = this.esu.createObjectOnPath( op1, null, null, "Four score and seven years ago".getBytes( "UTF-8" ), "text/plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
-        
+
         ObjectId id2 = this.esu.createObjectOnPath( op2, null, null, "You should not see this".getBytes( "UTF-8" ), "text/plain" );
         cleanup.add( id2 );
-        
+
         // Rename
         this.esu.rename( op1, op2, true );
 
         // Wait for overwrite to complete
         Thread.sleep( 5000 );
-        
+
         // Read back the content
         String content = new String( this.esu.readObject( op2, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "Four score and seven years ago", content );
-   	
+
     }
-    
-    
+
+    /**
+     * Tests renaming a path to UTF-8 multi-byte characters.  This is a separate test from create as the characters are
+     * passed in the headers instead of the URL itself.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testUtf8Rename() throws Exception {
+        String oneByteCharacters = "Hello! ,";
+        String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
+        String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
+        String normalName = TESTDIR + rand8char() + ".tmp";
+        String crazyName = TESTDIR + oneByteCharacters + twoByteCharacters + fourByteCharacters;
+        byte[] content = "This is a really crazy name.".getBytes( "UTF-8" );
+
+        // normal name
+        this.esu.createObjectOnPath( new ObjectPath( normalName ), null, null, content, "text/plain" );
+
+        // crazy multi-byte character name
+        this.esu.rename( new ObjectPath( normalName ), new ObjectPath( crazyName ), true );
+
+        // Wait for overwrite to complete
+        Thread.sleep( 5000 );
+
+        // verify name in directory list
+        boolean found = false;
+        for ( DirectoryEntry entry : this.esu.listDirectory( new ObjectPath( TESTDIR ), null ) ) {
+            if ( entry.getPath().toString().equals( crazyName ) ) {
+                found = true;
+                break;
+            }
+        }
+        Assert.assertTrue( "crazyName not found in directory listing", found );
+
+        // Read back the content
+        Assert.assertTrue( "object content wrong", Arrays.equals( content, this.esu.readObject( new ObjectPath( crazyName ), null, null ) ) );
+    }
+
     /**
      * Tests readback with checksum verification.  In order to test this, create a policy
      * with erasure coding and then set a policy selector with "policy=erasure" to invoke
      * the erasure coding policy.
+     *
      * @throws Exception
      */
     @Test
     public void testReadChecksum() throws Exception {
-    	MetadataList mlist = new MetadataList();
-    	Metadata policy = new Metadata( "policy", "erasure", false );
-    	mlist.addMetadata( policy );
-    	Checksum createChecksum = new Checksum( Algorithm.SHA0 );
+        MetadataList mlist = new MetadataList();
+        Metadata policy = new Metadata( "policy", "erasure", false );
+        mlist.addMetadata( policy );
+        Checksum createChecksum = new Checksum( Algorithm.SHA0 );
         ObjectId id = this.esu.createObject( null, mlist, "hello".getBytes( "UTF-8" ), "text/plain", createChecksum );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -1696,27 +1899,27 @@ public abstract class EsuApiTest {
         String content = new String( this.esu.readObject( id, null, null, readChecksum ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
     }
-    
+
     /**
      * Tests getting the service information
      */
     @Test
     public void testGetServiceInformation() throws Exception {
-    	ServiceInformation si = this.esu.getServiceInformation();
-    	
-    	Assert.assertNotNull( "Atmos version is null", si.getAtmosVersion() );
+        ServiceInformation si = this.esu.getServiceInformation();
+
+        Assert.assertNotNull( "Atmos version is null", si.getAtmosVersion() );
     }
 
-	/**
+    /**
      * Test getting object info.  Note to fully run this testcase, you should
      * create a policy named 'retaindelete' that keys off of the metadata
      * policy=retaindelete that includes a retention and deletion criteria.
      */
     @Test
     public void testGetObjectInfo() throws Exception {
-    	MetadataList mlist = new MetadataList();
-    	Metadata policy = new Metadata( "policy", "retaindelete", false );
-    	mlist.addMetadata( policy );
+        MetadataList mlist = new MetadataList();
+        Metadata policy = new Metadata( "policy", "retaindelete", false );
+        mlist.addMetadata( policy );
         ObjectId id = this.esu.createObject( null, mlist, "hello".getBytes( "UTF-8" ), "text/plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -1724,26 +1927,26 @@ public abstract class EsuApiTest {
         // Read back the content
         String content = new String( this.esu.readObject( id, null, null ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
-        
+
         // Get the object info
         ObjectInfo oi = this.esu.getObjectInfo( id );
         Assert.assertNotNull( "ObjectInfo null", oi );
-        Assert.assertNotNull("ObjectInfo expiration null", oi.getExpiration() );
-        Assert.assertNotNull("ObjectInfo objectid null", oi.getObjectId() );
-        Assert.assertNotNull("ObjectInfo raw xml null", oi.getRawXml() );
-        Assert.assertNotNull("ObjectInfo replicas null", oi.getReplicas() );
-        Assert.assertNotNull("ObjectInfo retention null", oi.getRetention() );
-        Assert.assertNotNull("ObjectInfo selection null", oi.getSelection() );
-        Assert.assertTrue("ObjectInfo should have at least one replica", oi.getReplicas().size()>0 );
+        Assert.assertNotNull( "ObjectInfo expiration null", oi.getExpiration() );
+        Assert.assertNotNull( "ObjectInfo objectid null", oi.getObjectId() );
+        Assert.assertNotNull( "ObjectInfo raw xml null", oi.getRawXml() );
+        Assert.assertNotNull( "ObjectInfo replicas null", oi.getReplicas() );
+        Assert.assertNotNull( "ObjectInfo retention null", oi.getRetention() );
+        Assert.assertNotNull( "ObjectInfo selection null", oi.getSelection() );
+        Assert.assertTrue( "ObjectInfo should have at least one replica", oi.getReplicas().size() > 0 );
 
     }
-    
+
     @Test
     public void testHmac() throws Exception {
         // Compute the signature hash
-    	String input = "Hello World";
-    	byte[] secret = Base64.decodeBase64( "D7qsp4j16PBHWSiUbc/bt3lbPBY=".getBytes( "UTF-8" ) );
-    	Mac mac = Mac.getInstance( "HmacSHA1" );
+        String input = "Hello World";
+        byte[] secret = Base64.decodeBase64( "D7qsp4j16PBHWSiUbc/bt3lbPBY=".getBytes( "UTF-8" ) );
+        Mac mac = Mac.getInstance( "HmacSHA1" );
         SecretKeySpec key = new SecretKeySpec( secret, "HmacSHA1" );
         mac.init( key );
         l4j.debug( "Hashing: \n" + input.toString() );
@@ -1752,7 +1955,7 @@ public abstract class EsuApiTest {
 
         // Encode the hash in Base64.
         String hashOut = new String( Base64.encodeBase64( hashData ), "UTF-8" );
-        
+
         l4j.debug( "Hash: " + hashOut );
     }
 

@@ -32,7 +32,7 @@ public class EsuRestApiTest20 extends EsuApiTest20 {
     public EsuRestApiTest20() {
     	super();
     	
-    	InputStream in = ClassLoader.getSystemResourceAsStream("atmos.properties");
+    	InputStream in = ClassLoader.getSystemResourceAsStream( "atmos.properties" );
     	if( in != null ) {
     		try {
 				System.getProperties().load(in);

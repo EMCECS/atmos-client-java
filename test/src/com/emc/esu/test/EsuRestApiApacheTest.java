@@ -40,7 +40,7 @@ public class EsuRestApiApacheTest extends EsuApiTest {
     private int port = 80;
     
     public EsuRestApiApacheTest() {
-    	InputStream in = ClassLoader.getSystemResourceAsStream("atmos.properties");
+    	InputStream in = ClassLoader.getSystemResourceAsStream( "atmos.properties" );
     	if( in != null ) {
     		try {
 				System.getProperties().load(in);
