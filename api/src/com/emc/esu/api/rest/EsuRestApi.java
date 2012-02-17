@@ -34,7 +34,12 @@ import java.io.UnsupportedEncodingException;
 import java.net.*;
 import java.security.GeneralSecurityException;
 import java.sql.Date;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.jdom.Document;
@@ -920,9 +925,13 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             headers.put("x-emc-uid", uid);
 
+            if(unicodeEnabled) {
+                headers.put("x-emc-utf8", "true");
+            }
+
             // Add tag
             if (tag != null) {
-                headers.put("x-emc-tags", tag);
+                headers.put("x-emc-tags", unicodeEnabled ? encodeUtf8(tag) : tag);
             } else {
                 throw new EsuException("Tag cannot be null");
             }
