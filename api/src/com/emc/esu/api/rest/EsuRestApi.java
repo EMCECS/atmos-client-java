@@ -31,19 +31,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.net.*;
 import java.security.GeneralSecurityException;
 import java.sql.Date;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.log4j.Logger;
 import org.jdom.Document;
@@ -867,7 +858,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             Map<String, String> headers = new HashMap<String, String>();
 
             headers.put("x-emc-uid", uid);
-            
+
             if(unicodeEnabled) {
             	headers.put("x-emc-utf8", "true");
             }
@@ -1245,6 +1236,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
             	if( con.getContentLength() != -1 ) {
             		checksum.update( data, 0, con.getContentLength() );
             	} else {
+                    // readResponse should return a new content-sized buffer in this case
             		checksum.update( data, 0, data.length );
             	}
             }
@@ -2256,9 +2248,12 @@ public class EsuRestApi extends AbstractEsuRestApi {
      *            must be large enough to read the entire response or an error
      *            will be thrown.
      * @return the byte array containing the response body. Note that if you
-     *         pass in a buffer, this will the same buffer object. Be sure to
-     *         check the content length to know what data in the buffer is valid
-     *         (from zero to contentLength).
+     *         pass in a buffer, this will return the same buffer object unless
+     *         the content length is indeterminate. Be sure to check the content
+     *         length to know what data in the buffer is valid
+     *         (from zero to contentLength). If the content length is
+     *         indeterminate a new buffer will be returned that is the exact size
+     *         of the response data.
      * @throws IOException if reading the response stream fails.
      */
     private byte[] readResponse(HttpURLConnection con, byte[] buffer)
@@ -2306,22 +2301,10 @@ public class EsuRestApi extends AbstractEsuRestApi {
                 }
 
                 return output;
-            } else if(buffer != null) {
-            	// Content length is indeterminate.  For the sake of
-            	// performance, assume that the buffer is big enough since
-            	// the only place that currently passes a buffer in here is
-            	// the readObject method.
-            	int c = 0;
-            	int pos = 0;
-            	while(c != -1) {
-            		c = in.read(buffer, pos, buffer.length-pos);
-            		pos += c;
-            	}
-            	
-            	return buffer;
             } else {
+                // Content length is indeterminate.
                 l4j.debug("Content length is unknown.  Buffering output.");
-                // Else, use a ByteArrayOutputStream to collect the response.
+                // use a ByteArrayOutputStream to collect the response.
                 if (buffer == null) {
                     buffer = new byte[4096];
                 }
@@ -2342,7 +2325,4 @@ public class EsuRestApi extends AbstractEsuRestApi {
             }
         }
     }
-
-
-
 }

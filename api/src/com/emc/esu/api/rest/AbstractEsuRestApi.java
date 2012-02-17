@@ -531,13 +531,10 @@ public abstract class AbstractEsuRestApi implements EsuApi {
             }
             
             String signature = sign( sb.toString() );
-            String query = "uid=" + URLEncoder.encode( uid, "UTF8" ) + "&expires=" + (expiration.getTime()/1000) +
-                "&signature=" + URLEncoder.encode( signature, "UTF8" );
+            String query = "uid=" + encodeUtf8(uid) + "&expires=" + (expiration.getTime()/1000) +
+                "&signature=" + encodeUtf8(signature);
             if(disposition != null) {
-            	disposition = URLEncoder.encode(disposition, "UTF-8");
-            	// For some reason, Java uses the old-style + encoding for
-            	// spaces, but Apache expects the newer %20.
-            	disposition = disposition.replace("+", "%20");
+            	disposition = encodeUtf8(disposition);
 
             	query += "&disposition=" + disposition;
             }
@@ -654,7 +651,8 @@ public abstract class AbstractEsuRestApi implements EsuApi {
             name = name.trim();
             
             if(unicodeEnabled) {
-            	value = URLDecoder.decode(value, "UTF-8");
+                name = decodeUtf8(name);
+            	value = decodeUtf8(value);
             }
 
             Metadata m = new Metadata(name, value, listable);
@@ -1024,16 +1022,12 @@ public abstract class AbstractEsuRestApi implements EsuApi {
     protected String formatTag(Metadata meta) throws UnsupportedEncodingException {
         // strip commas and newlines for now.
     	if(unicodeEnabled) {
-    		String name = URLEncoder.encode(meta.getName(), "UTF-8");
-    		// Use %20, not +
-    		name = name.replace("+", "%20");
+    		String name = encodeUtf8(meta.getName());
     		
         	if( meta.getValue() == null ) {
         		return name + "=";
         	}
-    		String value = URLEncoder.encode(meta.getValue(), "UTF-8");
-    		// Use %20, not +
-    		value = value.replace("+", "%20");
+    		String value = encodeUtf8(meta.getValue());
     		return name + "=" + value;
     	} else {
         	if( meta.getValue() == null ) {
@@ -1043,6 +1037,15 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 	        fixed = fixed.replace( ",", "" );
 	        return meta.getName() + "=" + fixed;
     	}
+    }
+
+    protected String encodeUtf8(String value) throws UnsupportedEncodingException {
+        // Use %20, not +
+        return URLEncoder.encode(value, "UTF-8").replace("+", "%20");
+    }
+    
+    protected String decodeUtf8(String value) throws UnsupportedEncodingException {
+        return URLDecoder.decode(value, "UTF-8");
     }
 
     /**
@@ -1078,7 +1081,7 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 
     /**
      * Condenses consecutive spaces into one.
-     * @param string
+     * @param str
      * @return
      */
     protected String normalizeSpace(String str) {
@@ -1216,7 +1219,7 @@ public abstract class AbstractEsuRestApi implements EsuApi {
     
     /**
      * Converts an ObjectResult list to an Identifier list.
-     * @param listObjects
+     * @param list
      * @return
      */
     private List<Identifier> filterIdList(List<ObjectResult> list) {
