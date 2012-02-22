@@ -135,11 +135,6 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
         cm.setDefaultMaxPerRoute(200);
 
         httpClient = new DefaultHttpClient( cm, null );
-        
-        // In order to support Unicode metadata, we need to encode the request headers in UTF-8 not
-        // ASCII.
-        httpClient.getParams().setParameter( CoreProtocolPNames.HTTP_ELEMENT_CHARSET, "UTF-8" );
-        
     }
     
     public void setProxy( String host, int port, boolean https ) {
@@ -810,6 +805,10 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
 
             headers.put("x-emc-uid", uid);
 
+            if(unicodeEnabled) {
+                headers.put("x-emc-utf8", "true");
+            }
+
             // process tags
             if (tags != null) {
                 processTags(tags, headers);
@@ -861,9 +860,13 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
 
             headers.put("x-emc-uid", uid);
 
+            if(unicodeEnabled) {
+                headers.put("x-emc-utf8", "true");
+            }
+
             // Add tag
             if (tag != null) {
-                headers.put("x-emc-tags", tag);
+                headers.put("x-emc-tags", unicodeEnabled ? encodeUtf8(tag) : tag);
             } else {
                 throw new EsuException("Tag cannot be null");
             }
@@ -1673,7 +1676,6 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
         }
     }
     
-	@Override
 	public ServiceInformation getServiceInformation() {
         try {
             String resource = context + "/service";
@@ -1739,12 +1741,16 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
 
             headers.put("x-emc-uid", uid);
 
+            if(unicodeEnabled) {
+                headers.put("x-emc-utf8", "true");
+            }
+
             String destPath = destination.toString();
             if (destPath.startsWith("/"))
             {
                 destPath = destPath.substring(1);
             }
-            headers.put("x-emc-path", destPath);
+            headers.put("x-emc-path", unicodeEnabled ? encodeUtf8(destPath) : destPath);
 
             if (force) {
                 headers.put("x-emc-force", "true");
@@ -2095,9 +2101,9 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
      * Generates the HMAC-SHA1 signature used to authenticate the request using
      * the Java security APIs.
      * 
-     * @param con the connection object
      * @param method the HTTP method used
      * @param resource the resource path
+     * @param query the URL querystring (if present)
      * @param headers the HTTP headers for the request
      * @throws IOException if character data cannot be encoded.
      * @throws GeneralSecurityException If errors occur generating the HMAC-SHA1

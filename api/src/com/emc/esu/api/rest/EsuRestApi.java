@@ -1908,12 +1908,16 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             headers.put("x-emc-uid", uid);
 
+            if(unicodeEnabled) {
+                headers.put("x-emc-utf8", "true");
+            }
+
             String destPath = destination.toString();
             if (destPath.startsWith("/"))
             {
                 destPath = destPath.substring(1);
             }
-            headers.put("x-emc-path", destPath);
+            headers.put("x-emc-path", unicodeEnabled ? encodeUtf8(destPath) : destPath);
 
             if (force) {
                 headers.put("x-emc-force", "true");
