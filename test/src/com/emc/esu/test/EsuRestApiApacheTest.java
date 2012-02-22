@@ -6,6 +6,7 @@ package com.emc.esu.test;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.emc.esu.api.EsuApi;
 import junit.framework.Assert;
 
 import org.junit.Before;
@@ -71,6 +72,7 @@ public class EsuRestApiApacheTest extends EsuApiTest {
     @Before
     public void setUp() throws Exception {
         esu = new EsuRestApiApache( host, port, uid2, secret );
+        ((EsuRestApiApache) esu).setUnicodeEnabled( true );
         uid = uid2;
     }
 
@@ -89,6 +91,7 @@ public class EsuRestApiApacheTest extends EsuApiTest {
      */
     @Test
     public void testSignatureFailure() throws Exception {
+       EsuApi tempEsu = esu;
        try {
            // Fiddle with the secret key
            esu = new EsuRestApiApache( host, port, uid, secret.toUpperCase() );
@@ -98,6 +101,8 @@ public class EsuRestApiApacheTest extends EsuApiTest {
        } catch( EsuException e ) {
            Assert.assertEquals( "Expected error code 1032 for signature failure", 
                    1032, e.getAtmosCode() );
+       } finally {
+           esu = tempEsu;
        }
     }
 

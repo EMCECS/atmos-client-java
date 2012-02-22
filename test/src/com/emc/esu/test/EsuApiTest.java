@@ -78,7 +78,9 @@ public abstract class EsuApiTest {
             this.esu.getSystemMetadata( new ObjectPath( TESTDIR ), null );
             deleteRecursively( new ObjectPath( TESTDIR ) );
         } catch ( EsuException e ) {
-            if ( e.getHttpCode() != 404 ) throw e;
+            if ( e.getHttpCode() != 404 ) {
+                l4j.warn("Could not delete test dir: ", e);
+            }
         }
     }
 
