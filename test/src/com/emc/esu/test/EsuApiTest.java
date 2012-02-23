@@ -79,7 +79,7 @@ public abstract class EsuApiTest {
             deleteRecursively( new ObjectPath( TESTDIR ) );
         } catch ( EsuException e ) {
             if ( e.getHttpCode() != 404 ) {
-                l4j.warn("Could not delete test dir: ", e);
+                l4j.warn( "Could not delete test dir: ", e );
             }
         }
     }
@@ -1738,11 +1738,76 @@ public abstract class EsuApiTest {
         ObjectId id = this.esu.createObject( null, metaList, null, null );
         cleanup.add( id );
 
+        // list all tags and make sure the UTF8 tag is in the list
+        MetadataTags tags = this.esu.listUserMetadataTags( id );
+        Assert.assertTrue( "UTF8 key not found in tag list", tags.contains( utf8String ) );
+
+        // get the user metadata and make sure all UTF8 characters are accurate
         metaList = this.esu.getUserMetadata( id, null );
         Metadata meta = metaList.getMetadata( utf8String );
         Assert.assertEquals( "UTF8 key does not match", meta.getName(), utf8String );
         Assert.assertEquals( "UTF8 key value does not match", meta.getValue(), "utf8Value" );
         Assert.assertEquals( "UTF8 value does not match", metaList.getMetadata( "utf8Key" ).getValue(), utf8String );
+
+        // test set metadata with UTF8
+        metaList = new MetadataList();
+        metaList.addMetadata( new Metadata( "newKey", utf8String + "2", false ) );
+        metaList.addMetadata( new Metadata( utf8String + "2", "newValue", false ) );
+        this.esu.setUserMetadata( id, metaList );
+
+        // verify set metadata call (also testing getAllMetadata)
+        ObjectMetadata objMeta = this.esu.getAllMetadata( id );
+        metaList = objMeta.getMetadata();
+        meta = metaList.getMetadata( utf8String + "2" );
+        Assert.assertEquals( "UTF8 key does not match", meta.getName(), utf8String + "2" );
+        Assert.assertEquals( "UTF8 key value does not match", meta.getValue(), "newValue" );
+        Assert.assertEquals( "UTF8 value does not match", metaList.getMetadata( "newKey" ).getValue(), utf8String + "2" );
+    }
+
+    @Test
+    public void testUtf8MetadataFilter() throws Exception {
+        String oneByteCharacters = "Hello! ,";
+        String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
+        String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
+        String utf8String = oneByteCharacters + twoByteCharacters + fourByteCharacters;
+
+        MetadataList metaList = new MetadataList();
+        metaList.addMetadata( new Metadata( "utf8Key", utf8String, false ) );
+        metaList.addMetadata( new Metadata( utf8String, "utf8Value", false ) );
+
+        ObjectId id = this.esu.createObject( null, metaList, null, null );
+        cleanup.add( id );
+
+        // apply a filter that includes the UTF8 tag
+        MetadataTags tags = new MetadataTags();
+        tags.addTag( new MetadataTag( utf8String, false ) );
+        metaList = this.esu.getUserMetadata( id, tags );
+        Assert.assertEquals( "UTF8 filter was not honored", metaList.count(), 1 );
+        Assert.assertNotNull( "UTF8 key was not found in filtered results", metaList.getMetadata( utf8String ) );
+    }
+
+    @Test
+    public void testUtf8DeleteMetadata() throws Exception {
+        String oneByteCharacters = "Hello! ,";
+        String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
+        String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
+        String utf8String = oneByteCharacters + twoByteCharacters + fourByteCharacters;
+
+        MetadataList metaList = new MetadataList();
+        metaList.addMetadata( new Metadata( "utf8Key", utf8String, false ) );
+        metaList.addMetadata( new Metadata( utf8String, "utf8Value", false ) );
+
+        ObjectId id = this.esu.createObject( null, metaList, null, null );
+        cleanup.add( id );
+
+        // delete the UTF8 tag
+        MetadataTags tags = new MetadataTags();
+        tags.addTag( new MetadataTag( utf8String, false ) );
+        this.esu.deleteUserMetadata( id, tags );
+
+        // verify delete was successful
+        tags = this.esu.listUserMetadataTags( id );
+        Assert.assertFalse( "UTF8 key was not deleted", tags.contains( utf8String ) );
     }
 
     @Test
@@ -1764,6 +1829,7 @@ public abstract class EsuApiTest {
         Assert.assertEquals( "UTF8 key value does not match", meta.getValue(), "utf8Value" );
         Assert.assertTrue( "UTF8 metadata is not listable", meta.isListable() );
 
+        // verify we can list the tag and see our object
         boolean found = false;
         for ( ObjectResult result : this.esu.listObjects( utf8String, null ) ) {
             if ( result.getId().equals( id ) ) {
@@ -1771,7 +1837,11 @@ public abstract class EsuApiTest {
                 break;
             }
         }
-        Assert.assertTrue( "UTF8 key listing did not contain the correct object ID", found );
+        Assert.assertTrue( "UTF8 tag listing did not contain the correct object ID", found );
+
+        // verify we can list child tags of the UTF8 tag
+        MetadataTags tags = this.esu.getListableTags( new MetadataTag( utf8String, true ) );
+        Assert.assertNotNull( "UTF8 child tag listing was null", tags );
     }
 
     @Test
