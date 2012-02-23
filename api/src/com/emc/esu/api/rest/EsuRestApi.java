@@ -748,9 +748,13 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             headers.put("x-emc-uid", uid);
 
+            if(unicodeEnabled) {
+                headers.put("x-emc-utf8", "true");
+            }
+
             // Add tag
             if (tag != null) {
-                headers.put("x-emc-tags", tag);
+                headers.put("x-emc-tags", unicodeEnabled ? encodeUtf8(tag) : tag);
             }
 
             // Add date
@@ -1027,6 +1031,10 @@ public class EsuRestApi extends AbstractEsuRestApi {
             Map<String, String> headers = new HashMap<String, String>();
 
             headers.put("x-emc-uid", uid);
+
+            if(unicodeEnabled) {
+                headers.put("x-emc-utf8", "true");
+            }
 
             // Add date
             headers.put("Date", getDateHeader());
@@ -1795,6 +1803,10 @@ public class EsuRestApi extends AbstractEsuRestApi {
             Map<String, String> headers = new HashMap<String, String>();
 
             headers.put("x-emc-uid", uid);
+
+            if(unicodeEnabled) {
+                headers.put("x-emc-utf8", "true");
+            }
 
             // Add date
             headers.put("Date", getDateHeader());

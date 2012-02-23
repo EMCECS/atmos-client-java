@@ -666,18 +666,23 @@ public abstract class AbstractEsuRestApi implements EsuApi {
      * header.
      * @param tags the tag list to enumerate
      * @param headers the HTTP request headers
+     * @throws UnsupportedEncodingException
      */
-    protected void processTags(MetadataTags tags, Map<String, String> headers) {
+    protected void processTags(MetadataTags tags, Map<String, String> headers) throws UnsupportedEncodingException {
         StringBuffer taglist = new StringBuffer();
 
         l4j.debug("Processing " + tags.count() + " metadata tag entries");
+
+        if(unicodeEnabled) {
+            headers.put("x-emc-utf8", "true");
+        }
 
         for (Iterator<MetadataTag> i = tags.iterator(); i.hasNext();) {
             MetadataTag tag = i.next();
             if (taglist.length() > 0) {
                 taglist.append(",");
             }
-            taglist.append(tag.getName());
+            taglist.append(unicodeEnabled ? encodeUtf8( tag.getName() ) : tag.getName());
         }
 
         if (taglist.length() > 0) {
@@ -957,8 +962,9 @@ public abstract class AbstractEsuRestApi implements EsuApi {
      * @param tags the list of metadata tags to append to
      * @param header the header to parse
      * @param listable true if the metadata tags in the header are listable
+     * @throws UnsupportedEncodingException
      */
-    protected void readTags( MetadataTags tags, String header, boolean listable) {
+    protected void readTags( MetadataTags tags, String header, boolean listable) throws UnsupportedEncodingException {
         if (header == null) {
             return;
         }
@@ -966,7 +972,7 @@ public abstract class AbstractEsuRestApi implements EsuApi {
         String[] attrs = header.split(",");
         for (int i = 0; i < attrs.length; i++) {
             String attr = attrs[i].trim();
-            tags.addTag(new MetadataTag(attr, listable));
+            tags.addTag(new MetadataTag(unicodeEnabled ? decodeUtf8( attr ) : attr, listable));
         }
     }
 
