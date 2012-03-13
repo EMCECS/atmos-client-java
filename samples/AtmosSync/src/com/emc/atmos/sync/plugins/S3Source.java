@@ -71,7 +71,6 @@ public class S3Source extends MultithreadedSource {
 	public static final String ROOT_KEY_ARG_NAME = "root-key";
 
 	private AmazonS3 amz;
-
 	private String bucketName;
 	private String rootKey;
 
@@ -127,6 +126,9 @@ public class S3Source extends MultithreadedSource {
 	@Override
 	public boolean parseOptions(CommandLine line) {
 		String sourceStr = line.getOptionValue(CommonOptions.SOURCE_OPTION);
+		if(sourceStr == null) {
+			return false;
+		}
 		if (sourceStr.startsWith("s3:")) {
 			bucketName = sourceStr.substring(3);
 

@@ -144,6 +144,18 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 				}
 			}
 			
+			// Quick check for no-args
+			if(sync.getSource() == null) {
+				System.err.println("Source must be specified");
+				help(plugins);
+				System.exit(1);
+			}
+			if(sync.getDestination() == null) {
+				System.err.println("Destination must be specified");
+				help(plugins);
+				System.exit(1);
+			}
+			
 			// do the sanity check (Spring will do this too)
 			sync.afterPropertiesSet();
 		}

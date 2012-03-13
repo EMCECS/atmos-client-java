@@ -118,6 +118,9 @@ public class FilesystemSource extends MultithreadedSource {
 	@Override
 	public boolean parseOptions(CommandLine line) {
 		String sourceOption = line.getOptionValue(CommonOptions.SOURCE_OPTION);
+		if(sourceOption == null) {
+			return false;
+		}
 		if(sourceOption.startsWith("file://")) {
 			URI u;
 			try {

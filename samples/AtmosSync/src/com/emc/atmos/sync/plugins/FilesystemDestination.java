@@ -68,9 +68,12 @@ public class FilesystemDestination extends DestinationPlugin {
 		if(obj.isDirectory()) {
 			mkdirs(destFile);
 		} else {
+			File parentDir = destFile.getParentFile();
+			if(!parentDir.exists()) {
+				parentDir.mkdirs();
+			}
 			// Copy the file data
 			copyData(obj, destFile);
-			
 		}
 		
 		if(!noMetadata) {
@@ -185,7 +188,7 @@ public class FilesystemDestination extends DestinationPlugin {
 	@Override
 	public boolean parseOptions(CommandLine line) {
 		String destOption = line.getOptionValue(CommonOptions.DESTINATION_OPTION);
-		if(destOption.startsWith("file://")) {
+		if(destOption != null && destOption.startsWith("file://")) {
 			URI u;
 			try {
 				u = new URI(destOption);

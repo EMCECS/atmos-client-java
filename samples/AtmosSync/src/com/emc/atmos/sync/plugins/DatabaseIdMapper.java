@@ -260,7 +260,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 			}
 			
 			// Guess based off the path
-			String path = obj.getDestURI().getPath();
+			String path = obj.getSourceURI().getPath();
 			if(path.startsWith("/rest/namespace")) {
 				return path.substring(15);
 			} else if(path.startsWith("/rest/objects/")) {

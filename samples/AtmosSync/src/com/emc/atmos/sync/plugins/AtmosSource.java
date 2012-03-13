@@ -85,6 +85,10 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 	public static final String SOURCE_OIDLIST_DESC = "The file containing the list of OIDs to copy (newline separated).  Use - to read the list from standard input.  Not compatible with source-namespace";
 	public static final String SOURCE_OIDLIST_ARG_NAME = "filename";
 	
+	public static final String SOURCE_NAMELIST_OPTION = "source-name-list";
+	public static final String SOURCE_NAMELIST_DESC = "The file containing the list of namespace paths to copy (newline separated).  Use - to read the list from standard input.  Not compatible with source-namespace";
+	public static final String SOURCE_NAMELIST_ARG_NAME = "filename";
+	
 	public static final String SOURCE_QUERY_OPTION = "source-query";
 	public static final String SOURCE_QUERY_DESC = "The xquery string to use to select the OIDs to copy.  Note that the XQuery service must be enabled on your Atmos system for this to work.  Not compatible with source-namespace or source-oidlist";
 	public static final String SOURCE_QUERY_ARG_NAME = "xquery-string";
@@ -99,6 +103,7 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 	private String namespaceRoot;
 	private String oidFile;
 	private String query;
+	private String nameFile;
 	
 
 	public AtmosSource() {
@@ -123,6 +128,10 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 		opts.addOption(OptionBuilder.withDescription(SOURCE_QUERY_DESC)
 				.withLongOpt(SOURCE_QUERY_OPTION)
 				.hasArg().withArgName(SOURCE_QUERY_ARG_NAME).create());
+		
+		opts.addOption(OptionBuilder.withDescription(SOURCE_NAMELIST_DESC)
+				.withLongOpt(SOURCE_NAMELIST_OPTION)
+				.hasArg().withArgName(SOURCE_NAMELIST_ARG_NAME).create());
 		
 		return opts;
 	}
@@ -162,19 +171,20 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 			boolean namespace = line.hasOption(SOURCE_NAMESPACE_OPTION);
 			boolean objectlist = line.hasOption(SOURCE_OIDLIST_OPTION);
 			boolean querylist = line.hasOption(SOURCE_QUERY_OPTION);
+			boolean namelist = line.hasOption(SOURCE_NAMELIST_OPTION);
 			
 			if(namespace && objectlist || namespace && querylist ||
-					objectlist && querylist) {
+					objectlist && querylist || namelist && namespace) {
 				throw new IllegalArgumentException(MessageFormat.format(
-						"Only one of (--{0}, --{1}, --{2}) is allowed", 
+						"Only one of (--{0}, --{1}, --{2}, --{3}) is allowed", 
 						SOURCE_NAMESPACE_OPTION, SOURCE_OIDLIST_OPTION,
-						SOURCE_QUERY_OPTION));
+						SOURCE_QUERY_OPTION, SOURCE_NAMELIST_OPTION));
 			}
-			if(!(namespace || objectlist || querylist)) {
+			if(!(namespace || objectlist || querylist || namelist)) {
 				throw new IllegalArgumentException(MessageFormat.format(
-						"One of (--{0}, --{1}, --{2}) must be specified",
+						"One of (--{0}, --{1}, --{2}, --{3}) must be specified",
 						SOURCE_NAMESPACE_OPTION, SOURCE_OIDLIST_OPTION,
-						SOURCE_QUERY_OPTION));
+						SOURCE_QUERY_OPTION, SOURCE_NAMELIST_OPTION));
 			}
 			
 			if(namespace) {
@@ -197,6 +207,9 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 			}
 			if(querylist) {
 				query = line.getOptionValue(SOURCE_QUERY_OPTION);
+			}
+			if(namelist) {
+				nameFile = line.getOptionValue(SOURCE_NAMELIST_OPTION);
 			}
 			
 			// Parse threading options
@@ -276,6 +289,8 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 			readOIDs();
 		} else if(query != null) {
 			readQuery();
+		} else if(nameFile != null) {
+			readNames();
 		} else {
 			throw new IllegalStateException("One of namespaceRoot, oidFile, or query must be set");
 		}
@@ -409,6 +424,67 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 		}
 		
 	}
+	
+	private void readNames() {
+		initQueue();
+		
+		BufferedReader br;
+		try {
+			if("-".equals(nameFile)) {
+				br = new BufferedReader(new InputStreamReader(System.in));
+			} else {
+				br = new BufferedReader(new FileReader(new File(nameFile)));
+			}
+			
+			while(running) {
+				// Look for available unsubmitted tasks
+				synchronized(graph) {
+					BreadthFirstIterator<TaskNode, DefaultEdge> i = new BreadthFirstIterator<TaskNode, DefaultEdge>(graph);
+					while( i.hasNext() ) {
+						TaskNode t = i.next();
+						if( graph.inDegreeOf(t) == 0 && !t.isQueued() ) {
+							t.setQueued(true);
+							l4j.debug( "Submitting " + t );
+							pool.submit(t);
+						}
+					}
+				}
+				if(queue.size() > threadCount*10) {
+					// Sleep a bit.  There could be billions of objects to read
+					// and we don't want to run out of memory by reading too
+					// much up front.
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						// Ignore.
+					}
+					continue;
+				}
+				
+				String line = br.readLine();
+				if(line == null) {
+					break;
+				}
+				ObjectPath op = new ObjectPath(line.trim());
+				ReadAtmosTask task = new ReadAtmosTask(op);
+				task.addToGraph(graph);
+				
+			}
+			
+			// We've read all of our data; go into the normal loop now and
+			// run until we're out of tasks.
+			runQueue();
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(5);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(6);
+		}
+		
+	}
+
 
 	private void readNamespace() {
 		initQueue();
