@@ -217,6 +217,8 @@ public class FilesystemSource extends MultithreadedSource {
 			} catch(Exception e) {
 				failed(fso, e);
 				return TaskResult.FAILURE;
+			} catch(Throwable t) {
+				l4j.fatal("Uncaught throwable: " + t.getMessage(), t);
 			}
 			
 			return TaskResult.SUCCESS;
@@ -303,5 +305,75 @@ public class FilesystemSource extends MultithreadedSource {
 			return relativePath;
 		}
 		
+	}
+
+	/**
+	 * @return the source
+	 */
+	public File getSource() {
+		return source;
+	}
+
+	/**
+	 * @param source the source to set
+	 */
+	public void setSource(File source) {
+		this.source = source;
+	}
+
+	/**
+	 * @return the recursive
+	 */
+	public boolean isRecursive() {
+		return recursive;
+	}
+
+	/**
+	 * @param recursive the recursive to set
+	 */
+	public void setRecursive(boolean recursive) {
+		this.recursive = recursive;
+	}
+
+	/**
+	 * @return the useAbsolutePath
+	 */
+	public boolean isUseAbsolutePath() {
+		return useAbsolutePath;
+	}
+
+	/**
+	 * @param useAbsolutePath the useAbsolutePath to set
+	 */
+	public void setUseAbsolutePath(boolean useAbsolutePath) {
+		this.useAbsolutePath = useAbsolutePath;
+	}
+
+	/**
+	 * @return the ignoreMeta
+	 */
+	public boolean isIgnoreMeta() {
+		return ignoreMeta;
+	}
+
+	/**
+	 * @param ignoreMeta the ignoreMeta to set
+	 */
+	public void setIgnoreMeta(boolean ignoreMeta) {
+		this.ignoreMeta = ignoreMeta;
+	}
+
+	/**
+	 * @return the mimeMap
+	 */
+	public MimetypesFileTypeMap getMimeMap() {
+		return mimeMap;
+	}
+
+	/**
+	 * @param mimeMap the mimeMap to set
+	 */
+	public void setMimeMap(MimetypesFileTypeMap mimeMap) {
+		this.mimeMap = mimeMap;
 	}
 }

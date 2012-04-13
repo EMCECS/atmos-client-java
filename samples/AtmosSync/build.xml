@@ -1,26 +1,83 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project default="create_run_jar" name="Create Runnable Jar for Project AtmosSync">
-    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
-    <!--ANT 1.7 is required                                        -->
-    <target name="create_run_jar">
-        <jar destfile="/Users/cwikj/AtmosSync.jar" filesetmanifest="mergewithoutmain">
+	<!-- Build directory locations -->
+	<property name="src" value="src"/>
+    <property name="dist" value="dist"/>
+	<property name="classes" value="classes"/>
+	<property name="build" value="build"/>
+	<property name="doc" value="doc/javadoc" />
+	<property name="lib" value="lib" />
+
+	<!--ANT 1.7 is required                                        -->
+	<!-- Classpath to compile with -->
+	<path id="classpath">
+		<fileset dir="${lib}">
+			<include name="*.jar"/>
+		</fileset>
+		<fileset dir="../esujava/commons-httpclient">
+			<include name="*.jar"/>
+		</fileset>
+		<fileset dir="../esujava/build">
+			<include name="esujava.jar"/>
+		</fileset>
+	</path>
+	
+	<!-- Builds the javadoc from the source code -->
+	<target name="doc" depends="prepare">
+		<javadoc source="1.5" destdir="${doc}" classpathref="classpath">
+			<header>EMC Cloud Optimized Storage API for Java</header>
+			<bottom>Copyright (c) 2008 EMC</bottom>
+		    <fileset dir="${src}">
+		    	<include name="**/*.java"/>
+		    </fileset>
+		</javadoc>
+	</target>
+
+	<!-- Compiles the java files -->
+	<target name="compile" depends="prepare">
+		<javac source="1.5" destdir="${classes}" srcdir="${src}" target="1.5"
+			debug="true" classpathref="classpath">
+		</javac>
+	</target>
+
+
+    <target name="create_run_jar" depends="compile">
+        <jar destfile="${dist}/AtmosSync.jar" filesetmanifest="mergewithoutmain">
             <manifest>
                 <attribute name="Main-Class" value="com.emc.atmos.sync.AtmosSync"/>
                 <attribute name="Class-Path" value="."/>
             </manifest>
-            <fileset dir="/Users/cwikj/Documents/workspace/AtmosSync/bin"/>
-            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/AtmosSync/lib/commons-cli-1.2.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/AtmosSync/lib/jgrapht-0.8.2.jar"/>
-            <fileset dir="/Users/cwikj/Documents/workspace/esujava/bin"/>
-            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/lib/jdom.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/lib/log4j-1.2.15.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/lib/commons-codec-1.4.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/commons-httpclient/commons-logging-1.1.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/lib/security-1.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/commons-httpclient/httpclient-4.1.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/commons-httpclient/httpclient-cache-4.1.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/commons-httpclient/httpcore-4.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="/Users/cwikj/Documents/workspace/esujava/commons-httpclient/httpmime-4.1.1.jar"/>
+            <fileset dir="classes"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/commons-cli-1.2.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/jgrapht-0.8.2.jar"/>
+            <fileset dir="../esujava/classes"/>
+            <zipfileset excludes="META-INF/*.SF" src="../esujava/lib/jdom.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="../esujava/lib/log4j-1.2.15.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="../lib/commons-codec-1.4.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="../esujava/commons-httpclient/commons-logging-1.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="../esujava/lib/security-1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="../esujava/commons-httpclient/httpclient-4.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="../esujava/commons-httpclient/httpclient-cache-4.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="../esujava/commons-httpclient/httpcore-4.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="../esujava/commons-httpclient/httpmime-4.1.1.jar"/>
         </jar>
     </target>
+	
+	<!-- Removes the build directories -->
+	<target name="clean">
+        <delete dir="${dist}" />
+        <delete dir="${classes}" />
+        <delete dir="${build}" />
+        <delete dir="${doc}" />
+	</target>
+	
+	<!-- Creates the build directories -->
+	<target name="prepare">
+        <mkdir dir="${dist}"/>
+        <mkdir dir="${classes}"/>
+        <mkdir dir="${build}"/>
+        <mkdir dir="${doc}"/>
+	</target>
+	
+
 </project>

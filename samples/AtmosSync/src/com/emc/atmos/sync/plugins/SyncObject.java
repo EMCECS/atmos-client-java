@@ -29,9 +29,13 @@ import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
+
 import com.emc.atmos.sync.util.AtmosMetadata;
 
 public abstract class SyncObject {
+	private static final Logger l4j = Logger.getLogger(SyncObject.class);
+	
 	private URI sourceURI;
 	private URI destURI;
 	private boolean directory;
@@ -86,6 +90,23 @@ public abstract class SyncObject {
 			}
 		}
 		return subset;
+	}
+	
+	/**
+	 * Similar to getAnnotations but it expects only one instance of the class.
+	 * If not found, it returns null.
+	 * @param clazz
+	 * @return
+	 */
+	public ObjectAnnotation getAnnotation(Class<? extends ObjectAnnotation> clazz) {
+		Set<ObjectAnnotation> subset = getAnnotations(clazz);
+		if(subset.size() < 1) {
+			return null;
+		}
+		if(subset.size() > 1) {
+			l4j.warn("More than one instance of annotation " + clazz + " found!");
+		}
+		return subset.iterator().next();
 	}
 
 	public long getSize() {

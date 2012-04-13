@@ -41,8 +41,24 @@ import org.jgrapht.traverse.BreadthFirstIterator;
 import com.emc.atmos.sync.TaskNode;
 
 /**
+ * This class implements a base for multithreaded sources.  This implements
+ * a graph-based algorithm for computing task dependencies.  Operations to
+ * execute should be implemented as TaskNode objects.  These objects may have
+ * zero or more TaskNodes as parent tasks.  The TaskNode will not execute until
+ * all of its parent tasks have completed.  The general procedure for using
+ * this class is:
+ * <ol>
+ * <li>In your run() method, call initQueue().
+ * <li>Create one or more TaskNode object.  Add these to the "graph" property.
+ * <li>Start execution by calling runQueue().  This will exit when all tasks
+ * have completed.
+ * </ol>
+ * Note that tasks can in turn spawn child tasks.  Also, when processing a
+ * "flat" list of objects, it may be needed to throttle input to keep the
+ * graph to a reasonable size (e.g. 10x - 100x threadCount).
+ * @see AtmosSource#readOIDs for a sample of throttling input.
  * @author cwikj
- *
+ * @see com.emc.atmos.sync.TaskNode
  */
 public abstract class MultithreadedSource extends SourcePlugin {
 	private static final Logger l4j = Logger.getLogger(MultithreadedSource.class);
@@ -59,6 +75,9 @@ public abstract class MultithreadedSource extends SourcePlugin {
 	private int completedCount;
 	private int failedCount;
 
+	/**
+	 * Initializes the graph, the thread pool, and the task queue.
+	 */
 	protected void initQueue() {
 		start = System.currentTimeMillis();
 		queue = new LinkedBlockingQueue<Runnable>();
@@ -68,6 +87,11 @@ public abstract class MultithreadedSource extends SourcePlugin {
 		graph = new SimpleDirectedGraph<TaskNode, DefaultEdge>(DefaultEdge.class);
 	}
 	
+	/**
+	 * Inspects the graph, looking for nodes with no parents.  These nodes
+	 * are added to the task queue.  This method will run until the graph is
+	 * empty.
+	 */
 	protected void runQueue() {
 		// Start filling the pool with tasks
 		while(running) {
@@ -104,11 +128,22 @@ public abstract class MultithreadedSource extends SourcePlugin {
 
 	}
 
+	/**
+	 * Call this method from your TaskNode on success.  It will update the
+	 * internal statistics for printing the summary at the end of execution.
+	 * @param obj the SyncObject that has completed successfully.
+	 */
 	public synchronized void complete(SyncObject obj) {
 		completedCount++;
 		byteCount += obj.getBytesRead();
 	}
 
+	/**
+	 * Call this method from your TaskNode on failure.  It will update the 
+	 * internal statistics for printing the summary at the end of execution.
+	 * @param obj the object that has failed
+	 * @param e the Exception that caused the failure.
+	 */
 	public synchronized void failed(SyncObject obj, Exception e) {
 		LogMF.warn(l4j, "Object {0} failed: {1}", obj, e);
 		failedCount++;
@@ -124,6 +159,7 @@ public abstract class MultithreadedSource extends SourcePlugin {
 		return false;
 	}
 
+	@Override
 	public void printStats() {
 		long end = System.currentTimeMillis();
 		long secs = ((end-start)/1000);
@@ -138,6 +174,7 @@ public abstract class MultithreadedSource extends SourcePlugin {
 	}
 
 	/**
+	 * Returns the number of threads to be used.
 	 * @return the threadCount
 	 */
 	public int getThreadCount() {
@@ -145,6 +182,7 @@ public abstract class MultithreadedSource extends SourcePlugin {
 	}
 
 	/**
+	 * Sets the number of threads to use to process items.
 	 * @param threadCount the threadCount to set
 	 */
 	public void setThreadCount(int threadCount) {
@@ -152,6 +190,7 @@ public abstract class MultithreadedSource extends SourcePlugin {
 	}
 
 	/**
+	 * Returns the set of items that failed to transfer.
 	 * @return the failedItems
 	 */
 	public Set<SyncObject> getFailedItems() {
@@ -159,6 +198,8 @@ public abstract class MultithreadedSource extends SourcePlugin {
 	}
 
 	/**
+	 * Returns the total number of bytes that were transferred to the 
+	 * destination, exclusive of metadata.
 	 * @return the byteCount
 	 */
 	public long getByteCount() {
@@ -166,6 +207,7 @@ public abstract class MultithreadedSource extends SourcePlugin {
 	}
 
 	/**
+	 * Returns the number of items that completed successfully.
 	 * @return the completedCount
 	 */
 	public int getCompletedCount() {
@@ -173,6 +215,7 @@ public abstract class MultithreadedSource extends SourcePlugin {
 	}
 
 	/**
+	 * Returns the number of items that failed.
 	 * @return the failedCount
 	 */
 	public int getFailedCount() {

@@ -60,4 +60,13 @@ public class DestinationAtmosId implements ObjectAnnotation {
 	public void setPath(ObjectPath path) {
 		this.path = path;
 	}
+
+	/**
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "DestinationAtmosId [id=" + id + ", path=" + path + "]";
+	}
+	
 }
