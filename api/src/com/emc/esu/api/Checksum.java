@@ -28,6 +28,7 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 import org.concord.security.ccjce.cryptix.jce.provider.CryptixCrypto;
@@ -48,13 +49,25 @@ public class Checksum {
 	 * The hash algorithm to use.  As of 1.4.0, only SHA0 is supported
 	 */
 	public static enum Algorithm { SHA0, SHA1, MD5 };
+
+    /**
+     * The intended behavior of this checksum (should we calculate first and send to the server to verify? or should
+     * we have the server generate a checksum for the request and return it to us to verify locally? or both?)
+     */
+    public static enum Behavior { SEND_TO_SERVER, GET_FROM_SERVER, BOTH };
 	
 	private MessageDigest digest;
 	private Algorithm alg;
+    private Behavior behavior;
 	private long offset;
 	private String expectedValue;
-	
-	public Checksum( Algorithm alg ) throws NoSuchAlgorithmException {
+    private String serverValue;
+
+    public Checksum( Algorithm alg ) throws NoSuchAlgorithmException {
+        this( alg, Behavior.SEND_TO_SERVER );
+    }
+
+	public Checksum( Algorithm alg, Behavior behavior ) throws NoSuchAlgorithmException {
 		switch( alg ) {
 		case SHA0:
 			digest = MessageDigest.getInstance( "SHA-0" );
@@ -67,6 +80,7 @@ public class Checksum {
 			break;
 		}
 		this.alg = alg;
+        this.behavior = behavior;
 		offset = 0;
 	}
 	
@@ -82,6 +96,20 @@ public class Checksum {
 		throw new RuntimeException( "Unknown algorithm: " + alg );
 		
 	}
+
+    public Behavior getBehavior() {
+        return this.behavior;
+    }
+
+    public boolean isSendToServer() {
+        return this.behavior == Behavior.SEND_TO_SERVER
+            || this.behavior == Behavior.BOTH;
+    }
+
+    public boolean isGetFromServer() {
+        return this.behavior == Behavior.GET_FROM_SERVER
+            || this.behavior == Behavior.BOTH;
+    }
 	
 	/**
 	 * Updates the checksum with the given buffer's contents
@@ -94,14 +122,20 @@ public class Checksum {
 		this.offset += length;
 	}
 
+    @Override
+    public String toString() {
+        return toString( true );
+    }
+
 	/**
 	 * Outputs the current digest checksum in a format
 	 * suitable for including in Atmos create/update calls.
 	 */
-	@Override
-	public String toString() {
+	public String toString( boolean includeOffset ) {
 		
-		String checksumData = getAlgorithmName()+"/"+offset+"/"+getHashValue();
+		String checksumData = getAlgorithmName();
+        if (includeOffset) checksumData += "/"+offset;
+        checksumData += "/"+getHashValue();
 		l4j.debug( "Checksum Value: '" + checksumData + "'" );
 		
 		return checksumData;
@@ -117,11 +151,12 @@ public class Checksum {
 		}
 		
 		byte[] currDigest = tmpDigest.digest();
-		
-		BigInteger bigInt = new BigInteger(1, currDigest);
-		return bigInt.toString(16);
-	}
 
+        // convert to hex string
+		BigInteger bigInt = new BigInteger(1, currDigest);
+        return String.format( "%0" + (currDigest.length << 1) + "x", bigInt );
+	}
+    
 	/**
 	 * Sets the expected value for this checksum.  Only used for read operations
 	 * @param expectedValue the expectedValue to set
@@ -137,7 +172,21 @@ public class Checksum {
 	public String getExpectedValue() {
 		return expectedValue;
 	}
-	
-	
+
+    /**
+     * Sets the server-calculated checksum for a request.
+     * @param serverValue the server-calculated checksum for a request
+     */
+	public void setServerValue(String serverValue) {
+        this.serverValue = serverValue;
+    }
+
+    /**
+     * Gets the server-calculated checksum for a request.
+     * @return the checksum of a request as calculated on the server
+     */
+    public String getServerValue() {
+        return this.serverValue;
+    }
 	
 }
