@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project DirectoryMonitor">
+	<!-- Build localDirectory locations -->
+	<property name="src" value="src"/>
+    <property name="dist" value="dist"/>
+	<property name="classes" value="classes"/>
+	<property name="build" value="build"/>
+
+    <property name="atmos_sync_path" location="../AtmosSync" />
+
+    <!--ANT 1.7 is required                                        -->
+	<!-- Classpath to compile with -->
+	<path id="classpath">
+        <fileset dir="${atmos_sync_path}/dist">
+            <include name="AtmosSync.jar"/>
+        </fileset>
+	</path>
+	
+	<!-- Compiles the java files -->
+	<target name="compile" depends="prepare">
+		<javac source="1.5" destdir="${classes}" srcdir="${src}" target="1.5"
+			debug="true" classpathref="classpath">
+		</javac>
+	</target>
+
+
+    <target name="create_run_jar" depends="compile">
+        <jar destfile="${dist}/DirectoryMonitor.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="com.emc.atmos.sync.monitor.DirectoryMonitorForm"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="classes"/>
+            <zipfileset excludes="META-INF/*.SF" src="${atmos_sync_path}/dist/AtmosSync.jar"/>
+        </jar>
+    </target>
+	
+	<!-- Removes the build directories -->
+	<target name="clean">
+        <delete dir="${dist}" />
+        <delete dir="${classes}" />
+        <delete dir="${build}" />
+	</target>
+	
+	<!-- Creates the build directories -->
+	<target name="prepare">
+        <mkdir dir="${dist}"/>
+        <mkdir dir="${classes}"/>
+        <mkdir dir="${build}"/>
+	</target>
+</project>
