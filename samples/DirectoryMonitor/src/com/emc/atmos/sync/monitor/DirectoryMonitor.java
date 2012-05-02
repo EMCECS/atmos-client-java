@@ -67,6 +67,7 @@ public class DirectoryMonitor {
     protected AtmosSync2 createSync() {
         FilesystemSource source = new FilesystemSource();
         source.setSource( new File( monitorBean.getLocalDirectory() ) );
+        source.setRecursive( monitorBean.isRecursive() );
 
         AtmosDestination destination = new AtmosDestination();
         destination.setHosts( Arrays.asList( monitorBean.getAtmosHost() ) );

@@ -7,6 +7,7 @@ public class DirectoryMonitorBean {
     private String atmosSecret;
     private String atmosDirectory;
     private String localDirectory;
+    private boolean recursive;
 
     public DirectoryMonitorBean() {
     }
@@ -59,5 +60,13 @@ public class DirectoryMonitorBean {
 
     public void setLocalDirectory( String localDirectory ) {
         this.localDirectory = localDirectory;
+    }
+
+    public boolean isRecursive() {
+        return recursive;
+    }
+
+    public void setRecursive( boolean recursive ) {
+        this.recursive = recursive;
     }
 }
