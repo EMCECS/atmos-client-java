@@ -54,6 +54,7 @@ public class DirectoryMonitorForm extends JFrame implements ActionListener, Wind
         startMonitorButton.addActionListener( this );
         stopMonitorButton.addActionListener( this );
         monitor = new DirectoryMonitor();
+        monitor.addActionListener( this );
         readProperties();
         setVisible( true );
         setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
@@ -62,9 +63,23 @@ public class DirectoryMonitorForm extends JFrame implements ActionListener, Wind
 
     @Override
     public void actionPerformed( ActionEvent actionEvent ) {
+        if ( actionEvent instanceof SyncEvent ) {
+            SyncEvent syncEvent = (SyncEvent) actionEvent;
+            switch ( syncEvent.getCommand() ) {
+                case START_SYNC:
+                    greenLight.setBackground( Color.YELLOW );
+                    break;
+                case SYNC_COMPLETE:
+                    greenLight.setBackground( Color.GREEN );
+                    break;
+                case ERROR:
+                    JOptionPane.showMessageDialog( mainPanel, syncEvent.getException().getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE );
+                    break;
+            }
 
-        // browse
-        if ( actionEvent.getSource() == browseButton ) {
+            // browse button
+        } else if ( actionEvent.getSource() == browseButton ) {
             final JFileChooser chooser = new JFileChooser();
             chooser.setFileSelectionMode( JFileChooser.DIRECTORIES_ONLY );
             int returnVal = chooser.showOpenDialog( browseButton );
@@ -72,10 +87,9 @@ public class DirectoryMonitorForm extends JFrame implements ActionListener, Wind
                 File file = chooser.getSelectedFile();
                 localDirectory.setText( file.getAbsolutePath() );
             }
-        }
 
-        // start monitor
-        if ( actionEvent.getSource() == startMonitorButton ) {
+            // start button
+        } else if ( actionEvent.getSource() == startMonitorButton ) {
             DirectoryMonitorBean bean = new DirectoryMonitorBean();
             try {
                 getData( bean );
@@ -90,10 +104,9 @@ public class DirectoryMonitorForm extends JFrame implements ActionListener, Wind
                         "Error", JOptionPane.ERROR_MESSAGE );
                 log.error( "exception", e );
             }
-        }
 
-        // stop monitor
-        if ( actionEvent.getSource() == stopMonitorButton ) {
+            // stop button
+        } else if ( actionEvent.getSource() == stopMonitorButton ) {
             monitor.stopMonitor();
             greenLight.setBackground( mainPanel.getBackground() );
         }

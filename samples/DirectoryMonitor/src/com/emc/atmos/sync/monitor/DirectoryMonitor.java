@@ -5,8 +5,11 @@ import com.emc.atmos.sync.plugins.AtmosDestination;
 import com.emc.atmos.sync.plugins.FilesystemSource;
 import org.apache.log4j.Logger;
 
+import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class DirectoryMonitor {
     private static final Logger log = Logger.getLogger( DirectoryMonitor.class );
@@ -18,6 +21,7 @@ public class DirectoryMonitor {
     private AtmosSync2 sync;
     private DirectoryHash hash;
     private SyncWorker worker;
+    private List<ActionListener> listeners = new ArrayList<ActionListener>();
 
     public int getInterval() {
         return interval;
@@ -33,6 +37,14 @@ public class DirectoryMonitor {
 
     public void setMonitorBean( DirectoryMonitorBean monitorBean ) {
         this.monitorBean = monitorBean;
+    }
+
+    public synchronized void addActionListener( ActionListener listener ) {
+        listeners.add( listener );
+    }
+
+    public synchronized void removeActionListener( ActionListener listener ) {
+        listeners.remove( listener );
     }
 
     public synchronized void startMonitor() throws InterruptedException {
@@ -90,7 +102,14 @@ public class DirectoryMonitor {
                 while ( monitoring ) {
                     if ( hash.update( new File( monitorBean.getLocalDirectory() ) ) ) {
                         log.info( "Hash changed for directory" );
-                        sync.run();
+                        try {
+                            fireEvent( SyncEvent.Command.START_SYNC, null );
+                            sync.run();
+                            fireEvent( SyncEvent.Command.SYNC_COMPLETE, null );
+                        } catch ( Exception e ) {
+                            fireEvent( SyncEvent.Command.ERROR, e );
+                            log.error( "Error in sync run", e );
+                        }
                     } else {
                         log.info( "No changes in directory" );
                     }
@@ -99,6 +118,13 @@ public class DirectoryMonitor {
             } catch ( InterruptedException e ) {
                 log.error( "interrupted", e );
             }
+        }
+    }
+
+    private synchronized void fireEvent( SyncEvent.Command command, Exception e ) {
+        SyncEvent event = new SyncEvent( this, command, e );
+        for ( ActionListener listener : listeners ) {
+            listener.actionPerformed( event );
         }
     }
 }
