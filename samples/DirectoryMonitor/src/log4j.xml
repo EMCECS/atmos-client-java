@@ -8,11 +8,11 @@
 	</appender>
  
 	<logger name="com.emc">
- 		<level value="DEBUG"></level>
+ 		<level value="INFO"></level>
  	</logger>
 
  	<logger name="com.emc.esu.api">
- 		<level value="DEBUG"></level>
+ 		<level value="WARN"></level>
  	</logger>
 
 	<root>
