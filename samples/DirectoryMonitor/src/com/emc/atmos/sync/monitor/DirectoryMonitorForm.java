@@ -1,6 +1,5 @@
 package com.emc.atmos.sync.monitor;
 
-import com.emc.esu.api.rest.EsuRestApi;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;

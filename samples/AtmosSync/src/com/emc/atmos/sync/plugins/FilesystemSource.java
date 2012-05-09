@@ -255,19 +255,14 @@ public class FilesystemSource extends MultithreadedSource {
 				setMetadata(am);
 			}
 			
-			if(useAbsolutePath) {
-				relativePath = f.getAbsolutePath();
-				if(File.separatorChar == '\\') {
-					relativePath = relativePath.replace('\\', '/');
-				}
-			} else {
-				relativePath = f.getAbsolutePath();
-				if(relativePath.startsWith(source.getAbsolutePath())) {
-					relativePath = relativePath.substring(
-							source.getAbsolutePath().length());
-				}
+            relativePath = f.getAbsolutePath();
+            if(!useAbsolutePath && relativePath.startsWith(source.getAbsolutePath())) {
+                relativePath = relativePath.substring(source.getAbsolutePath().length());
 			}
-			if(relativePath.startsWith("/")) {
+            if(File.separatorChar == '\\') {
+                relativePath = relativePath.replace('\\', '/');
+            }
+            if(relativePath.startsWith("/")) {
 				relativePath = relativePath.substring(1);
 			}
 			if(f.isDirectory() && !relativePath.endsWith("/") && relativePath.length()>0) {

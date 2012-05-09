@@ -55,6 +55,8 @@
             <fileset dir="classes"/>
             <zipfileset excludes="META-INF/*.SF" src="lib/commons-cli-1.2.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="lib/jgrapht-0.8.2.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.core-3.1.0.RELEASE.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.beans-3.1.0.RELEASE.jar"/>
             <fileset dir="${esu_java_path}/classes"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jdom.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/log4j-1.2.16.jar"/>

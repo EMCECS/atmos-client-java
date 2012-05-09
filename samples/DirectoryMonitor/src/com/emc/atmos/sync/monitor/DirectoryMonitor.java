@@ -3,7 +3,6 @@ package com.emc.atmos.sync.monitor;
 import com.emc.atmos.sync.AtmosSync2;
 import com.emc.atmos.sync.plugins.AtmosDestination;
 import com.emc.atmos.sync.plugins.FilesystemSource;
-import com.emc.esu.api.EsuApi;
 import org.apache.log4j.Logger;
 
 import java.io.File;
