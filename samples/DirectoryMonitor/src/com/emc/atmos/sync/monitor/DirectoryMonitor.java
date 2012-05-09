@@ -11,7 +11,7 @@ import java.util.Arrays;
 public class DirectoryMonitor {
     private static final Logger log = Logger.getLogger( DirectoryMonitor.class );
 
-    private int interval = 5000; // 5 seconds
+    private int interval = 2000; // 2 seconds
     private DirectoryMonitorBean monitorBean;
 
     private boolean monitoring = false;
