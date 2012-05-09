@@ -1726,7 +1726,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testUtf8Metadata() throws Exception {
-        String oneByteCharacters = "Hello! ,";
+        String oneByteCharacters = "Hello! ";
         String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
         String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
         String utf8String = oneByteCharacters + twoByteCharacters + fourByteCharacters;
@@ -1766,7 +1766,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testUtf8MetadataFilter() throws Exception {
-        String oneByteCharacters = "Hello! ,";
+        String oneByteCharacters = "Hello! ";
         String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
         String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
         String utf8String = oneByteCharacters + twoByteCharacters + fourByteCharacters;
@@ -1788,7 +1788,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testUtf8DeleteMetadata() throws Exception {
-        String oneByteCharacters = "Hello! ,";
+        String oneByteCharacters = "Hello! ";
         String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
         String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
         String utf8String = oneByteCharacters + twoByteCharacters + fourByteCharacters;
