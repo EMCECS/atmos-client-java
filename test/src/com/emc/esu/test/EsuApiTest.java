@@ -1844,7 +1844,7 @@ public abstract class EsuApiTest {
         Assert.assertNotNull( "UTF8 child tag listing was null", tags );
     }
 
-    @Test
+    //@Test
     public void testUtf8ListableTagWithComma() {
         String stringWithComma = "Hello, you!";
 
