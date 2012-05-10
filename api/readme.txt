@@ -101,6 +101,13 @@ You can fix this problem by editing the registry and changing MaxUserPort and
 TCPTimedWaitDelay settings.  This is discussed in the article:
 http://support.microsoft.com/kb/196271/en-us
 
+New in 2.0.3: Hardlinks and content-disposition for shareable URLs (requires
+Atmos 2.0.3+)
+------------------------------------------------------------
+Using EsuRestApi20 (and EsuApi20), you have access to additional features such as
+hardlinks and providing a content-disposition value for shareable URLs (i.e.
+"attachment; filename=\"filename.txt\"")
+
 New in 1.4: EsuRestApiApache
 ----------------------------
 In version 1.4 a new implementation is available: EsuRestApiApache.  This version
