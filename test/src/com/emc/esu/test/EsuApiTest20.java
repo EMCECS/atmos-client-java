@@ -139,40 +139,4 @@ public class EsuApiTest20 extends EsuApiTest {
     	
     }
 
-    @Test
-    public void testGenerateChecksum() throws Exception {
-        byte[] content = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-=[]\\;',./_+{}|:\"<>?`~".getBytes( "UTF-8" );
-
-        String expectedSha0Hash = "SHA0/0bf7c1a19fb63615f0a6ef5c5861a874c96418ca";
-        String expectedSha1Hash = "SHA1/d3e5e1f07c4c0c8ee010591e240de95d6cd7b7af";
-        String expectedMd5Hash = "MD5/519dedc3865353cc8fe275a4aa02b6b9";
-
-        Checksum sha0Checksum = new Checksum( Checksum.Algorithm.SHA0, Checksum.Behavior.GET_FROM_SERVER );
-        Checksum sha1Checksum = new Checksum( Checksum.Algorithm.SHA1, Checksum.Behavior.GET_FROM_SERVER );
-        Checksum md5Checksum = new Checksum( Checksum.Algorithm.MD5, Checksum.Behavior.GET_FROM_SERVER );
-
-        // calculate hashes
-        sha0Checksum.update( content, 0, content.length );
-        sha1Checksum.update( content, 0, content.length );
-        md5Checksum.update( content, 0, content.length );
-        
-        // verify hashes
-        Assert.assertEquals( "local SHA0 hash is invalid", expectedSha0Hash, sha0Checksum.toString(false) );
-        Assert.assertEquals( "local SHA1 hash is invalid", expectedSha1Hash, sha1Checksum.toString(false) );
-        Assert.assertEquals( "local MD5 hash is invalid", expectedMd5Hash, md5Checksum.toString(false) );
-        
-        // create object and verify SHA0 server hash
-        ObjectId oid = this.esu.createObject( null, null, content, null, sha0Checksum );
-        cleanup.add( oid );
-        Assert.assertEquals( "server SHA0 hash is invalid", expectedSha0Hash, sha0Checksum.getServerValue() );
-        
-        // update object and verify SHA1 server hash
-        this.esu.updateObject( oid, null, null, null, content, null, sha1Checksum );
-        Assert.assertEquals( "server SHA1 hash is invalid", expectedSha1Hash, sha1Checksum.getServerValue() );
-
-        // update object and verify MD5 server hash
-        this.esu.updateObject( oid, null, null, null, content, null, md5Checksum );
-        Assert.assertEquals( "server MD5 hash is invalid", expectedMd5Hash, md5Checksum.getServerValue() );
-    }
-
 }
