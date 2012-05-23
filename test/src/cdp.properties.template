@@ -1,0 +1,5 @@
+cdp.mgmt.protocol=https
+cdp.mgmt.host=10.242.25.73
+cdp.mgmt.port=443
+cdp.mgmt.username=sysadmin
+cdp.mgmt.password=password1
