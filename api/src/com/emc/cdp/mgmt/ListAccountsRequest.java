@@ -6,20 +6,27 @@ import java.net.HttpURLConnection;
 public class ListAccountsRequest extends CdpMgmtRequest<ListAccountsResponse> {
     public ListAccountsRequest( CdpMgmtApi api ) {
         super( api );
-        path = "/admin/accounts";
-        query = getSessionQuery();
     }
 
     @Override
-    protected void handleConnection( HttpURLConnection con ) throws IOException {
-        con.connect();
-        if ( con.getResponseCode() != 200 ) {
-            handleError( con );
-        }
+    public String getPath() {
+        return "/admin/accounts";
     }
 
     @Override
     protected ListAccountsResponse createResponse( HttpURLConnection con ) throws IOException {
         return new ListAccountsResponse( con );
+    }
+
+    public void setStart( Integer start ) {
+        setQueryParameter( "start", start.toString() );
+    }
+
+    public void setCount( Integer count ) {
+        setQueryParameter( "count", count.toString() );
+    }
+
+    public void setWithSubscriptions( Boolean withSubscriptions ) {
+        setQueryParameter( "with_subscriptions", withSubscriptions.toString() );
     }
 }

@@ -1,6 +1,9 @@
 package com.emc.cdp.mgmt;
 
-import javax.xml.bind.*;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
 import java.io.StringReader;
 import java.io.StringWriter;
 
@@ -13,7 +16,7 @@ public class XmlUtil {
 
     static {
         try {
-            JAXBContext context = JAXBContext.newInstance( "com.emd.cdp.mgmt.bean" );
+            JAXBContext context = JAXBContext.newInstance( "com.emc.cdp.mgmt.bean" );
             marshaller = context.createMarshaller();
             unmarshaller = context.createUnmarshaller();
         } catch ( JAXBException e ) {
@@ -32,11 +35,11 @@ public class XmlUtil {
         }
     }
 
-    public static Object unmarshal( String xml ) {
+    @SuppressWarnings( "unchecked" )
+    public static <T> T unmarshal( Class<T> beanClass, String xml ) {
         try {
             StringReader reader = new StringReader( xml );
-            JAXBElement<?> element = (JAXBElement<?>) unmarshaller.unmarshal( reader );
-            return element.getValue();
+            return (T) unmarshaller.unmarshal( reader );
         } catch ( JAXBException e ) {
             throw new RuntimeException( e );
         }

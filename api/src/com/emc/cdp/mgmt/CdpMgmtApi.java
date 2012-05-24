@@ -14,8 +14,8 @@ public class CdpMgmtApi {
     private String sessionToken;
 
     public CdpMgmtApi() {
-        this.proto = "https";
-        this.port = 443;
+        this.proto = "http";
+        this.port = 80;
     }
 
     public CdpMgmtApi( String proto, String host, int port, String username,
@@ -32,8 +32,26 @@ public class CdpMgmtApi {
         this.sessionToken = response.getSessionToken();
     }
 
-    public ListAccountsResponse listAccounts() {
-        return executeWithRetry( new ListAccountsRequest( this ) );
+    public ListAccountsResponse listAccounts( boolean withSubscriptions ) {
+        ListAccountsRequest request = new ListAccountsRequest( this );
+        request.setWithSubscriptions( withSubscriptions );
+        return executeWithRetry( request );
+    }
+
+    public GetAccountResponse getAccount( String accountId, boolean withSubscriptions ) {
+        GetAccountRequest request = new GetAccountRequest( this, accountId );
+        request.setWithSubscriptions( withSubscriptions );
+        return executeWithRetry( request );
+    }
+
+    public GetAccountAssigneeResponse getAccountAssignee( String accountId, String identityId, boolean showProfile ) {
+        GetAccountAssigneeRequest request = new GetAccountAssigneeRequest( this, accountId, identityId );
+        request.setShowProfile( showProfile );
+        return executeWithRetry( request );
+    }
+
+    public GetSubtenantResponse getSubtenant( String accountId, String subscriptionId ) {
+        return executeWithRetry( new GetSubtenantRequest( this, accountId, subscriptionId ) );
     }
 
     // detects 401 response (unauthorized) and attempts to login and retry the request

@@ -13,6 +13,8 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Map;
+import java.util.TreeMap;
 
 public abstract class CdpMgmtRequest<T extends CdpMgmtResponse> {
     private static final Logger l4j = Logger.getLogger( CdpMgmtRequest.class );
@@ -21,31 +23,56 @@ public abstract class CdpMgmtRequest<T extends CdpMgmtResponse> {
 
     protected CdpMgmtApi api;
 
-    protected String path;
-    protected String query;
+    private Map<String, String> queryParameters = new TreeMap<String, String>();
 
     /**
-     * implementations should call super(api) and also set path and query appropriately based on the respective
-     * URL path (excluding the prefix above) and URL querystring for the request.
+     * main constructor
      *
      * @param api the management API object that contains configuration properties
      */
     public CdpMgmtRequest( CdpMgmtApi api ) {
         this.api = api;
-        path = "";
-        query = "";
     }
 
     /**
-     * implementations should handle the details of the request here. a typical example would be
-     * <pre>
+     * returns the URL path to use for the request. this allows implementations to dynamically generate the path based
+     * on arbitrary criteria immediately before creating the connection.
      *
-     * </pre>
+     * @return the URL path for this request
+     */
+    protected abstract String getPath();
+
+    /**
+     * returns the URL querystring to use for the request. override to dynamically generate the query
+     * based on arbitraty criteria immediately before creating the connection. default implementation marshals the
+     * query parameter map (see setQueryParameter()).
      *
-     * @param con
+     * @return the URL querystring for this request
+     */
+    protected String getQuery() {
+        String query = "";
+        for ( Map.Entry<String, String> entry : queryParameters.entrySet() ) {
+            query += entry.getKey() + "=" + entry.getValue() + "&";
+        }
+
+        if ( query.length() == 0 ) return null;
+
+        return query.substring( 0, query.length() - 1 );
+    }
+
+    /**
+     * handles the details of the request. default implementation calls con.connect() and if a response code other than
+     * 200 is found, calls handleError(). override for any other behavior.
+     *
+     * @param con a new connection that has not been sent (connect() has not been called)
      * @throws IOException
      */
-    protected abstract void handleConnection( HttpURLConnection con ) throws IOException;
+    protected void handleConnection( HttpURLConnection con ) throws IOException {
+        con.connect();
+        if ( con.getResponseCode() != 200 ) {
+            handleError( con );
+        }
+    }
 
     /**
      * implementations should construct/return the appropriate response object (subclass of CdpMgmtResponse) resulting
@@ -84,9 +111,18 @@ public abstract class CdpMgmtRequest<T extends CdpMgmtResponse> {
      */
     protected HttpURLConnection getConnection()
             throws IOException, URISyntaxException {
+        String query = getQuery();
 
-        URI uri = new URI( api.getProto(), null, api.getHost(),
-                api.getPort(), PATH_PREFIX + path, query, null );
+        // prepend the session token if available
+        String sessionQuery = getSessionQuery();
+        if ( sessionQuery != null ) {
+            if ( query == null )
+                query = sessionQuery;
+            else
+                query = sessionQuery + "&" + query;
+        }
+
+        URI uri = new URI( api.getProto(), null, api.getHost(), api.getPort(), PATH_PREFIX + getPath(), query, null );
         l4j.debug( "URI: " + uri );
         URL u = new URL( uri.toASCIIString() );
         l4j.debug( "URL: " + u );
@@ -133,6 +169,17 @@ public abstract class CdpMgmtRequest<T extends CdpMgmtResponse> {
      * @return "cdp_session=" + api.getSessionToken()
      */
     protected String getSessionQuery() {
+        if ( api.getSessionToken() == null ) return null;
         return "cdp_session=" + api.getSessionToken();
+    }
+
+    /**
+     * Sets a parameter in the map of parameters (used to generate the querystring)
+     *
+     * @param name  the name of the parameter to set
+     * @param value the value of the parameter to set
+     */
+    protected void setQueryParameter( String name, String value ) {
+        queryParameters.put( name, value );
     }
 }

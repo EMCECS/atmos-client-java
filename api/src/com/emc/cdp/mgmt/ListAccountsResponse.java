@@ -10,7 +10,7 @@ public class ListAccountsResponse extends CdpMgmtResponse {
     private AccountList accountList;
 
     public ListAccountsResponse( HttpURLConnection con ) throws IOException {
-        this.accountList = (AccountList) XmlUtil.unmarshal( HttpUtil.readResponseString( con ) );
+        this.accountList = XmlUtil.unmarshal( AccountList.class, HttpUtil.readResponseString( con ) );
     }
 
     public AccountList getAccountList() {

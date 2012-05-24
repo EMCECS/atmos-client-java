@@ -7,7 +7,11 @@ import java.net.HttpURLConnection;
 public class LoginRequest extends CdpMgmtRequest<LoginResponse> {
     public LoginRequest( CdpMgmtApi api ) {
         super( api );
-        this.path = "/admin/login";
+    }
+
+    @Override
+    protected String getPath() {
+        return "/admin/login";
     }
 
     @Override
@@ -17,6 +21,7 @@ public class LoginRequest extends CdpMgmtRequest<LoginResponse> {
 
         String content = "cdp-identity-id=" + api.getUsername() + "&cdp-password=" + api.getPassword();
 
+        con.setDoInput( true );
         con.setDoOutput( true );
         con.setFixedLengthStreamingMode( content.length() );
         con.connect();
@@ -25,13 +30,7 @@ public class LoginRequest extends CdpMgmtRequest<LoginResponse> {
         writer.write( content );
         writer.close();
 
-        int responseCode = 0;
-        try {
-            responseCode = con.getResponseCode();
-        } catch ( IOException e ) {
-            // this might be ok
-        }
-        if ( responseCode > 0 ) {
+        if ( con.getResponseCode() != 200 ) {
             handleError( con );
         }
     }
