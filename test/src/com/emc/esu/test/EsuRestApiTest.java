@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.rest.EsuRestApi;
+import com.emc.esu.sysmgmt.SysMgmtApi;
 
 public class EsuRestApiTest extends EsuApiTest {
     /**
@@ -89,8 +90,9 @@ public class EsuRestApiTest extends EsuApiTest {
     @Before
     public void setUp() throws Exception {
         esu = new EsuRestApi( host, port, uid2, secret );
-        ((EsuRestApi)esu).setUnicodeEnabled(true);
+        //((EsuRestApi)esu).setUnicodeEnabled(true);
         uid = uid2;
+        SysMgmtApi.disableCertificateValidation();
     }
 
 

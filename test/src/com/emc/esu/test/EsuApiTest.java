@@ -197,6 +197,8 @@ public abstract class EsuApiTest {
 
         // create crazy-name object
         this.esu.createObjectOnPath( path, null, null, content, "text/plain" );
+        
+        cleanup.add(path);
 
         // verify name in directory list
         boolean found = false;
@@ -241,7 +243,7 @@ public abstract class EsuApiTest {
      */
     @Test
     public void testCreateObjectWithContent() throws Exception {
-        ObjectId id = this.esu.createObject( null, null, "hello".getBytes( "UTF-8" ), "text/plain" );
+        ObjectId id = this.esu.createObject( null, null, "hello".getBytes( "UTF-8" ), "text\\plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
 
@@ -326,6 +328,7 @@ public abstract class EsuApiTest {
         Metadata listable2 = new Metadata( "listable2", "foo2 foo2", true );
         Metadata unlistable2 = new Metadata( "unlistable2", "bar2 bar2", false );
         Metadata listable3 = new Metadata( "listable3", null, true );
+        Metadata quotes = new Metadata("ST_modalities", "\\US\\", false);
         //Metadata withCommas = new Metadata( "withcommas", "I, Robot", false );
         //Metadata withEquals = new Metadata( "withequals", "name=value", false );
         mlist.addMetadata( listable );
@@ -333,6 +336,7 @@ public abstract class EsuApiTest {
         mlist.addMetadata( listable2 );
         mlist.addMetadata( unlistable2 );
         mlist.addMetadata( listable3 );
+        mlist.addMetadata(quotes);
         //mlist.addMetadata( withCommas );
         //mlist.addMetadata( withEquals );
         ObjectId id = this.esu.createObject( null, mlist, null, null );
@@ -366,7 +370,15 @@ public abstract class EsuApiTest {
     public void testMetadataNormalizeSpace() {
         MetadataList mlist = new MetadataList();
         Metadata unlistable = new Metadata( "unlistable", "bar  bar   bar    bar", false );
+        Metadata leadingSpacesOdd = new Metadata( "leadingodd", "   spaces", false);
+        Metadata trailingSpacesOdd = new Metadata( "trailingodd", "spaces   ", false);
+        Metadata leadingSpacesEven = new Metadata( "leadingeven", "    SPACES", false);
+        Metadata trailingSpacesEven = new Metadata( "trailingeven", "spaces    ", false);
         mlist.addMetadata( unlistable );
+        mlist.addMetadata( leadingSpacesOdd );
+        mlist.addMetadata( trailingSpacesOdd );
+        mlist.addMetadata( leadingSpacesEven);
+        mlist.addMetadata( trailingSpacesEven);
         ObjectId id = this.esu.createObject( null, mlist, null, null );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -2029,6 +2041,72 @@ public abstract class EsuApiTest {
         String hashOut = new String( Base64.encodeBase64( hashData ), "UTF-8" );
 
         l4j.debug( "Hash: " + hashOut );
+    }
+    
+    @Test
+    public void testDirectoryMetadata() throws Exception {
+    	ObjectPath dir = new ObjectPath("/" + rand8char() + "/");
+        MetadataList mlist = new MetadataList();
+        Metadata listable = new Metadata( "listable", "foo", true );
+        Metadata unlistable = new Metadata( "unlistable", "bar", false );
+        Metadata listable2 = new Metadata( "listable2", "foo2 foo2", true );
+        Metadata unlistable2 = new Metadata( "unlistable2", "bar2 bar2", false );
+        Metadata listable3 = new Metadata( "listable3", null, true );
+        //Metadata withCommas = new Metadata( "withcommas", "I, Robot", false );
+        //Metadata withEquals = new Metadata( "withequals", "name=value", false );
+        mlist.addMetadata( listable );
+        mlist.addMetadata( unlistable );
+        mlist.addMetadata( listable2 );
+        mlist.addMetadata( unlistable2 );
+        mlist.addMetadata( listable3 );
+        //mlist.addMetadata( withCommas );
+        //mlist.addMetadata( withEquals );
+        ObjectId id = this.esu.createObjectOnPath( dir, null, mlist, null, null );
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        // Read and validate the metadata
+        MetadataList meta = this.esu.getAllMetadata( dir ).getMetadata();
+        Assert.assertEquals( "value of 'listable' wrong", "foo", meta.getMetadata( "listable" ).getValue() );
+        Assert.assertEquals( "value of 'listable2' wrong", "foo2 foo2", meta.getMetadata( "listable2" ).getValue() );
+        Assert.assertEquals( "value of 'unlistable' wrong", "bar", meta.getMetadata( "unlistable" ).getValue() );
+        Assert.assertEquals( "value of 'unlistable2' wrong", "bar2 bar2", meta.getMetadata( "unlistable2" ).getValue() );
+        Assert.assertNotNull( "listable3 missing", meta.getMetadata( "listable3" ) );
+        Assert.assertTrue( "Value of listable3 should be empty", meta.getMetadata( "listable3" ).getValue() == null || meta.getMetadata( "listable3" ).getValue().length() == 0 );
+        //Assert.assertEquals( "Value of withcommas wrong", "I, Robot", meta.getMetadata( "withcommas" ).getValue() );
+        //Assert.assertEquals( "Value of withequals wrong", "name=value", meta.getMetadata( "withequals" ).getValue() );
+
+        // Check listable flags
+        Assert.assertEquals( "'listable' is not listable", true, meta.getMetadata( "listable" ).isListable() );
+        Assert.assertEquals( "'listable2' is not listable", true, meta.getMetadata( "listable2" ).isListable() );
+        Assert.assertEquals( "'listable3' is not listable", true, meta.getMetadata( "listable3" ).isListable() );
+        Assert.assertEquals( "'unlistable' is listable", false, meta.getMetadata( "unlistable" ).isListable() );
+        Assert.assertEquals( "'unlistable2' is listable", false, meta.getMetadata( "unlistable2" ).isListable() );
+    	
+    }
+    
+    /**
+     * Tests fetching data with a MultiExtent.
+     */
+    @Test
+    public void testMultiExtent() throws Exception {
+    	String input = "Four score and seven years ago";
+    	ObjectId id = esu.createObject(null, null, input.getBytes("UTF-8"), "text/plain");
+    	cleanup.add(id);
+    	Assert.assertNotNull("Object null", id);
+    	
+    	MultiExtent me = new MultiExtent();
+    	me.add(new Extent(27,2)); //ag
+    	me.add(new Extent(9,1)); // e
+    	me.add(new Extent(5,1)); // s
+    	me.add(new Extent(4,1)); // ' '
+    	me.add(new Extent(27,3)); // ago
+    	
+    	Assert.assertEquals("Extent string wrong", 
+    			"bytes=27-28,9-9,5-5,4-4,27-29", me.toString());
+    	byte[] data = esu.readObject(id, me, null);
+    	String out = new String(data, "UTF-8");
+    	Assert.assertEquals("Content incorrect", "ages ago", out);
     }
 
 }
