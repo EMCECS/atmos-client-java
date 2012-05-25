@@ -1728,6 +1728,10 @@ public class EsuRestApi extends AbstractEsuRestApi {
             Map<String, String> headers = new HashMap<String, String>();
 
             headers.put("x-emc-uid", uid);
+            
+            if(unicodeEnabled) {
+                headers.put("x-emc-utf8", "true");
+            }
 
             // Process options
             if( options != null ) {
