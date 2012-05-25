@@ -11,5 +11,6 @@
 	<classpathentry exported="true" kind="lib" path="commons-httpclient/httpcore-4.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="commons-httpclient/httpmime-4.1.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/log4j-1.2.16.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/rest_model-1.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

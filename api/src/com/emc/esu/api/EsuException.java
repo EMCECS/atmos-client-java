@@ -71,7 +71,7 @@ public class EsuException extends RuntimeException {
      * @param message the error message
      * @param cause the exception that caused the failure
      */
-    public EsuException( String message, Exception cause ) {
+    public EsuException( String message, Throwable cause ) {
         super( message, cause );
     }
     
@@ -81,7 +81,7 @@ public class EsuException extends RuntimeException {
      * @param cause the exception that caused the failure
      * @param HTTP code the error code
      */
-    public EsuException( String message, Exception cause, int http_code ) {
+    public EsuException( String message, Throwable cause, int http_code ) {
         super( message, cause );
         this.http_code = http_code;
     }
@@ -93,7 +93,7 @@ public class EsuException extends RuntimeException {
      * @param HTTP code the error code
      * @param Atmos detailed code the error code
      */
-    public EsuException( String message, Exception cause, int http_code, int atmos_code ) {
+    public EsuException( String message, Throwable cause, int http_code, int atmos_code ) {
         super( message, cause );
         this.http_code = http_code;
         this.atmos_code = atmos_code;
