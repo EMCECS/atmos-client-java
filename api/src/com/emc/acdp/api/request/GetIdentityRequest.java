@@ -43,7 +43,7 @@ public class GetIdentityRequest extends AcdpXmlResponseRequest<Identity> {
 
     @Override
     public String getRequestPath() {
-        return "/cdp-rest/v1/admin/identites/" + identityId;
+        return "/cdp-rest/v1/admin/identities/" + identityId;
     }
 
     @Override
