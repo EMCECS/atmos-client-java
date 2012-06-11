@@ -25,6 +25,9 @@
 
 package com.emc.acdp.api.impl;
 
+import java.util.Date;
+import java.util.List;
+
 import com.emc.acdp.api.AcdpAdminApi;
 import com.emc.acdp.api.request.AcdpRequest;
 import com.emc.acdp.api.request.AddAccountAssigneeRequest;
@@ -35,9 +38,11 @@ import com.emc.acdp.api.request.CreateIdentityRequest;
 import com.emc.acdp.api.request.CreateSubscriptionRequest;
 import com.emc.acdp.api.request.DeleteAccountRequest;
 import com.emc.acdp.api.request.DeleteIdentityRequest;
+import com.emc.acdp.api.request.DeleteSubscriptionRequest;
 import com.emc.acdp.api.request.GetAccountRequest;
 import com.emc.acdp.api.request.GetIdentityAccountRequest;
 import com.emc.acdp.api.request.GetIdentityRequest;
+import com.emc.acdp.api.request.GetSubscriptionUsage;
 import com.emc.acdp.api.request.ListAccountSubscriptionsRequest;
 import com.emc.acdp.api.request.ProvisionSubscriptionRequest;
 import com.emc.acdp.api.request.UpdateIdentityProfileRequest;
@@ -49,6 +54,7 @@ import com.emc.acdp.api.response.CreateSubscriptionResponse;
 import com.emc.cdp.services.rest.model.Account;
 import com.emc.cdp.services.rest.model.Identity;
 import com.emc.cdp.services.rest.model.LifecycleEventType;
+import com.emc.cdp.services.rest.model.MeteringUsageList;
 import com.emc.cdp.services.rest.model.Profile;
 import com.emc.cdp.services.rest.model.SubscriptionList;
 import com.emc.esu.api.EsuException;
@@ -149,8 +155,8 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
             } else if (res.getError() == null) {
                 throw new EsuException("Request failed but no error logged");
             } else {
-                throw new EsuException("Error in execute: "
-                        + res.getError(), res.getError());
+                throw new EsuException("Error in execute: " + res.getError(),
+                        res.getError());
             }
         }
 
@@ -216,28 +222,57 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
         AddAccountAssigneeRequest req = new AddAccountAssigneeRequest(
                 accountId, identityId, password, firstName, lastName, email,
                 role, adminSession);
-        
+
         execute(req);
     }
 
     @Override
     public void updateIdentityProfile(String identityId, Profile profile) {
-        UpdateIdentityProfileRequest req = new UpdateIdentityProfileRequest(identityId, profile, adminSession);
-        
+        UpdateIdentityProfileRequest req = new UpdateIdentityProfileRequest(
+                identityId, profile, adminSession);
+
         execute(req);
     }
 
     @Override
     public Identity getIdentity(String identityId) {
-        GetIdentityRequest req = new GetIdentityRequest(identityId, adminSession);
-        
+        GetIdentityRequest req = new GetIdentityRequest(identityId,
+                adminSession);
+
         return execute(req).getResponse();
     }
 
     public Account getAccount(String accountId) {
         GetAccountRequest req = new GetAccountRequest(accountId, adminSession);
-        
+
         return execute(req).getResponse();
+    }
+
+    @Override
+    public MeteringUsageList getSubscriptionUsage(String accountId,
+            String subscriptionId, Date startDate, Date endDate,
+            List<String> resources, String category) {
+        return getSubscriptionUsage(accountId, subscriptionId, startDate,
+                endDate, resources, category, -1, -1);
+    }
+
+    @Override
+    public MeteringUsageList getSubscriptionUsage(String accountId,
+            String subscriptionId, Date startDate, Date endDate,
+            List<String> resources, String category, int start, int count) {
+        GetSubscriptionUsage req = new GetSubscriptionUsage(accountId,
+                subscriptionId, startDate, endDate, resources, category, adminSession);
+        req.setStart(start);
+        req.setCount(count);
+
+        return execute(req).getResponse();
+    }
+
+    @Override
+    public void deleteSubscription(String accountId, String subscriptionId) {
+        DeleteSubscriptionRequest req = new DeleteSubscriptionRequest(accountId, subscriptionId, adminSession);
+        
+        execute(req);
     }
 
 }

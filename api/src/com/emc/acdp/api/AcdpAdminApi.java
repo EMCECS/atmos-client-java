@@ -25,34 +25,64 @@
 
 package com.emc.acdp.api;
 
+import java.util.Date;
+import java.util.List;
+
 import com.emc.cdp.services.rest.model.Account;
 import com.emc.cdp.services.rest.model.Identity;
 import com.emc.cdp.services.rest.model.LifecycleEventType;
+import com.emc.cdp.services.rest.model.MeteringUsageList;
 import com.emc.cdp.services.rest.model.Profile;
 import com.emc.cdp.services.rest.model.SubscriptionList;
 import com.emc.esu.api.EsuException;
 
 /**
  * Interface for Atmos Cloud Delivery Platform API
+ * 
  * @author cwikj
  */
 public interface AcdpAdminApi {
     void adminLogin(String identity, String password) throws EsuException;
+
     void createIdentity(Identity id) throws EsuException;
+
     String createAccount(Account acct) throws EsuException;
+
     void deleteAccount(String accountId) throws EsuException;
+
     Identity adminGetIdentity(String id);
-	String createSubscription(String accountId, String serviceId);
+
+    String createSubscription(String accountId, String serviceId);
+
     void provisionSubscription(String accountId, String subscriptionId,
             boolean sendEmail);
+
     Account getIdentityAccount(String identity);
+
     SubscriptionList getAccountSubscriptions(String accountId);
+
     void adminAccountEvent(String accountId, LifecycleEventType adminSuspend);
+
     void deleteIdentity(String identityId);
+
     void addAccountAssignee(String accountId, String identityId,
             String password, String firstName, String lastName, String email,
             String role);
+
     void updateIdentityProfile(String identityId, Profile p);
+
     Identity getIdentity(String identityId);
+
     Account getAccount(String accountId);
+
+    MeteringUsageList getSubscriptionUsage(String accountId, String subscriptionId,
+            Date startDate, Date endDate, List<String> resources,
+            String category);
+
+    MeteringUsageList getSubscriptionUsage(String accountId, String subscriptionId,
+            Date startDate, Date endDate, List<String> resources,
+            String category, int start, int count);
+    
+    void deleteSubscription(String accountId, String subscriptionId);
+
 }
