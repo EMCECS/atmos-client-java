@@ -64,7 +64,7 @@ public class AdminAccountEventRequest extends BasicAcdpRequest {
      */
     @Override
     public String getRequestQuery() {
-        return CDP_SESSION_PARAM + "?" + adminSessionId;
+        return CDP_SESSION_PARAM + "=" + adminSessionId;
     }
 
     /**
