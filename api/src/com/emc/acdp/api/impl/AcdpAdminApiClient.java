@@ -45,6 +45,7 @@ import com.emc.acdp.api.request.GetIdentityRequest;
 import com.emc.acdp.api.request.GetSubscriptionUsage;
 import com.emc.acdp.api.request.ListAccountSubscriptionsRequest;
 import com.emc.acdp.api.request.ProvisionSubscriptionRequest;
+import com.emc.acdp.api.request.UnassignAccountIdentityRequest;
 import com.emc.acdp.api.request.UpdateIdentityProfileRequest;
 import com.emc.acdp.api.response.AcdpResponse;
 import com.emc.acdp.api.response.AcdpXmlResponse;
@@ -274,5 +275,12 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
         
         execute(req);
     }
+
+	@Override
+	public void unassignAccountIdentity(String accountId, String identityId) {
+		UnassignAccountIdentityRequest req = new UnassignAccountIdentityRequest(accountId, identityId, adminSession);
+		
+		execute(req);
+	}
 
 }

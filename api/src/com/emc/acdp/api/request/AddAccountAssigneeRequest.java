@@ -13,7 +13,7 @@ import java.text.MessageFormat;
  * not exist.
  * 
  * @author cwikj
- * 
+ * @since 1.1.2
  */
 public class AddAccountAssigneeRequest extends BasicAcdpRequest {
 

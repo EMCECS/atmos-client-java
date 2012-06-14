@@ -33,8 +33,12 @@ public class CreateSubscriptionRequest extends
     private byte[] data;
     private String serviceId;
 
+
     /**
      * 
+     * @param accountId The account Id to add a subscription to.
+     * @param serviceId The service to add.  You probably want "storageservice".
+     * @param adminSessionId Your Admin session ID.
      */
     public CreateSubscriptionRequest(String accountId, String serviceId,
             String adminSessionId) {

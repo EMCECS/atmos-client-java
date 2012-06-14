@@ -84,5 +84,7 @@ public interface AcdpAdminApi {
             String category, int start, int count);
     
     void deleteSubscription(String accountId, String subscriptionId);
+    
+    void unassignAccountIdentity(String accountId, String identityId);
 
 }
