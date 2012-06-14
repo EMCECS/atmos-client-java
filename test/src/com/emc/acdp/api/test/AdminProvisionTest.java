@@ -97,12 +97,12 @@ public class AdminProvisionTest {
 		Assert.assertNotNull("Empty AccountID", accountId);
 		
 		// Step 2: Create an Identity and assign it as the account admin
-		String identityId = rand8char();
 		String firstName = rand8char();
 		String lastName = rand8char();
 		String email = generateEmail();
 		String password = rand8char() + "!";
 		String role = "account_manager";
+		String identityId = email;
 		
 		api.addAccountAssignee(accountId, identityId, password, firstName, lastName, email, role);
 		
