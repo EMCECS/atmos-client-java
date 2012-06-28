@@ -26,6 +26,7 @@ package com.emc.acdp.api.test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.MessageFormat;
 import java.util.Random;
 
 import org.junit.Assert;
@@ -34,6 +35,7 @@ import org.junit.Test;
 import com.emc.acdp.api.AcdpAdminApi;
 import com.emc.acdp.api.impl.AcdpAdminApiClient;
 import com.emc.cdp.services.rest.model.Account;
+import com.emc.esu.api.EsuException;
 
 /**
  * This test case tests provisioning an ACDP account from front-to-back using
@@ -126,6 +128,55 @@ public class AdminProvisionTest {
 		
 	}
 
+	@Test
+	public void testAssignIdentityError() {
+		// Step 0: Login
+		AcdpAdminApi api = new AcdpAdminApiClient(acdpAdminEndpoint);
+		api.adminLogin(acdpAdminUsername, acdpAdminPassword);
+		
+		// Step 1: Create an Account
+		Account acct = new Account();
+		acct.setName("Testcase Account");
+		acct.setDescription("This account was created through JUnit");
+		acct.setType("web");
+		
+		String accountId = api.createAccount(acct);
+		Assert.assertNotNull("Empty AccountID", accountId);
+		
+		// Step 2: Create an Identity and assign it as the account admin
+		String firstName = rand8char();
+		String lastName = rand8char();
+		String email = generateEmail();
+		String password = rand8char() + "!";
+		String role = "account_manager";
+		String identityId = email;
+		
+		api.addAccountAssignee(accountId, identityId, password, firstName, lastName, email, role);
+		
+		try {
+			// Do it again, should get error.
+			api.addAccountAssignee(accountId, identityId, password, firstName, lastName, email, role);
+			Assert.fail("Expected Exception");
+		} catch(EsuException e) {
+			Assert.assertEquals("HTTP code wrong", 409, e.getHttpCode());
+			String msg = MessageFormat.format(
+					"The identity \"{0}\" is already assigned to an account", 
+					identityId);
+			Assert.assertEquals("Error message incorrect", msg, e.getMessage());
+		}
+		
+		// Cleanup
+		
+		// Step 5: Unassign the identity
+		api.unassignAccountIdentity(accountId, identityId);
+		
+		// Step 6: Delete the identity
+		api.deleteIdentity(identityId);
+		
+		// Step 7: Delete the account
+		api.deleteAccount(accountId);
+		
+	}
 	
     private String generateEmail() {
         return rand8char() + "@" + rand8char() + ".com";
