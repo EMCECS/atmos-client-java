@@ -91,6 +91,7 @@ import com.emc.esu.api.ObjectMetadata;
 import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.ObjectResult;
 import com.emc.esu.api.ServiceInformation;
+import com.emc.esu.api.Version;
 
 /**
  * This is an enhanced version of the REST API that uses the Apache Commons
@@ -1055,6 +1056,80 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
         }
     }
 
+    public List<Version> listVersions(ObjectId id, ListOptions options) {
+        try {
+            String resource = getResourcePath(context, id);
+            String query = "versions";
+            URL u = buildUrl(resource, query);
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            headers.put("x-emc-uid", uid);
+
+            // Process options
+            if( options != null ) {
+            	if( options.isIncludeMetadata() ) {
+            		l4j.warn("Include metadata is not supported for listVersions");
+            	}
+            	if( options.getLimit() > 0 ) {
+            		headers.put( "x-emc-limit", ""+options.getLimit() );
+            	}
+            	if( options.getToken() != null ) {
+            		headers.put( "x-emc-token", options.getToken() );
+            	}
+            }
+
+            // Add date
+            headers.put("Date", getDateHeader());
+
+            // Sign request
+            signRequest("GET", resource, query, headers);
+
+            HttpResponse response = restGet( u, headers );
+            handleError( response );
+
+            if( options != null ) {
+            	// Update the token for listing more results.  If there are no
+            	// more results, the header will not be set and the token will
+            	// be cleared in the options object.
+            	Header token = response.getFirstHeader("x-emc-token");
+            	if( token != null ) {
+            		options.setToken( token.getValue() );
+            	} else {
+            		options.setToken( null );
+            	}
+            } else {
+            	Header token = response.getFirstHeader("x-emc-token");
+            	if( token != null ) {
+            		l4j.warn( "Result set truncated. Use ListOptions to " +
+    				"retrieve token for next page of results." );
+            	}            	
+            }
+
+            // Get object id list from response
+            byte[] data = readStream( response.getEntity().getContent(), 
+                    (int) response.getEntity().getContentLength() );
+
+            if( l4j.isDebugEnabled() ) {
+                l4j.debug("Response: " + new String(data, "UTF-8"));
+            }
+            finishRequest( response );
+
+            return parseVersionListLong(data);
+
+        } catch (MalformedURLException e) {
+            throw new EsuException("Invalid URL", e);
+        } catch (IOException e) {
+            throw new EsuException("Error connecting to server", e);
+        } catch (GeneralSecurityException e) {
+            throw new EsuException("Error computing request signature", e);
+        } catch (URISyntaxException e) {
+            throw new EsuException("Invalid URL", e);
+        }
+    }
+
+    
     /**
      * Executes a query for objects matching the specified XQuery string.
      * 

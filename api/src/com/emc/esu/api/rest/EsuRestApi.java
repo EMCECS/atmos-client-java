@@ -65,6 +65,7 @@ import com.emc.esu.api.ObjectMetadata;
 import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.ObjectResult;
 import com.emc.esu.api.ServiceInformation;
+import com.emc.esu.api.Version;
 
 /**
  * Implements the REST version of the ESU API. This class uses HttpUrlRequest to
@@ -1111,6 +1112,76 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
             con.disconnect();
             return parseVersionList(response);
+
+        } catch (MalformedURLException e) {
+            throw new EsuException("Invalid URL", e);
+        } catch (IOException e) {
+            throw new EsuException("Error connecting to server", e);
+        } catch (GeneralSecurityException e) {
+            throw new EsuException("Error computing request signature", e);
+        } catch (URISyntaxException e) {
+            throw new EsuException("Invalid URL", e);
+        }
+    }
+
+    public List<Version> listVersions(ObjectId id, ListOptions options) {
+        try {
+            String resource = getResourcePath(context, id);
+            String query = "versions";
+            URL u = buildUrl(resource, query);
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            headers.put("x-emc-uid", uid);
+
+            // Add date
+            headers.put("Date", getDateHeader());
+
+            // Process options
+            if( options != null ) {
+            	if( options.isIncludeMetadata() ) {
+            		l4j.warn("Include metadata is not supported for listVersions");
+            	}
+            	if( options.getLimit() > 0 ) {
+            		headers.put( "x-emc-limit", ""+options.getLimit() );
+            	}
+            	if( options.getToken() != null ) {
+            		headers.put( "x-emc-token", options.getToken() );
+            	}
+            }
+
+            // Sign request
+            signRequest("GET", resource, query, headers);
+            configureRequest( con, "GET", headers );
+
+            con.connect();
+
+            // Check response
+            if (con.getResponseCode() > 299) {
+                handleError(con);
+            }
+
+            if( options != null ) {
+            	// Update the token for listing more results.  If there are no
+            	// more results, the header will not be set and the token will
+            	// be cleared in the options object.
+            	options.setToken( con.getHeaderField("x-emc-token") );
+            } else {
+            	if( con.getHeaderField( "x-emc-token" ) != null ) {
+            		l4j.warn( "Result set truncated. Use ListOptions to " +
+            				"retrieve token for next page of results." );
+            	}
+            }
+
+            // Get object id list from response
+            byte[] response = readResponse(con, null);
+
+            l4j.debug("Response: " + new String(response, "UTF-8"));
+
+            con.disconnect();
+            return parseVersionListLong(response);
 
         } catch (MalformedURLException e) {
             throw new EsuException("Invalid URL", e);

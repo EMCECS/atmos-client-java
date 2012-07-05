@@ -462,8 +462,19 @@ public interface EsuApi {
      * @param id the object whose versions to list.
      * @return The list of versions of the object.  If the object does
      * not have any versions, the array will be empty.
+     * @deprecated this may not return all results if there are more than 4096 
+     * versions.  Use listVersions(ObjectId, ListOptions) instead to paginate
+     * results.
      */
     List<Identifier> listVersions( Identifier id );
+    
+    /**
+     * Lists the versions of an object.
+     * @param id the object whose versions to list.
+     * @return The list of versions of the object.  If the object does
+     * not have any versions, the array will be empty.
+     */
+    List<Version> listVersions( ObjectId id, ListOptions options );
     
     /**
      * Creates a new immutable version of an object.

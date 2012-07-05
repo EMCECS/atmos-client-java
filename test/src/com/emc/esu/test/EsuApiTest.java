@@ -596,6 +596,50 @@ public abstract class EsuApiTest {
         Assert.assertTrue( "version 1 not found in version list", versions.contains( vid1 ) );
         Assert.assertTrue( "version 2 not found in version list", versions.contains( vid2 ) );
     }
+    
+    /**
+     * Test listing the versions of an object
+     */
+    @Test
+    public void testListVersionsLong() {
+        // Create an object
+        MetadataList mlist = new MetadataList();
+        Metadata listable = new Metadata( "listable", "foo", true );
+        Metadata unlistable = new Metadata( "unlistable", "bar", false );
+        Metadata listable2 = new Metadata( "listable2", "foo2 foo2", true );
+        Metadata unlistable2 = new Metadata( "unlistable2", "bar2 bar2", false );
+        mlist.addMetadata( listable );
+        mlist.addMetadata( unlistable );
+        mlist.addMetadata( listable2 );
+        mlist.addMetadata( unlistable2 );
+        ObjectId id = this.esu.createObject( null, mlist, null, null );
+        Assert.assertNotNull( "null ID returned", id );
+
+        // Version the object
+        ObjectId vid1 = this.esu.versionObject( id );
+        Version v1 = new Version(vid1, 0, null);
+        Assert.assertNotNull( "null version ID returned", vid1 );
+        ObjectId vid2 = this.esu.versionObject( id );
+        Version v2 = new Version(vid2, 1, null);
+        Assert.assertNotNull( "null version ID returned", vid2 );
+        cleanup.add( id );
+
+        // List the versions and ensure their IDs are correct
+        ListOptions options = new ListOptions();
+        options.setLimit(1);
+        List<Version> versions = new ArrayList<Version>();
+        do {
+        	versions.addAll(this.esu.listVersions( id, options ));
+        } while(options.getToken() != null);
+        Assert.assertEquals( "Wrong number of versions returned", 2, versions.size() );
+        Assert.assertTrue( "version 1 not found in version list", versions.contains( v1 ) );
+        Assert.assertTrue( "version 2 not found in version list", versions.contains( v2 ) );
+        for(Version v : versions) {
+        	Assert.assertNotNull("oid null in version", v.getId());
+        	Assert.assertTrue("Invalid version number in version", v.getVersionNumber()>-1);
+        	Assert.assertNotNull("itime null in version", v.getItime());
+        }
+    }
 
     /**
      * Test listing the versions of an object

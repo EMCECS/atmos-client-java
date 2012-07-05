@@ -40,6 +40,7 @@ import java.net.URLEncoder;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -83,6 +84,7 @@ import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.ObjectResult;
 import com.emc.esu.api.Permission;
 import com.emc.esu.api.ServiceInformation;
+import com.emc.esu.api.Version;
 
 /**
  * Encapsulates common REST API functionality that is independant of 
@@ -92,6 +94,7 @@ import com.emc.esu.api.ServiceInformation;
 public abstract class AbstractEsuRestApi implements EsuApi {
     private static final DateFormat HEADER_FORMAT = new SimpleDateFormat(
             "EEE, d MMM yyyy HH:mm:ss z", Locale.ENGLISH);
+    private static final String ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
     private static final Pattern OBJECTID_EXTRACTOR = Pattern
             .compile("/\\w+/objects/([0-9a-f]{44})");
     private static final Logger l4j = Logger.getLogger( AbstractEsuRestApi.class );
@@ -801,6 +804,54 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 
         return objs;
     }
+    
+    @SuppressWarnings("rawtypes")
+	protected List<Version> parseVersionListLong( byte[] response ) {
+        List<Version> objs = new ArrayList<Version>();
+        DateFormat itimeParser = new SimpleDateFormat(ISO8601_FORMAT);
+        itimeParser.setTimeZone(TimeZone.getTimeZone("UTC"));
+        
+        // Use JDOM to parse the XML
+        SAXBuilder sb = new SAXBuilder();
+        try {
+            Document d = sb.build( new ByteArrayInputStream( response ) );
+            
+            // The ObjectID element is part of a namespace so we need to use
+            // the namespace to identify the elements.
+            Namespace esuNs = Namespace.getNamespace( "http://www.emc.com/cos/" );
+
+            List children = d.getRootElement().getChildren( "Ver", esuNs );
+            
+            l4j.debug( "Found " + children.size() + " objects" );
+            for( Iterator i=children.iterator(); i.hasNext(); ) {
+                Object o = i.next();
+                if( o instanceof Element ) {
+                	Element e = (Element)o;
+                    ObjectId id = new ObjectId( e.getChildText("OID", esuNs) );
+                    int versionNumber = 
+                    		Integer.parseInt(e.getChildText("VerNum", esuNs));
+                    String sitime = e.getChildText("itime", esuNs);
+                    Date itime = null;
+                    try {
+						itime = itimeParser.parse(sitime);
+					} catch (ParseException e1) {
+						throw new EsuException("Could not parse itime: " + sitime, e1);
+					}
+                    
+                    objs.add(new Version(id, versionNumber, itime));
+                } else {
+                    l4j.debug( o + " is not an Element!" );
+                }
+            }
+            
+        } catch (JDOMException e) {
+            throw new EsuException( "Error parsing response", e );
+        } catch (IOException e) {
+            throw new EsuException( "Error reading response", e );
+        }
+
+        return objs;
+    }
 
     /**
      * Parses an XML response and extracts the list of ObjectIDs
@@ -1117,10 +1168,14 @@ public abstract class AbstractEsuRestApi implements EsuApi {
     protected String getDateHeader() {
         TimeZone tz = TimeZone.getTimeZone("GMT");
         l4j.debug("TZ: " + tz);
-        HEADER_FORMAT.setTimeZone(tz);
-        String dateHeader = HEADER_FORMAT.format(new Date(System.currentTimeMillis()-serverOffset));
-        l4j.debug("Date: " + dateHeader);
-        return dateHeader;
+        
+        // Per the Java documentation, DateFormat objects are not thread safe.
+        synchronized(HEADER_FORMAT) {
+	        HEADER_FORMAT.setTimeZone(tz);
+	        String dateHeader = HEADER_FORMAT.format(new Date(System.currentTimeMillis()-serverOffset));
+	        l4j.debug("Date: " + dateHeader);
+	        return dateHeader;
+        }
     }
     
     protected ObjectId getObjectId( String location ) {
