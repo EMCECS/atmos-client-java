@@ -30,6 +30,8 @@
 	<classpathentry exported="true" kind="lib" path="lib/org.springframework.context.support-3.1.0.RELEASE.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/org.springframework.asm-3.1.0.RELEASE.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/org.springframework.expression-3.1.0.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/org.springframework.jdbc-3.1.0.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/org.springframework.transaction-3.1.0.RELEASE.jar"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/esujava"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

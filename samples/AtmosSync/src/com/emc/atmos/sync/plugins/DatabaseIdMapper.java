@@ -28,10 +28,10 @@ import java.beans.PropertyVetoException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -41,6 +41,7 @@ import org.apache.commons.cli.Options;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.util.Assert;
 
 import com.emc.esu.api.ObjectId;
@@ -90,6 +91,9 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 	public static final String JDBC_RAW_IDS_OPT = "id-map-raw-ids";
 	public static final String JDBC_RAW_IDS_DESC = "If specified, the 'raw' Atmos identifiers (ObjectID or Namespace Path) will be inserted into the database instead of the full URIs.";
 	
+	private static final String SOURCE_PARAM = "source_id";
+	private static final String DEST_PARAM = "dest_id";
+	private static final String ERROR_PARAM = "error_msg";
 	
 	private DataSource dataSource;
 	private String mapQuery;
@@ -119,95 +123,75 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 	 */
 	@Override
 	public void filter(SyncObject obj) {
-		Connection con = null;
-		PreparedStatement stmt = null;
 		try {
 			boolean alreadyMapped = false;
 			if(selectQuery != null) {
 				// Check to see if ID mapping exists.
-				con = getDataSource().getConnection();
-				stmt = con.prepareStatement(selectQuery);
-				stmt.setString(1, getSource(obj));
-				ResultSet rs = stmt.executeQuery();
-				if(rs.next()) {
-					// Looks like an ID already exists.
-					String id = rs.getString(1);
-					ObjectId oid = null;
-					if(rawIds) {
-						oid = new ObjectId(id);
-					} else {
-						// Parse out of the URI.
-						try {
-							URI uri = new URI(id);
-							id = uri.getPath();
-							if(id.startsWith("/")) {
-								id = id.substring(1);
-							}
+				NamedParameterJdbcTemplate tmpl = new NamedParameterJdbcTemplate(dataSource);
+				Map<String,String> params = Collections.singletonMap(SOURCE_PARAM, getSource(obj));
+				// Could use as update instead of mapping
+				if(mapQuery.toLowerCase().startsWith("update") || mapQuery.toLowerCase().startsWith("insert")) {
+					tmpl.update(mapQuery, params);
+				} else {
+					String id = tmpl.queryForObject(mapQuery, params, String.class);
+					
+					if(id != null) {
+						// Looks like an ID already exists.
+						ObjectId oid = null;
+						if(rawIds) {
 							oid = new ObjectId(id);
-						} catch (URISyntaxException e) {
-							throw new RuntimeException("Could not parse Atmos ID from URI: " + id, e);
+						} else {
+							// Parse out of the URI.
+							try {
+								URI uri = new URI(id);
+								id = uri.getPath();
+								if(id.startsWith("/")) {
+									id = id.substring(1);
+								}
+								oid = new ObjectId(id);
+							} catch (URISyntaxException e) {
+								throw new RuntimeException("Could not parse Atmos ID from URI: " + id, e);
+							}
+							
 						}
-						
+						DestinationAtmosId dai = new DestinationAtmosId(oid);
+						obj.addAnnotation(dai);
+						alreadyMapped = true;
 					}
-					DestinationAtmosId dai = new DestinationAtmosId(oid);
-					obj.addAnnotation(dai);
-					alreadyMapped = true;
+
 				}
-				rs.close();
-				stmt.close();
-				stmt = null;
 			}
 			
 			getNext().filter(obj);
 			
 			if(!alreadyMapped) {
-				// Insert the new mapping.
-				if(con == null) {
-					con = getDataSource().getConnection();
-				}
-				stmt = con.prepareStatement(mapQuery);
-				stmt.setString(1, getSource(obj));
-				stmt.setString(2, getDest(obj));
-				stmt.execute();
-				stmt.close();
-				stmt = null;
+				NamedParameterJdbcTemplate tmpl = new NamedParameterJdbcTemplate(dataSource);
+				Map<String,String> params = new HashMap<String, String>();
+				params.put(SOURCE_PARAM, getSource(obj));
+				params.put(DEST_PARAM, getDest(obj));
+				tmpl.update(mapQuery, params);
 			}
 			
 		} catch(RuntimeException e) {
 			if(errorQuery != null) {
 				try {
-					if(con == null) {
-						con = getDataSource().getConnection();
+					NamedParameterJdbcTemplate tmpl = new NamedParameterJdbcTemplate(dataSource);
+					Map<String,String> params = new HashMap<String, String>();
+					params.put(SOURCE_PARAM, getSource(obj));
+					if(e.getClass().equals(RuntimeException.class) && e.getCause() != null) {
+						params.put(ERROR_PARAM, e.getCause().toString());
+					} else {
+						params.put(ERROR_PARAM, e.toString());
 					}
-					stmt = con.prepareStatement(errorQuery);
-					stmt.setString(1, getSource(obj));
-					stmt.setString(2, e.getMessage());
-					stmt.execute();
-				} catch (SQLException e1) {
-					l4j.error("Error inserting error message: " + e.getMessage(), e);
+					tmpl.update(errorQuery, params);
+				} catch (Exception e1) {
+					l4j.error("Error inserting error message: " + e1.getMessage(), e1);
 				}
 			
 			}
 			
 			// re-throw
 			throw e;
-		} catch (SQLException e) {
-			l4j.error("Error inserting IDs into database: " + e.getMessage(), e);
-		} finally {
-			if(stmt != null) {
-				try {
-					stmt.close();
-				} catch (SQLException e) {
-					l4j.warn("Error closing statement: " + e.getMessage(), e);
-				}
-			}
-			if(con != null) {
-				try {
-					con.close();
-				} catch (SQLException e) {
-					l4j.warn("Error closing connection: " + e.getMessage(), e);
-				}
-			}
 		}
 		
 

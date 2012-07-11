@@ -34,11 +34,17 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.sql.DataSource;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
@@ -98,7 +104,8 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 	private int port;
 	private String uid;
 	private String secret;
-	private EsuApi atmos;	
+	private EsuApi atmos;
+	private DataSource dataSource;
 	
 	private String namespaceRoot;
 	private String oidFile;
@@ -287,6 +294,8 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 			readNamespace();
 		} else if(oidFile != null) {
 			readOIDs();
+		} else if(query != null && dataSource != null) {
+			readSqlQuery();
 		} else if(query != null) {
 			readQuery();
 		} else if(nameFile != null) {
@@ -341,6 +350,75 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 				task.addToGraph(graph);
 				lastItem = id;
 			}
+			
+		}
+		
+		// We've read all of our data; go into the normal loop now and
+		// run until we're out of tasks.
+		runQueue();
+	}
+	
+	private void readSqlQuery() {
+		initQueue();
+		
+		Connection con;
+		PreparedStatement stmt;
+		ResultSet rs;
+		try {
+			con = dataSource.getConnection();
+			stmt = con.prepareStatement(query);
+			rs = stmt.executeQuery();
+		} catch(SQLException e) {
+			throw new RuntimeException("Error querying for ids: " + e, e);
+		}
+		
+		while(running) {
+			// Look for available unsubmitted tasks
+			synchronized(graph) {
+				BreadthFirstIterator<TaskNode, DefaultEdge> i = new BreadthFirstIterator<TaskNode, DefaultEdge>(graph);
+				while( i.hasNext() ) {
+					TaskNode t = i.next();
+					if( graph.inDegreeOf(t) == 0 && !t.isQueued() ) {
+						t.setQueued(true);
+						l4j.debug( "Submitting " + t );
+						pool.submit(t);
+					}
+				}
+			}
+			if(queue.size() > threadCount*100) {
+				// Sleep a bit.  There could be billions of objects to read
+				// and we don't want to run out of memory by reading too
+				// much up front.
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// Ignore.
+				}
+				continue;
+			}
+			
+			try {
+				if(!rs.next()) {
+					l4j.info("Reached end of input set");
+					try {
+						rs.close();
+						stmt.close();
+						con.close();
+					} catch(SQLException e) {
+						l4j.warn("Error closing connection: " + e, e);
+					}
+					break;
+				}
+				
+				ObjectId oid = new ObjectId(rs.getString(1));
+				ReadAtmosTask task = new ReadAtmosTask(oid);
+				task.addToGraph(graph);
+				
+			} catch (SQLException e) {
+				throw new RuntimeException("Error fetching rows from DB: " + e, e);
+			}
+			
+			
 			
 		}
 		
@@ -613,6 +691,16 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 			}
 			
 		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return "ReadAtmosTask [id=" + id + "]";
+		}
+		
+		
 		
 	}
 	
@@ -780,6 +868,20 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 	 */
 	public void setQuery(String query) {
 		this.query = query;
+	}
+
+	/**
+	 * @return the dataSource
+	 */
+	public DataSource getDataSource() {
+		return dataSource;
+	}
+
+	/**
+	 * @param dataSource the dataSource to set
+	 */
+	public void setDataSource(DataSource dataSource) {
+		this.dataSource = dataSource;
 	}
 
 

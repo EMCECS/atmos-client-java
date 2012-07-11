@@ -75,6 +75,8 @@ public abstract class MultithreadedSource extends SourcePlugin {
 	private int completedCount;
 	private int failedCount;
 
+	private boolean rememberFailed = true;
+
 	/**
 	 * Initializes the graph, the thread pool, and the task queue.
 	 */
@@ -147,7 +149,9 @@ public abstract class MultithreadedSource extends SourcePlugin {
 	public synchronized void failed(SyncObject obj, Exception e) {
 		LogMF.warn(l4j, "Object {0} failed: {1}", obj, e);
 		failedCount++;
-		failedItems.add(obj);
+		if(rememberFailed ) {
+			failedItems.add(obj);
+		}
 	}
 	
 	@Override
@@ -220,6 +224,20 @@ public abstract class MultithreadedSource extends SourcePlugin {
 	 */
 	public int getFailedCount() {
 		return failedCount;
+	}
+
+	/**
+	 * @return the rememberFailed
+	 */
+	public boolean isRememberFailed() {
+		return rememberFailed;
+	}
+
+	/**
+	 * @param rememberFailed the rememberFailed to set
+	 */
+	public void setRememberFailed(boolean rememberFailed) {
+		this.rememberFailed = rememberFailed;
 	}
 	
 

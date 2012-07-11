@@ -55,9 +55,9 @@
 	<!-- The database ID mapper -->
 	<bean name="databaseIdMapper" class="com.emc.atmos.sync.plugins.DatabaseIdMapper">
 		<property name="dataSource" ref="dataSource"/>
-		<property name="mapQuery" value="insert into id_map(old_id, new_id) values(?,?)"/>
-		<property name="errorQuery" value="insert into error_map(old_id, error_msg) values(?,?)"/>
-		<property name="selectQuery" value="select new_id from id_map where old_id=?"/>
+		<property name="mapQuery" value="insert into id_map(old_id, new_id) values(:source_id,:dest_id)"/>
+		<property name="errorQuery" value="insert into error_map(old_id, error_msg) values(:source_id,:error_msg)"/>
+		<property name="selectQuery" value="select new_id from id_map where old_id=:source_id"/>
 		<property name="rawIds" value="true"/>
 	</bean>
 	
