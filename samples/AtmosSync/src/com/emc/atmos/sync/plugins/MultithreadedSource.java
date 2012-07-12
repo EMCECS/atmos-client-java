@@ -24,6 +24,7 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
+import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -172,8 +173,13 @@ public abstract class MultithreadedSource extends SourcePlugin {
 		}
 		
 		long rate = byteCount / secs;
-		System.out.println("Transferred " + byteCount + " bytes in " + secs + " seconds (" + rate + " bytes/s)" );
-		System.out.println("Successful Files: " + completedCount + " Failed Files: " + failedCount );
+		double objrate = (double)completedCount / secs;
+		System.out.println(MessageFormat.format(
+				"Transferred {0} bytes in {1} seconds ({2} bytes/s)", 
+				byteCount, secs, rate) );
+		System.out.println(MessageFormat.format(
+				"Successful Files: {0} ({2,number,#.##}/s) Failed Files: {1}",
+				completedCount, failedCount, objrate));
 		System.out.println("Failed Files: " + failedItems );
 	}
 

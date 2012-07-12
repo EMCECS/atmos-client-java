@@ -106,9 +106,9 @@ public class AtmosDeletePlugin extends SyncPlugin {
 							}
 						}
 					}
-					l4j.debug("Deleting " + id);
-					source.getAtmos().deleteObject(id);
 				}
+				l4j.debug("Deleting " + id);
+				source.getAtmos().deleteObject(id);
 			} catch(EsuException e) {
 				if(e.getHttpCode() == 404) {
 					// Good (already deleted)
