@@ -34,6 +34,9 @@ import com.emc.cdp.services.rest.model.LifecycleEventType;
 import com.emc.cdp.services.rest.model.MeteringUsageList;
 import com.emc.cdp.services.rest.model.Profile;
 import com.emc.cdp.services.rest.model.SubscriptionList;
+import com.emc.cdp.services.rest.model.Token;
+import com.emc.cdp.services.rest.model.TokenGroupList;
+import com.emc.cdp.services.rest.model.TokenList;
 import com.emc.esu.api.EsuException;
 
 /**
@@ -75,16 +78,25 @@ public interface AcdpAdminApi {
 
     Account getAccount(String accountId);
 
-    MeteringUsageList getSubscriptionUsage(String accountId, String subscriptionId,
-            Date startDate, Date endDate, List<String> resources,
-            String category);
+    MeteringUsageList getSubscriptionUsage(String accountId,
+            String subscriptionId, Date startDate, Date endDate,
+            List<String> resources, String category);
 
-    MeteringUsageList getSubscriptionUsage(String accountId, String subscriptionId,
-            Date startDate, Date endDate, List<String> resources,
-            String category, int start, int count);
-    
+    MeteringUsageList getSubscriptionUsage(String accountId,
+            String subscriptionId, Date startDate, Date endDate,
+            List<String> resources, String category, int start, int count);
+
     void deleteSubscription(String accountId, String subscriptionId);
     
     void unassignAccountIdentity(String accountId, String identityId);
 
+    TokenGroupList listTokenGroups(String accountId, String subscriptionId);
+
+    TokenList listTokens(String accountId, String subscriptionId,
+            String tokenGroupId);
+    
+    Token getTokenInformation(String accountId, String subscriptionId,
+            String tokenGroupId, String tokenId, boolean showFullInfo);
+
+    String getAdminSessionId();
 }

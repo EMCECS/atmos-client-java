@@ -43,7 +43,10 @@ import com.emc.acdp.api.request.GetAccountRequest;
 import com.emc.acdp.api.request.GetIdentityAccountRequest;
 import com.emc.acdp.api.request.GetIdentityRequest;
 import com.emc.acdp.api.request.GetSubscriptionUsage;
+import com.emc.acdp.api.request.GetTokenInformation;
 import com.emc.acdp.api.request.ListAccountSubscriptionsRequest;
+import com.emc.acdp.api.request.ListTokenGroupsRequest;
+import com.emc.acdp.api.request.ListTokensRequest;
 import com.emc.acdp.api.request.ProvisionSubscriptionRequest;
 import com.emc.acdp.api.request.UnassignAccountIdentityRequest;
 import com.emc.acdp.api.request.UpdateIdentityProfileRequest;
@@ -58,6 +61,9 @@ import com.emc.cdp.services.rest.model.LifecycleEventType;
 import com.emc.cdp.services.rest.model.MeteringUsageList;
 import com.emc.cdp.services.rest.model.Profile;
 import com.emc.cdp.services.rest.model.SubscriptionList;
+import com.emc.cdp.services.rest.model.Token;
+import com.emc.cdp.services.rest.model.TokenGroupList;
+import com.emc.cdp.services.rest.model.TokenList;
 import com.emc.esu.api.EsuException;
 
 /**
@@ -135,7 +141,7 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
         return r.getResponse();
     }
 
-    private <U extends AcdpRequest<T>, T extends AcdpResponse> T execute(U req) {
+    public <U extends AcdpRequest<T>, T extends AcdpResponse> T execute(U req) {
         req.setEndpoint(endpoint);
 
         T res;
@@ -262,7 +268,8 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
             String subscriptionId, Date startDate, Date endDate,
             List<String> resources, String category, int start, int count) {
         GetSubscriptionUsage req = new GetSubscriptionUsage(accountId,
-                subscriptionId, startDate, endDate, resources, category, adminSession);
+                subscriptionId, startDate, endDate, resources, category,
+                adminSession);
         req.setStart(start);
         req.setCount(count);
 
@@ -271,9 +278,43 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
 
     @Override
     public void deleteSubscription(String accountId, String subscriptionId) {
-        DeleteSubscriptionRequest req = new DeleteSubscriptionRequest(accountId, subscriptionId, adminSession);
-        
+        DeleteSubscriptionRequest req = new DeleteSubscriptionRequest(
+                accountId, subscriptionId, adminSession);
+
         execute(req);
+    }
+
+    @Override
+    public TokenGroupList listTokenGroups(String accountId,
+            String subscriptionId) {
+        ListTokenGroupsRequest req = new ListTokenGroupsRequest(accountId,
+                subscriptionId, adminSession);
+
+        return execute(req).getResponse();
+    }
+
+    @Override
+    public TokenList listTokens(String accountId, String subscriptionId,
+            String tokenGroupId) {
+        ListTokensRequest req = new ListTokensRequest(accountId,
+                subscriptionId, tokenGroupId, adminSession);
+
+        return execute(req).getResponse();
+    }
+
+    @Override
+    public String getAdminSessionId() {
+        return adminSession;
+    }
+
+    @Override
+    public Token getTokenInformation(String accountId, String subscriptionId,
+            String tokenGroupId, String tokenId, boolean showFullInfo) {
+        GetTokenInformation req = new GetTokenInformation(accountId, 
+                subscriptionId, tokenGroupId, tokenId, showFullInfo, 
+                adminSession);
+        
+        return execute(req).getResponse();
     }
 
 	@Override

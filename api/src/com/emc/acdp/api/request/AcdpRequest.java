@@ -88,6 +88,8 @@ public abstract class AcdpRequest<T extends AcdpResponse> implements
 
     // Params
     public static final String CDP_SESSION_PARAM = "cdp_session";
+    public static final String CDP_START_PARAM = "start";
+    public static final String CDP_COUNT_PARAM = "count";
 
     protected String endpoint;
 
