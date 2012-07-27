@@ -2187,13 +2187,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
         // Can set all the headers, etc now.
         for ( String name : headers.keySet() ) {
-
-            // Convert values from platform charset to ISO-8859-1.  The string
-            // is created as ISO-8859-1 bytes but reread with platform encoding.
-            // This makes sure that when the header is re-serialized into bytes
-            // that it uses the bytes we want.
-            con.setRequestProperty( new String( name.getBytes( "ISO-8859-1" ) ),
-                    new String( headers.get( name ).getBytes( "ISO-8859-1" ) ) );
+            con.setRequestProperty( name, headers.get(name) );
         }
 
         // Set the method.
