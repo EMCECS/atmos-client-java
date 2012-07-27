@@ -27,6 +27,7 @@ package com.emc.esu.test;
 import com.emc.esu.api.*;
 import com.emc.esu.api.Checksum.Algorithm;
 import com.emc.esu.api.rest.DownloadHelper;
+import com.emc.esu.api.rest.EsuRestApi;
 import com.emc.esu.api.rest.UploadHelper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
@@ -2128,11 +2129,23 @@ public abstract class EsuApiTest {
         Assert.assertEquals( "'unlistable2' is listable", false, meta.getMetadata( "unlistable2" ).isListable() );
     	
     }
+
+    /**
+     * NOTE: This method does not actually test that the custom headers are sent over the wire. Run tcpmon or wireshark
+     * to verify
+     */
+    @Test
+    public void testCustomHeaders() throws Exception {
+        Map<String, String> customHeaders = new HashMap<String, String>();
+        customHeaders.put( "myCustomHeader", "Hello World!" );
+        ((EsuRestApi) this.esu).setCustomHeaders( customHeaders );
+        this.esu.getServiceInformation();
+    }
     
     /**
      * Tests fetching data with a MultiExtent.
      */
-    @Test
+    //@Test
     public void testMultiExtent() throws Exception {
     	String input = "Four score and seven years ago";
     	ObjectId id = esu.createObject(null, null, input.getBytes("UTF-8"), "text/plain");

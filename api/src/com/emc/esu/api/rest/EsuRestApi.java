@@ -83,6 +83,8 @@ import com.emc.esu.api.Version;
 public class EsuRestApi extends AbstractEsuRestApi {
     private static final Logger l4j = Logger.getLogger(EsuRestApi.class);
 
+    private Map<String, String> customHeaders;
+
     /**
      * Creates a new EsuRestApi object.
      * 
@@ -2177,19 +2179,27 @@ public class EsuRestApi extends AbstractEsuRestApi {
     // ///////////////////
 
 
-    
-    protected void configureRequest( HttpURLConnection con, String method, Map<String,String> headers ) throws ProtocolException, UnsupportedEncodingException {
+    protected void configureRequest( HttpURLConnection con, String method, Map<String, String> headers )
+            throws ProtocolException, UnsupportedEncodingException {
+
+        // add any custom headers (i.e. for authentication proxy)
+        if ( getCustomHeaders() != null ) headers.putAll( getCustomHeaders() );
+
         // Can set all the headers, etc now.
-        for (Iterator<String> i = headers.keySet().iterator(); i.hasNext();) {
-            String name = i.next();
-            
-            con.setRequestProperty( name, headers.get(name) );
+        for ( String name : headers.keySet() ) {
+
+            // Convert values from platform charset to ISO-8859-1.  The string
+            // is created as ISO-8859-1 bytes but reread with platform encoding.
+            // This makes sure that when the header is re-serialized into bytes
+            // that it uses the bytes we want.
+            con.setRequestProperty( new String( name.getBytes( "ISO-8859-1" ) ),
+                    new String( headers.get( name ).getBytes( "ISO-8859-1" ) ) );
         }
 
         // Set the method.
-        con.setRequestMethod(method);        
+        con.setRequestMethod( method );
     }
-    
+
     /**
      * Generates the HMAC-SHA1 signature used to authenticate the request using
      * the Java security APIs.
@@ -2424,5 +2434,14 @@ public class EsuRestApi extends AbstractEsuRestApi {
                 in.close();
             }
         }
+    }
+
+    // Getters/Setters
+    public Map<String, String> getCustomHeaders() {
+        return customHeaders;
+    }
+
+    public void setCustomHeaders(Map<String, String> customHeaders) {
+        this.customHeaders = customHeaders;
     }
 }
