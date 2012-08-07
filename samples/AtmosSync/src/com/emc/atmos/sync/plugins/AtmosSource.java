@@ -51,13 +51,9 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.traverse.BreadthFirstIterator;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
-import com.emc.atmos.sync.TaskNode;
-import com.emc.atmos.sync.TaskResult;
 import com.emc.atmos.sync.util.AtmosMetadata;
 import com.emc.atmos.sync.util.CountingInputStream;
 import com.emc.esu.api.DirectoryEntry;
@@ -75,7 +71,7 @@ import com.emc.esu.api.rest.LBEsuRestApi;
  * Reads objects from an Atmos system.
  * @author cwikj
  */
-public class AtmosSource extends MultithreadedSource implements InitializingBean {
+public class AtmosSource extends MultithreadedCrawlSource implements InitializingBean {
 	private static final Logger l4j = Logger.getLogger(AtmosSource.class);
 	
 	/**
@@ -309,31 +305,7 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 		initQueue();
 		
 		ObjectId lastItem = null;
-		while(running) {
-			// Look for available unsubmitted tasks
-			synchronized(graph) {
-				BreadthFirstIterator<TaskNode, DefaultEdge> i = new BreadthFirstIterator<TaskNode, DefaultEdge>(graph);
-				while( i.hasNext() ) {
-					TaskNode t = i.next();
-					if( graph.inDegreeOf(t) == 0 && !t.isQueued() ) {
-						t.setQueued(true);
-						l4j.debug( "Submitting " + t );
-						pool.submit(t);
-					}
-				}
-			}
-			if(queue.size() > threadCount*100) {
-				// Sleep a bit.  There could be billions of objects to read
-				// and we don't want to run out of memory by reading too
-				// much up front.
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					// Ignore.
-				}
-				continue;
-			}
-			
+		while(running) {			
 			String token = "0";
 			if(lastItem != null) {
 				LogMF.info(l4j, "Getting more results starting with {0}", lastItem);
@@ -347,7 +319,7 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 			LogMF.info(l4j, "Found {0} results", ids.size());
 			for(ObjectId id : ids) {
 				ReadAtmosTask task = new ReadAtmosTask(id);
-				task.addToGraph(graph);
+				submitTransferTask(task);
 				lastItem = id;
 			}
 			
@@ -373,30 +345,6 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 		}
 		
 		while(running) {
-			// Look for available unsubmitted tasks
-			synchronized(graph) {
-				BreadthFirstIterator<TaskNode, DefaultEdge> i = new BreadthFirstIterator<TaskNode, DefaultEdge>(graph);
-				while( i.hasNext() ) {
-					TaskNode t = i.next();
-					if( graph.inDegreeOf(t) == 0 && !t.isQueued() ) {
-						t.setQueued(true);
-						l4j.debug( "Submitting " + t );
-						pool.submit(t);
-					}
-				}
-			}
-			if(queue.size() > threadCount*100) {
-				// Sleep a bit.  There could be billions of objects to read
-				// and we don't want to run out of memory by reading too
-				// much up front.
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					// Ignore.
-				}
-				continue;
-			}
-			
 			try {
 				if(!rs.next()) {
 					l4j.info("Reached end of input set");
@@ -412,13 +360,11 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 				
 				ObjectId oid = new ObjectId(rs.getString(1));
 				ReadAtmosTask task = new ReadAtmosTask(oid);
-				task.addToGraph(graph);
+				submitTransferTask(task);
 				
 			} catch (SQLException e) {
 				throw new RuntimeException("Error fetching rows from DB: " + e, e);
-			}
-			
-			
+			}			
 			
 		}
 		
@@ -454,38 +400,14 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 				br = new BufferedReader(new FileReader(new File(oidFile)));
 			}
 			
-			while(running) {
-				// Look for available unsubmitted tasks
-				synchronized(graph) {
-					BreadthFirstIterator<TaskNode, DefaultEdge> i = new BreadthFirstIterator<TaskNode, DefaultEdge>(graph);
-					while( i.hasNext() ) {
-						TaskNode t = i.next();
-						if( graph.inDegreeOf(t) == 0 && !t.isQueued() ) {
-							t.setQueued(true);
-							l4j.debug( "Submitting " + t );
-							pool.submit(t);
-						}
-					}
-				}
-				if(queue.size() > threadCount*10) {
-					// Sleep a bit.  There could be billions of objects to read
-					// and we don't want to run out of memory by reading too
-					// much up front.
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						// Ignore.
-					}
-					continue;
-				}
-				
+			while(running) {				
 				String line = br.readLine();
 				if(line == null) {
 					break;
 				}
 				ObjectId id = new ObjectId(line.trim());
 				ReadAtmosTask task = new ReadAtmosTask(id);
-				task.addToGraph(graph);
+				submitTransferTask(task);
 				
 			}
 			
@@ -515,37 +437,17 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 			}
 			
 			while(running) {
-				// Look for available unsubmitted tasks
-				synchronized(graph) {
-					BreadthFirstIterator<TaskNode, DefaultEdge> i = new BreadthFirstIterator<TaskNode, DefaultEdge>(graph);
-					while( i.hasNext() ) {
-						TaskNode t = i.next();
-						if( graph.inDegreeOf(t) == 0 && !t.isQueued() ) {
-							t.setQueued(true);
-							l4j.debug( "Submitting " + t );
-							pool.submit(t);
-						}
-					}
-				}
-				if(queue.size() > threadCount*10) {
-					// Sleep a bit.  There could be billions of objects to read
-					// and we don't want to run out of memory by reading too
-					// much up front.
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						// Ignore.
-					}
-					continue;
-				}
-				
 				String line = br.readLine();
 				if(line == null) {
 					break;
 				}
 				ObjectPath op = new ObjectPath(line.trim());
 				ReadAtmosTask task = new ReadAtmosTask(op);
-				task.addToGraph(graph);
+				if(op.isDirectory()) {
+					submitCrawlTask(task);
+				} else {
+					submitTransferTask(task);
+				}
 				
 			}
 			
@@ -569,14 +471,9 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 		
 		// Enqueue the root task.
 		ReadAtmosTask rootTask = new ReadAtmosTask(new ObjectPath(namespaceRoot));
-		rootTask.addToGraph(graph);
+		submitCrawlTask(rootTask);
 		
 		runQueue();
-		
-		if(!running) {
-			// We were terminated
-			pool.shutdownNow();
-		}
 	}
 	
 	
@@ -639,7 +536,7 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 	 * This is the core task node that executes inside the thread pool.  It
 	 * handles the dependencies when enumerating directories.
 	 */
-	class ReadAtmosTask extends TaskNode {
+	class ReadAtmosTask implements Runnable {
 		private Identifier id;
 
 		public ReadAtmosTask(Identifier id) {
@@ -647,27 +544,39 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 		}
 
 		@Override
-		protected TaskResult execute() throws Exception {
-			if(id instanceof ObjectPath) {
-				ObjectPath op = (ObjectPath)id;
-				if(op.toString().equals("/apache/")) {
-					return new TaskResult(true);
-				}
-				if(op.isDirectory()) {
-					listDirectory(op);
-				}
+		public void run() {
+			AtmosSyncObject obj;
+			try {
+				obj = new AtmosSyncObject(id);
+			} catch (URISyntaxException e) {
+				l4j.error("Could not initialize AtmosSyncObject: " + e, e);
+				return;
 			}
-			
-			AtmosSyncObject obj = new AtmosSyncObject(id);
-			
 			try {
 				getNext().filter(obj);
 				complete(obj);
 			} catch(Exception e) {
 				failed(obj, e);
-				return TaskResult.FAILURE;
+				return;
 			}
-			return TaskResult.SUCCESS;
+
+			if(id instanceof ObjectPath) {
+				ObjectPath op = (ObjectPath)id;
+				if(op.toString().equals("/apache/")) {
+					l4j.debug("Skipping " + op);
+					return;
+				}
+				if(op.isDirectory()) {
+					try {
+						listDirectory(op);
+					} catch(Exception e) {
+						l4j.error("Failed to list directory " + op + ": " + e, e);
+						failed(obj, e);
+						return;
+					}
+				}
+			}
+			
 		}
 
 		/**
@@ -677,19 +586,25 @@ public class AtmosSource extends MultithreadedSource implements InitializingBean
 		private void listDirectory(ObjectPath op) {
 
 			ListOptions options = new ListOptions();
-			List<DirectoryEntry> ents = atmos.listDirectory(op, options);
-			if(options.getToken() != null) {
-				ents.addAll(atmos.listDirectory(op, options));
-			}
+			List<DirectoryEntry> ents = null;
 			
-			for(DirectoryEntry ent : ents) {
-				// Create a child task for each child entry in the directory
-				// and enqueue it in the graph.
-				ReadAtmosTask child = new ReadAtmosTask(ent.getPath());
-				child.addParent(this);
-				child.addToGraph(graph);
-			}
-			
+			l4j.debug(">>Start listing " + op);
+			do {
+				ents = atmos.listDirectory(op, options);
+				for(DirectoryEntry ent : ents) {
+					// Create a child task for each child entry in the directory
+					// and enqueue it in the graph.
+					ReadAtmosTask child = new ReadAtmosTask(ent.getPath());
+					if("directory".equals(ent.getType())) {
+						LogMF.debug(l4j, "+crawl: {0}", ent.getPath());
+						submitCrawlTask(child);
+					} else {
+						LogMF.debug(l4j, "+transfer: {0}", ent.getPath());
+						submitTransferTask(child);
+					}
+				}
+			} while(options.getToken() != null);
+			l4j.debug("<<Done listing " + op);
 		}
 
 		/* (non-Javadoc)

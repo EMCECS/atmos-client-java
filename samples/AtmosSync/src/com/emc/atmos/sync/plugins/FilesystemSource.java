@@ -39,8 +39,6 @@ import org.apache.commons.cli.Options;
 import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;
 
-import com.emc.atmos.sync.TaskNode;
-import com.emc.atmos.sync.TaskResult;
 import com.emc.atmos.sync.util.AtmosMetadata;
 import com.emc.atmos.sync.util.CountingInputStream;
 
@@ -48,7 +46,7 @@ import com.emc.atmos.sync.util.CountingInputStream;
  * The filesystem source reads data from a file or directory.
  * @author cwikj
  */
-public class FilesystemSource extends MultithreadedSource {
+public class FilesystemSource extends MultithreadedCrawlSource {
 	private static final Logger l4j = Logger.getLogger(FilesystemSource.class);
 	
 	public static final String IGNORE_META_OPT = "ignore-meta-dir";
@@ -78,15 +76,10 @@ public class FilesystemSource extends MultithreadedSource {
 		
 		// Enqueue the root task.
 		ReadFileTask rootTask = new ReadFileTask(source);
-		rootTask.addToGraph(graph);
+		submitCrawlTask(rootTask);
 		
 		runQueue();
 		
-		if(!running) {
-			// We were terminated
-			pool.shutdownNow();
-		}
-
 	}
 
 	/**
@@ -181,7 +174,7 @@ public class FilesystemSource extends MultithreadedSource {
 				" to ignore the metadata directory.";
 	}
 		
-	public class ReadFileTask extends TaskNode {
+	public class ReadFileTask implements Runnable {
 		private File f;
 
 		public ReadFileTask(File f) {
@@ -189,39 +182,54 @@ public class FilesystemSource extends MultithreadedSource {
 		}
 
 		@Override
-		protected TaskResult execute() throws Exception {
-			if(f.isDirectory()) {
-				for(File child : f.listFiles()) {
-					if(child.isDirectory() && child.getName().equals(AtmosMetadata.META_DIR)) {
-						// skip
-						continue;
-					}
-					if(!child.isDirectory() || (child.isDirectory() && recursive)) {
- 						ReadFileTask chTask = new ReadFileTask(child);
- 						chTask.addParent(this);
- 						chTask.addToGraph(graph);
- 					}
-				}
-				
-			}
-			
+		public void run() {
 			FileSyncObject fso = null;
 			try {
 				fso = new FileSyncObject(f);
 			} catch(Exception e) {
-				throw new RuntimeException("Failed to create fso: " + f, e);
+				l4j.error("Error creating FileSyncObject: " + e, e);
+				return;
 			}
 			try {
 				getNext().filter(fso);
 				complete(fso);
 			} catch(Exception e) {
 				failed(fso, e);
-				return TaskResult.FAILURE;
+				return;
 			} catch(Throwable t) {
 				l4j.fatal("Uncaught throwable: " + t.getMessage(), t);
 			}
+			try {
+				if(f.isDirectory()) {
+					LogMF.debug(l4j, ">Crawling {0}", f);
+					for(File child : f.listFiles()) {
+						if(child.isDirectory() && child.getName().equals(AtmosMetadata.META_DIR)) {
+							// skip
+							continue;
+						}
+						if(!child.isDirectory() || (child.isDirectory() && recursive)) {
+	 						ReadFileTask chTask = new ReadFileTask(child);
+	 						
+	 						// Directories that need crawling go into the crawler
+	 						// queue.  All other objects go into the bounded 
+	 						// transfer queue.  Note that adding to the transfer
+	 						// queue might block if it's full.
+	 						if(child.isDirectory()) {
+	 							LogMF.debug(l4j, "+crawl {0}", child);
+	 							submitCrawlTask(chTask);
+	 						} else {
+	 							LogMF.debug(l4j, "+transfer {0}", child);
+	 							submitTransferTask(chTask);
+	 						}
+	 					}
+					}
+					LogMF.debug(l4j, "<Done Crawling {0}", f);
+				}
+			} catch(Exception e) { 
+				l4j.error("Error enumerating directory: " + f, e);
+				failed(fso, e);
+			}
 			
-			return TaskResult.SUCCESS;
 		}		
 		
 	}

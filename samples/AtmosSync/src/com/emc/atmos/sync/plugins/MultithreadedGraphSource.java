@@ -61,8 +61,8 @@ import com.emc.atmos.sync.TaskNode;
  * @author cwikj
  * @see com.emc.atmos.sync.TaskNode
  */
-public abstract class MultithreadedSource extends SourcePlugin {
-	private static final Logger l4j = Logger.getLogger(MultithreadedSource.class);
+public abstract class MultithreadedGraphSource extends SourcePlugin {
+	private static final Logger l4j = Logger.getLogger(MultithreadedGraphSource.class);
 	
 	protected boolean running;
 	protected int threadCount = 1;

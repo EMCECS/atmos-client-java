@@ -44,8 +44,6 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.emc.atmos.sync.TaskNode;
-import com.emc.atmos.sync.TaskResult;
 import com.emc.atmos.sync.util.AtmosMetadata;
 import com.emc.atmos.sync.util.CountingInputStream;
 import com.emc.esu.api.Metadata;
@@ -55,7 +53,7 @@ import com.emc.esu.api.Metadata;
  * 
  * @author cwikj
  */
-public class S3Source extends MultithreadedSource {
+public class S3Source extends MultithreadedCrawlSource {
 	private static final Logger l4j = Logger.getLogger(S3Source.class);
 
 	public static final String ACCESS_KEY_OPTION = "s3-access-key";
@@ -85,7 +83,7 @@ public class S3Source extends MultithreadedSource {
 		// Enqueue the first task
 		S3SyncObject root = new S3SyncObject(rootKey);
 		S3TaskNode rootTask = new S3TaskNode(root);
-		rootTask.addToGraph(graph);
+		submitCrawlTask(rootTask);
 		
 		runQueue();
 	}
@@ -326,7 +324,7 @@ public class S3Source extends MultithreadedSource {
 		
 	}
 	
-	class S3TaskNode extends TaskNode {
+	class S3TaskNode implements Runnable {
 		private S3SyncObject obj;
 
 		public S3TaskNode(S3SyncObject obj) {
@@ -334,7 +332,18 @@ public class S3Source extends MultithreadedSource {
 		}
 
 		@Override
-		protected TaskResult execute() throws Exception {
+		public void run() {
+			try {
+				getNext().filter(obj);
+				complete(obj);
+			} catch(Exception e) {
+				failed(obj, e);
+				return;
+			} finally {
+				// Need to ensure we close any S3 streams.
+				obj.close();
+			}
+			
 			if(obj.isDirectory()) {
 				// Enumerate the keys
 				ListObjectsRequest req = new ListObjectsRequest(bucketName, 
@@ -352,8 +361,7 @@ public class S3Source extends MultithreadedSource {
 						
 						S3SyncObject s3so = new S3SyncObject(s3os);
 						S3TaskNode s3tn = new S3TaskNode(s3so);
-						s3tn.addParent(this);
-						s3tn.addToGraph(graph);
+						submitTransferTask(s3tn);
 					}
 					
 					// Enqueue the subdirectories
@@ -365,27 +373,12 @@ public class S3Source extends MultithreadedSource {
 						l4j.debug("Adding task for subkey: " + subkey);
 						S3SyncObject s3so = new S3SyncObject(subkey);
 						S3TaskNode s3tn = new S3TaskNode(s3so);
-						s3tn.addParent(this);
-						s3tn.addToGraph(graph);
+						submitCrawlTask(s3tn);
 					}
 					
 					req.setMarker(listing.getNextMarker());
 				} while(listing.isTruncated());
 			}
-			
-			try {
-				getNext().filter(obj);
-				complete(obj);
-			} catch(Exception e) {
-				failed(obj, e);
-				return TaskResult.FAILURE;
-			} finally {
-				// Need to ensure we close any S3 streams.
-				obj.close();
-			}
-			
-			
-			return TaskResult.SUCCESS;
 		}
 		
 	}

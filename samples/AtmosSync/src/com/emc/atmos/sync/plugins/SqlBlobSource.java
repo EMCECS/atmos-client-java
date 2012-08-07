@@ -88,7 +88,7 @@ import com.emc.esu.api.ObjectId;
  * 
  * @author cwikj
  */
-public class SqlBlobSource extends MultithreadedSource {
+public class SqlBlobSource extends MultithreadedGraphSource {
 	private static final Logger l4j = Logger.getLogger(SqlBlobSource.class);
 
 	private DataSource dataSource;
