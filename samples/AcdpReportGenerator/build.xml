@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project AcdpReportGenerator" basedir=".">
+	<!-- Build localDirectory locations -->
+	<property name="src" value="src"/>
+    <property name="dist" value="dist"/>
+	<property name="classes" value="classes"/>
+	<property name="build" value="build"/>
+    <property name="lib" value="lib" />
+
+    <property name="esu_java_path" location="../../api" />
+
+    <!--ANT 1.7 is required                                        -->
+	<!-- Classpath to compile with -->
+	<path id="classpath">
+        <fileset dir="${lib}">
+            <include name="*.jar"/>
+        </fileset>
+        <fileset dir="${esu_java_path}/build">
+            <include name="emcesu.jar"/>
+        </fileset>
+        <fileset dir="${esu_java_path}/lib">
+            <include name="*.jar"/>
+        </fileset>
+        <fileset dir="${esu_java_path}/commons-httpclient">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+	
+	<!-- Compiles the java files -->
+	<target name="compile" depends="prepare">
+		<javac source="1.6" destdir="${classes}" srcdir="${src}" target="1.6"
+			debug="true" classpathref="classpath">
+		</javac>
+	</target>
+
+
+    <target name="create_run_jar" depends="compile">
+        <copy todir="${classes}">
+            <fileset dir="${src}" includes="log4j.*" />
+        </copy>
+        <jar destfile="${dist}/AcdpReportGenerator.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="com.emc.acdp.report.AcdpReportGenerator"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="classes"/>
+            <fileset dir="${esu_java_path}/classes"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/commons-codec-1.4.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jdom.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-apache-client-1.13.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-client-1.13.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-core-1.13.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/log4j-1.2.16.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/rest_model-1.0.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/security-1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/commons-logging-1.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpclient-4.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpclient-cache-4.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpcore-4.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpmime-4.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/commons-cli-1.2.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/commons-csv-1.0-20120611.133440-109.jar"/>
+        </jar>
+    </target>
+	
+	<!-- Removes the build directories -->
+	<target name="clean">
+        <delete dir="${dist}" />
+        <delete dir="${classes}" />
+        <delete dir="${build}" />
+	</target>
+	
+	<!-- Creates the build directories -->
+	<target name="prepare">
+        <mkdir dir="${dist}"/>
+        <mkdir dir="${classes}"/>
+        <mkdir dir="${build}"/>
+	</target>
+</project>
