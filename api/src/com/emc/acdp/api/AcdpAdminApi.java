@@ -25,78 +25,116 @@
 
 package com.emc.acdp.api;
 
+import com.emc.cdp.services.rest.model.*;
+
 import java.util.Date;
 import java.util.List;
 
-import com.emc.cdp.services.rest.model.Account;
-import com.emc.cdp.services.rest.model.Identity;
-import com.emc.cdp.services.rest.model.LifecycleEventType;
-import com.emc.cdp.services.rest.model.MeteringUsageList;
-import com.emc.cdp.services.rest.model.Profile;
-import com.emc.cdp.services.rest.model.SubscriptionList;
-import com.emc.cdp.services.rest.model.Token;
-import com.emc.cdp.services.rest.model.TokenGroupList;
-import com.emc.cdp.services.rest.model.TokenList;
-import com.emc.esu.api.EsuException;
-
 /**
  * Interface for Atmos Cloud Delivery Platform API
- * 
+ *
  * @author cwikj
  */
 public interface AcdpAdminApi {
-    void adminLogin(String identity, String password) throws EsuException;
+    String createAccount( Account acct );
 
-    void createIdentity(Identity id) throws EsuException;
+    void deleteAccount( String accountId );
 
-    String createAccount(Account acct) throws EsuException;
+    AccountList listAccounts( boolean includeSubscription );
 
-    void deleteAccount(String accountId) throws EsuException;
+    AccountList listAccounts( boolean includeSubscription, int start, int count );
 
-    Identity adminGetIdentity(String id);
+    String createAccountInvitation( String accountId, String email, String accountRole );
 
-    String createSubscription(String accountId, String serviceId);
+    String createSubscription( String accountId, String serviceId );
 
-    void provisionSubscription(String accountId, String subscriptionId,
-            boolean sendEmail);
+    void provisionSubscription( String accountId, String subscriptionId, boolean sendEmail );
 
-    Account getIdentityAccount(String identity);
+    Account getIdentityAccount( String identity, boolean includeSubscription );
 
-    SubscriptionList getAccountSubscriptions(String accountId);
+    SubscriptionList getAccountSubscriptions( String accountId );
 
-    void adminAccountEvent(String accountId, LifecycleEventType adminSuspend);
+    Subtenant getSubtenant( String accountId, String subscriptionId );
 
-    void deleteIdentity(String identityId);
+    void adminAccountEvent( String accountId, LifecycleEventType adminSuspend );
 
-    void addAccountAssignee(String accountId, String identityId,
-            String password, String firstName, String lastName, String email,
-            String role);
+    void deleteIdentity( String identityId );
 
-    void updateIdentityProfile(String identityId, Profile p);
+    void addAccountAssignee( String accountId,
+                             String identityId,
+                             String password,
+                             String firstName,
+                             String lastName,
+                             String email,
+                             String role );
 
-    Identity getIdentity(String identityId);
+    AssigneeList listAccountAssignees( String accountId, boolean includeProfile );
 
-    Account getAccount(String accountId);
+    Assignee getAccountAssignee( String accountId, String identityId, boolean includeProfile );
 
-    MeteringUsageList getSubscriptionUsage(String accountId,
-            String subscriptionId, Date startDate, Date endDate,
-            List<String> resources, String category);
+    void editAccountAssignee( String accountId, String identityId, String newRole );
 
-    MeteringUsageList getSubscriptionUsage(String accountId,
-            String subscriptionId, Date startDate, Date endDate,
-            List<String> resources, String category, int start, int count);
+    void RemoveAccountAssignee( String accountId, String identityId );
 
-    void deleteSubscription(String accountId, String subscriptionId);
-    
-    void unassignAccountIdentity(String accountId, String identityId);
+    void updateIdentityProfile( String identityId, Profile p );
 
-    TokenGroupList listTokenGroups(String accountId, String subscriptionId);
+    IdentityList listIdentities( boolean listAllAccounts, boolean includeProfile );
 
-    TokenList listTokens(String accountId, String subscriptionId,
-            String tokenGroupId);
-    
-    Token getTokenInformation(String accountId, String subscriptionId,
-            String tokenGroupId, String tokenId, boolean showFullInfo);
+    IdentityList listIdentities( boolean listAllAccounts, boolean includeProfile, int start, int count );
 
-    String getAdminSessionId();
+    Identity getIdentity( String identityId );
+
+    Account getAccount( String accountId );
+
+    MeteringUsageList getSubscriptionUsage( String accountId,
+                                            String subscriptionId,
+                                            Date startDate,
+                                            Date endDate,
+                                            List<String> resources,
+                                            String category );
+
+    MeteringUsageList getSubscriptionUsage( String accountId,
+                                            String subscriptionId,
+                                            Date startDate,
+                                            Date endDate,
+                                            List<String> resources,
+                                            String category,
+                                            int start,
+                                            int count );
+
+    void deleteSubscription( String accountId, String subscriptionId );
+
+    void unassignAccountIdentity( String accountId, String identityId );
+
+    TokenGroupList listTokenGroups( String accountId, String subscriptionId );
+
+    TokenGroupList listTokenGroups( String accountId, String subscriptionId, int start, int count );
+
+    MeteringUsageList getTokenGroupUsage( String accountId,
+                                          String subscriptionId,
+                                          String tokenGroupId,
+                                          Date startDate,
+                                          Date endDate,
+                                          List<String> resources,
+                                          String category );
+
+    MeteringUsageList getTokenGroupUsage( String accountId,
+                                          String subscriptionId,
+                                          String tokenGroupId,
+                                          Date startDate,
+                                          Date endDate,
+                                          List<String> resources,
+                                          String category,
+                                          int start,
+                                          int count );
+
+    TokenList listTokens( String accountId, String subscriptionId, String tokenGroupId );
+
+    TokenList listTokens( String accountId, String subscriptionId, String tokenGroupId, int start, int count );
+
+    Token getTokenInformation( String accountId,
+                               String subscriptionId,
+                               String tokenGroupId,
+                               String tokenId,
+                               boolean showFullInfo );
 }

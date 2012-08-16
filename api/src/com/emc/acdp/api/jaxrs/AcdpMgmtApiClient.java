@@ -1,0 +1,28 @@
+package com.emc.acdp.api.jaxrs;
+
+import com.emc.acdp.api.AcdpConfig;
+import com.emc.acdp.api.AcdpMgmtApi;
+import com.emc.cdp.services.rest.model.Identity;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.WebResource;
+
+public class AcdpMgmtApiClient implements AcdpMgmtApi {
+    private AcdpConfig config;
+    private Client client;
+
+    public AcdpMgmtApiClient( AcdpConfig config ) {
+        this.config = config;
+        this.client = RestUtil.createClient( config );
+    }
+
+    @Override
+    public void createIdentity( Identity identity ) {
+        WebResource resource = client.resource( getMgmtUri() + "/identities" );
+        resource.type( RestUtil.TYPE_XML );
+        resource.post( identity );
+    }
+
+    private String getMgmtUri() {
+        return config.getBaseUri() + "/cdp-rest/v1";
+    }
+}

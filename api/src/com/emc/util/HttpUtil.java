@@ -2,10 +2,9 @@ package com.emc.util;
 
 import org.apache.log4j.Logger;
 
-import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 
 public class HttpUtil {
@@ -31,15 +30,7 @@ public class HttpUtil {
             // could not get stream
             return "";
         }
-        try {
-            return new java.util.Scanner( in, "UTF-8" ).useDelimiter( "\\A" ).next();
-        } catch ( java.util.NoSuchElementException e ) {
-            return "";
-        } finally {
-            if ( in != null ) {
-                in.close();
-            }
-        }
+        return StreamUtil.readAsString( in );
     }
 
     /**
@@ -67,46 +58,31 @@ public class HttpUtil {
             // could not get stream
             return new byte[0];
         }
-        try {
-            byte[] output;
-            int contentLength = con.getContentLength();
-            // If we know the content length, read it directly into a buffer.
-            if ( contentLength != -1 ) {
-                output = new byte[con.getContentLength()];
+        int contentLength = con.getContentLength();
+        // If we know the content length, read it directly into a buffer.
+        if ( contentLength != -1 ) {
+            return StreamUtil.readAsBytes( in, contentLength );
 
-                int c = 0;
-                while ( c < contentLength ) {
-                    int read = in.read( output, c, contentLength - c );
-                    if ( read == -1 ) {
-                        // EOF!
-                        throw new EOFException(
-                                "EOF reading response at position " + c
-                                        + " size " + (contentLength - c) );
-                    }
-                    c += read;
-                }
-
-                return output;
-            } else {
-                l4j.debug( "Content length is unknown.  Buffering output." );
-                // Else, use a ByteArrayOutputStream to collect the response.
-                byte[] buffer = new byte[4096];
-
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                int c = 0;
-                while ( (c = in.read( buffer )) != -1 ) {
-                    baos.write( buffer, 0, c );
-                }
-                baos.close();
-
-                l4j.debug( "Buffered " + baos.size() + " response bytes" );
-
-                return baos.toByteArray();
-            }
-        } finally {
-            if ( in != null ) {
-                in.close();
-            }
+            // Else, use a ByteArrayOutputStream to collect the response.
+        } else {
+            l4j.debug( "Content length is unknown.  Buffering output." );
+            byte[] data = StreamUtil.readAsBytes( in );
+            l4j.debug( "Buffered " + data.length + " response bytes" );
+            return data;
         }
+    }
+
+    /**
+     * Simply writes the given content to the given connection's output stream.
+     * WARNING: DO NOT connect the connection before calling this method (it will be connected here)
+     */
+    public static void writeRequest( HttpURLConnection con, String content ) throws IOException {
+        con.setDoOutput( true );
+        con.setFixedLengthStreamingMode( content.getBytes( "UTF-8" ).length );
+        con.connect();
+        OutputStreamWriter writer = new OutputStreamWriter( con.getOutputStream() );
+        writer.write( content );
+        writer.flush();
+        writer.close();
     }
 }
