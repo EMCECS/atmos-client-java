@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -49,7 +50,6 @@ public class EsuApiTest20 extends EsuApiTest {
         
     }
 
-    
     @Test
     public void testGetShareableUrlAndDisposition() throws Exception {
         // Create an object with content.
@@ -110,7 +110,6 @@ public class EsuApiTest20 extends EsuApiTest {
         Assert.assertNotNull( "null ID returned", id );
         //cleanup.add( op );
 
-        
         // One cryllic, one accented, and one japanese character
         // RFC5987
         String disposition="attachment; filename=\"no UTF support.txt\"; filename*=UTF-8''" + URLEncoder.encode("бöｼ.txt", "UTF-8");
@@ -137,6 +136,28 @@ public class EsuApiTest20 extends EsuApiTest {
     	
     	Assert.assertTrue("Expected at least one feature", info.getFeatures().size()>0);
     	
+    }
+
+    @Test
+    public void testBug23750() throws Exception {
+        byte[] data = new byte[1000];
+        Arrays.fill( data, (byte) 0 );
+        MetadataList mdList = new MetadataList();
+        mdList.addMetadata( new Metadata( "test", null, true ) );
+
+        Checksum sha1 = new Checksum( Checksum.Algorithm.SHA1 );
+        ObjectId oid = this.esu.createObject( null, mdList, data, null, sha1 );
+
+        try {
+            Extent extent = new Extent( 1000, 1000 );
+            Checksum sha0 = new Checksum( Checksum.Algorithm.SHA0 );
+            sha0.update( data, 0, 1000 );
+            this.esu.updateObject( oid, null, mdList, extent, data, null, sha0 );
+
+            Assert.fail("Should have triggered an exception");
+        } catch (EsuException e) {
+            // expected
+        }
     }
 
 }
