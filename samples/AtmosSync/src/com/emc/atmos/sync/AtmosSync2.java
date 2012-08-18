@@ -161,6 +161,20 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 		}
 		
 		try {
+//			Thread kill = new Thread(new Runnable() {
+//				
+//				@Override
+//				public void run() {
+//					try {
+//						Thread.sleep(600000);
+//					} catch (InterruptedException e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
+//					System.exit(1);
+//				}
+//			});
+//			kill.start();
 			sync.run();
 		} catch(Exception e) {
 			e.printStackTrace();

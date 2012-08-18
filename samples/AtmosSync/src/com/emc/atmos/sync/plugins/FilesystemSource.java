@@ -30,6 +30,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Date;
 
 import javax.activation.MimetypesFileTypeMap;
 
@@ -101,6 +102,7 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 				.withLongOpt(IGNORE_META_OPT).create());
 		opts.addOption(OptionBuilder.withDescription(ABSOLUTE_PATH_DESC)
 				.withLongOpt(ABSOLUTE_PATH_OPT).create());
+		addOptions(opts);
 		
 		return opts;
 	}
@@ -260,6 +262,7 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 				// Default is empty, but we'll throw in the mime type.
 				AtmosMetadata am = new AtmosMetadata();
 				am.setContentType(mimeMap.getContentType(f));
+				am.setMtime(new Date(f.lastModified()));
 				setMetadata(am);
 			}
 			

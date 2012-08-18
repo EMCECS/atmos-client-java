@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -69,6 +70,9 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	public static final String DEST_NAMESPACE_DESC = "The destination within the Atmos namespace.  Note that a directory must end with a trailing slash (e.g. /dir1/dir2/) otherwise it will be interpreted as a single file (only useful for transferring a single file).";
 	public static final String DEST_NAMESPACE_ARG_NAME = "atmos-path";
 	
+	public static final String DEST_NO_UPDATE_OPTION = "no-update";
+	public static final String DEST_NO_UPDATE_DESC = "If specified, no updates will be applied to the destination";
+	
 	public static final String ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 	
 	private static final Logger l4j = Logger.getLogger(AtmosDestination.class);
@@ -81,11 +85,13 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	private String secret;
 	private EsuApi atmos;
 	private boolean force;
+	private boolean noUpdate;
 	private DateFormat iso8601;
 	
 	public AtmosDestination() {
 		super();
 		iso8601 = new SimpleDateFormat(ISO_8601);
+		iso8601.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 	
 	/**
@@ -248,6 +254,12 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 		Date srcCtime = obj.getMetadata().getMtime();
 		Date dstCtime = parseDate(destMeta.getMetadata().getMetadata("ctime"));
 		if((srcMtime != null && dstMtime != null && srcMtime.after(dstMtime)) || force) {
+			if(noUpdate) {
+				LogMF.debug(l4j, "Skipping {0}, updates disabled.", 
+						obj.getSourceURI(), 
+						obj.getDestURI());
+				return;
+			}
 			// Update the object
 			InputStream in = null;
 			try {
@@ -276,6 +288,12 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 			}
 			
 		} else if(srcCtime != null && dstCtime != null && srcCtime.after(dstCtime)) {
+			if(noUpdate) {
+				LogMF.debug(l4j, "Skipping {0}, updates disabled.", 
+						obj.getSourceURI(), 
+						obj.getDestURI());
+				return;
+			}
 			// Metadata update required.
 			if(obj.getMetadata().getMetadata() != null && obj.getMetadata().getMetadata().count()>0) {
 				LogMF.debug(l4j, "Updating metadata on {0}", destId);
@@ -368,6 +386,9 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 				.withLongOpt(DEST_NAMESPACE_OPTION).hasArg()
 				.withArgName(DEST_NAMESPACE_ARG_NAME).create());
 		
+		opts.addOption(OptionBuilder.withDescription(DEST_NO_UPDATE_DESC)
+				.withLongOpt(DEST_NO_UPDATE_OPTION).create());
+		
 		return opts;
 	}
 
@@ -409,6 +430,11 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 			
 			if(line.hasOption(DEST_NAMESPACE_OPTION)) {
 				destNamespace = line.getOptionValue(DEST_NAMESPACE_OPTION);
+			}
+			
+			if(line.hasOption(DEST_NO_UPDATE_OPTION)) {
+				noUpdate = true;
+				l4j.info("Overwrite/update destination objects disabled");
 			}
 			
 			// Create and verify Atmos connection

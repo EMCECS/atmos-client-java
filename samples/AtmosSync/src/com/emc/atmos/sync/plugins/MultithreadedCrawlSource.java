@@ -30,12 +30,13 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
 import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;
 
@@ -64,13 +65,16 @@ public abstract class MultithreadedCrawlSource extends SourcePlugin {
 	private static final Logger l4j = Logger
 			.getLogger(MultithreadedCrawlSource.class);
 
+	public static final String CRAWL_THREADS_OPT = "crawl-threads";
+	public static final String CRAWL_THREADS_DESC = "Sets the number of threads to crawl directory structures. Default is 2.";
+
 	protected boolean running;
 	protected int transferThreadCount = 1;
 	protected int crawlerThreadCount = 2;
 	private LinkedBlockingQueue<Runnable> transferQueue;
-	private ThreadPoolExecutor transferPool;
+	private CountingExecutor transferPool;
 	private LinkedBlockingQueue<Runnable> crawlerQueue;
-	private ThreadPoolExecutor crawlerPool;
+	private CountingExecutor crawlerPool;
 	protected long start;
 	private Set<SyncObject> failedItems;
 
@@ -81,6 +85,12 @@ public abstract class MultithreadedCrawlSource extends SourcePlugin {
 	private AtomicLong remainingTasks = new AtomicLong();
 
 	private boolean rememberFailed = true;
+
+	@SuppressWarnings("static-access")
+	protected void addOptions(Options opts) {
+		opts.addOption(OptionBuilder.withLongOpt(CRAWL_THREADS_OPT)
+				.withDescription(CRAWL_THREADS_DESC).hasArg().create());
+	}
 
 	/**
 	 * Initializes the graph, the thread pool, and the task queue.
@@ -152,27 +162,9 @@ public abstract class MultithreadedCrawlSource extends SourcePlugin {
 		submitTask(transferPool, task);
 	}
 
-	private void submitTask(ThreadPoolExecutor pool, Runnable task) {
+	private void submitTask(CountingExecutor pool, Runnable task) {
 		remainingTasks.incrementAndGet();
-		while (!(pool.isShutdown() || pool.isTerminating())) {
-			try {
-				pool.submit(task);
-				return;
-			} catch (RejectedExecutionException e) {
-				LogMF.debug(
-						l4j,
-						"Pool full trying to submit {0}.  Current size {1}, " +
-						"reason: {2}.",
-						task, pool.getQueue().size(), e.getMessage());
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e1) {
-					// ignore.
-				}
-			}
-		}
-
-		l4j.warn("Unable to submit task: " + task + " to pool " + pool);
+		pool.blockingSubmit(task);
 	}
 
 	/**
@@ -209,6 +201,10 @@ public abstract class MultithreadedCrawlSource extends SourcePlugin {
 		if (line.hasOption(CommonOptions.SOURCE_THREADS_OPTION)) {
 			transferThreadCount = Integer.parseInt(line
 					.getOptionValue(CommonOptions.SOURCE_THREADS_OPTION));
+		}
+		if (line.hasOption(CRAWL_THREADS_OPT)) {
+			crawlerThreadCount = Integer.parseInt(line
+					.getOptionValue(CRAWL_THREADS_OPT));
 		}
 		return false;
 	}
@@ -304,6 +300,7 @@ public abstract class MultithreadedCrawlSource extends SourcePlugin {
 	}
 
 	class CountingExecutor extends ThreadPoolExecutor {
+		private Object syncObject = new Object();
 
 		public CountingExecutor(int corePoolSize, int maximumPoolSize,
 				long keepAliveTime, TimeUnit unit,
@@ -311,11 +308,63 @@ public abstract class MultithreadedCrawlSource extends SourcePlugin {
 			super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
 		}
 
+		public void blockingSubmit(Runnable task) {
+			while(true) {
+				if(this.isShutdown() || this.isTerminated() || this.isTerminating()) {
+					throw new RuntimeException("Pool is not accepting tasks");
+				}
+
+				synchronized(syncObject) {
+					try {
+						this.submit(task);
+						return;
+					} catch(Exception e) {
+						LogMF.debug(l4j,
+								"Pool full trying to submit {0}.  Current size {1}, "
+										+ "reason: {2}.", task, this.getQueue().size(),
+								e.getMessage());
+					}
+					if(this.isShutdown() || this.isTerminated() || this.isTerminating()) {
+						throw new RuntimeException("Pool is not accepting tasks");
+					}
+					try {
+						syncObject.wait();
+					} catch (InterruptedException e) {
+						// Ignore
+					}
+				}
+			}
+			
+		}
+		
+		// A new task started.  The queue should be smaller.
+		@Override
+		protected void beforeExecute(Thread t, Runnable r) {
+			synchronized(syncObject) {
+				syncObject.notify();
+			}
+			super.beforeExecute(t, r);
+		}
+
 		@Override
 		protected void afterExecute(Runnable r, Throwable t) {
 			remainingTasks.decrementAndGet();
-			super.afterExecute(r, t);
 		}
+		
+	}
 
+	/**
+	 * @return the crawlerThreadCount
+	 */
+	public int getCrawlerThreadCount() {
+		return crawlerThreadCount;
+	}
+
+	/**
+	 * @param crawlerThreadCount
+	 *            the crawlerThreadCount to set
+	 */
+	public void setCrawlerThreadCount(int crawlerThreadCount) {
+		this.crawlerThreadCount = crawlerThreadCount;
 	}
 }

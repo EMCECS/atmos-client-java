@@ -135,6 +135,8 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 		opts.addOption(OptionBuilder.withDescription(SOURCE_NAMELIST_DESC)
 				.withLongOpt(SOURCE_NAMELIST_OPTION)
 				.hasArg().withArgName(SOURCE_NAMELIST_ARG_NAME).create());
+		// Add parent options
+		addOptions(opts);
 		
 		return opts;
 	}
