@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+
+Name: com.emc.acdp.report
+Specification-Title: "ACDP REST API"
+Specification-Version: "1.0"
+Specification-Vendor: "EMC".
+Implementation-Title: "ACDP REST Report Tool"
+Implementation-Version: "1.0.0"
+Implementation-Vendor: "EMC"

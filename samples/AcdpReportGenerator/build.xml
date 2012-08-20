@@ -38,7 +38,7 @@
         <copy todir="${classes}">
             <fileset dir="${src}" includes="log4j.*" />
         </copy>
-        <jar destfile="${dist}/AcdpReportGenerator.jar" filesetmanifest="mergewithoutmain">
+        <jar destfile="${dist}/AcdpReportGenerator.jar" manifest="src/MANIFEST.MF" filesetmanifest="mergewithoutmain">
             <manifest>
                 <attribute name="Main-Class" value="com.emc.acdp.report.AcdpReportGenerator"/>
                 <attribute name="Class-Path" value="."/>
