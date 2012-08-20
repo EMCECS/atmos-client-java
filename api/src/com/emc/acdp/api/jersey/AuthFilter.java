@@ -1,4 +1,4 @@
-package com.emc.acdp.api.jaxrs;
+package com.emc.acdp.api.jersey;
 
 import com.emc.acdp.api.AcdpConfig;
 import com.emc.acdp.api.AcdpException;

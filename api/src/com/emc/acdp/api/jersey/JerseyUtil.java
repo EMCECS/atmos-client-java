@@ -1,4 +1,4 @@
-package com.emc.acdp.api.jaxrs;
+package com.emc.acdp.api.jersey;
 
 import com.emc.acdp.api.AcdpConfig;
 import com.emc.acdp.api.AcdpException;
@@ -8,7 +8,7 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.urlconnection.HTTPSProperties;
 
-public class RestUtil {
+public class JerseyUtil {
     public static Client createClient( AcdpConfig config ) {
         try {
             ClientConfig clientConfig = new DefaultClientConfig();
@@ -30,6 +30,6 @@ public class RestUtil {
         }
     }
 
-    private RestUtil() {
+    private JerseyUtil() {
     }
 }

@@ -1,4 +1,4 @@
-package com.emc.acdp.api.jaxrs;
+package com.emc.acdp.api.jersey;
 
 import com.emc.acdp.api.AcdpConfig;
 import com.emc.acdp.api.AcdpMgmtApi;
@@ -14,7 +14,7 @@ public class AcdpMgmtApiClient implements AcdpMgmtApi {
 
     public AcdpMgmtApiClient( AcdpConfig config ) {
         this.config = config;
-        this.client = RestUtil.createClient( config );
+        this.client = JerseyUtil.createClient( config );
     }
 
     @Override

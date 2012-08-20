@@ -2,7 +2,7 @@ package com.emc.acdp.api.test;
 
 import com.emc.acdp.api.AcdpConfig;
 import com.emc.acdp.api.AcdpException;
-import com.emc.acdp.api.jaxrs.AcdpAdminApiClient;
+import com.emc.acdp.api.jersey.AcdpAdminApiClient;
 import com.emc.util.PropertiesUtil;
 import junit.framework.Assert;
 import org.junit.Before;

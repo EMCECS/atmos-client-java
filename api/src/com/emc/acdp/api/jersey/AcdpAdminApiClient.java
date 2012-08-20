@@ -23,7 +23,7 @@
 //      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 //      POSSIBILITY OF SUCH DAMAGE.
 
-package com.emc.acdp.api.jaxrs;
+package com.emc.acdp.api.jersey;
 
 import com.emc.acdp.api.AcdpAdminApi;
 import com.emc.acdp.api.AcdpConfig;
@@ -383,7 +383,7 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
 
     private WebResource getAdminResource() {
         if ( adminResource == null ) {
-            Client client = RestUtil.createClient( config );
+            Client client = JerseyUtil.createClient( config );
             adminResource = client.resource( config.getBaseUri() + "/cdp-rest/v1/admin" );
         }
         return adminResource;

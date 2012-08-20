@@ -26,7 +26,7 @@ package com.emc.acdp.api.test;
 
 import com.emc.acdp.api.AcdpConfig;
 import com.emc.acdp.api.AcdpAdminApi;
-import com.emc.acdp.api.jaxrs.AcdpAdminApiClient;
+import com.emc.acdp.api.jersey.AcdpAdminApiClient;
 import com.emc.cdp.services.rest.model.Account;
 import com.emc.esu.api.EsuException;
 import com.emc.util.PropertiesUtil;

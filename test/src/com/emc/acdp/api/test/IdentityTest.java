@@ -26,8 +26,8 @@
 package com.emc.acdp.api.test;
 
 import com.emc.acdp.api.AcdpConfig;
-import com.emc.acdp.api.jaxrs.AcdpAdminApiClient;
-import com.emc.acdp.api.jaxrs.AcdpMgmtApiClient;
+import com.emc.acdp.api.jersey.AcdpAdminApiClient;
+import com.emc.acdp.api.jersey.AcdpMgmtApiClient;
 import com.emc.cdp.services.rest.model.Identity;
 import com.emc.cdp.services.rest.model.IdentityList;
 import com.emc.cdp.services.rest.model.ObjectFactory;

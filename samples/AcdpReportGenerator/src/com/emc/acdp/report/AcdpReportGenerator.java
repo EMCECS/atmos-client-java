@@ -27,7 +27,7 @@ package com.emc.acdp.report;
 import com.emc.acdp.api.AcdpAdminApi;
 import com.emc.acdp.api.AcdpConfig;
 import com.emc.acdp.api.AcdpException;
-import com.emc.acdp.api.jaxrs.AcdpAdminApiClient;
+import com.emc.acdp.api.jersey.AcdpAdminApiClient;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Logger;
 
