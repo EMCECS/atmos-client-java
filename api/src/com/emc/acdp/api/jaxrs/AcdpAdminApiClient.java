@@ -34,6 +34,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -56,7 +57,7 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
     @Override
     public String createAccount( Account acct ) {
         ClientResponse response = getAdminResource().path( "accounts" )
-                .type( RestUtil.TYPE_XML )
+                .type( MediaType.TEXT_XML )
                 .post( ClientResponse.class,
                        acct );
 
@@ -112,7 +113,7 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
         params.putSingle( "account_role", accountRole );
 
         ClientResponse response = getAdminResource().path( "accounts/" + accountId + "/invitations" )
-                .type( RestUtil.TYPE_FORM_DATA )
+                .type( MediaType.APPLICATION_FORM_URLENCODED )
                 .post( ClientResponse.class, params );
 
         String location = response.getLocation().toString();
@@ -127,7 +128,7 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
         subscription.setServiceId( serviceId );
 
         ClientResponse response = getAdminResource().path( "accounts/" + accountId + "/subscriptions" )
-                .type( RestUtil.TYPE_XML )
+                .type( MediaType.TEXT_XML )
                 .post( ClientResponse.class, subscription );
 
         String location = response.getLocation().toString();
@@ -142,7 +143,7 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
         params.putSingle( "send_email", Boolean.toString( sendEmail ) );
 
         getAdminResource().path( "accounts/" + accountId + "/storage/" + subscriptionId )
-                .type( RestUtil.TYPE_FORM_DATA )
+                .type( MediaType.APPLICATION_FORM_URLENCODED )
                 .post( params );
     }
 
@@ -171,7 +172,7 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
         lifecycleEvent.setTargetType( LifecycleTargetType.ACCOUNT );
         lifecycleEvent.setEventType( eventType );
 
-        getAdminResource().path( "events" ).type( RestUtil.TYPE_XML ).post( lifecycleEvent );
+        getAdminResource().path( "events" ).type( MediaType.TEXT_XML ).post( lifecycleEvent );
     }
 
     @Override
@@ -195,7 +196,7 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
         params.putSingle( "email", email );
 
         getAdminResource().path( "accounts/" + accountId + "/identities/" + identityId )
-                .type( RestUtil.TYPE_FORM_DATA )
+                .type( MediaType.APPLICATION_FORM_URLENCODED )
                 .put( params );
     }
 
@@ -219,7 +220,7 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
         params.putSingle( "account_role", newRole );
 
         getAdminResource().path( "accounts/" + accountId + "/identities/" + identityId )
-                .type( RestUtil.TYPE_FORM_DATA )
+                .type( MediaType.APPLICATION_FORM_URLENCODED )
                 .post( params );
     }
 
@@ -230,7 +231,7 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
 
     @Override
     public void updateIdentityProfile( String identityId, Profile profile ) {
-        getAdminResource().path( "identities/" + identityId + "/profile" ).type( RestUtil.TYPE_XML ).put( profile );
+        getAdminResource().path( "identities/" + identityId + "/profile" ).type( MediaType.TEXT_XML ).put( profile );
     }
 
     public Account getAccount( String accountId ) {

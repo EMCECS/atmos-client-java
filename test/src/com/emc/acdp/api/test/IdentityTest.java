@@ -47,16 +47,11 @@ import java.util.Random;
 public class IdentityTest {
     AcdpMgmtApiClient mgmt;
     AcdpAdminApiClient admin;
-    private AcdpConfig mgmtConfig;
-    private AcdpConfig adminConfig;
-
-    public IdentityTest() throws Exception {
-        mgmtConfig = loadMgmtConfig( "acdp.properties" );
-        adminConfig = loadAdminConfig( "acdp.properties" );
-    }
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        AcdpConfig mgmtConfig = loadMgmtConfig( "acdp.properties" );
+        AcdpConfig adminConfig = loadAdminConfig( "acdp.properties" );
         mgmt = new AcdpMgmtApiClient( mgmtConfig );
         admin = new AcdpAdminApiClient( adminConfig );
     }

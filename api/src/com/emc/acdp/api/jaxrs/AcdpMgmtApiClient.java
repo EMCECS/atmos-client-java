@@ -6,6 +6,8 @@ import com.emc.cdp.services.rest.model.Identity;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
 
+import javax.ws.rs.core.MediaType;
+
 public class AcdpMgmtApiClient implements AcdpMgmtApi {
     private AcdpConfig config;
     private Client client;
@@ -18,7 +20,7 @@ public class AcdpMgmtApiClient implements AcdpMgmtApi {
     @Override
     public void createIdentity( Identity identity ) {
         WebResource resource = client.resource( getMgmtUri() + "/identities" );
-        resource.type( RestUtil.TYPE_XML );
+        resource.type( MediaType.TEXT_XML );
         resource.post( identity );
     }
 

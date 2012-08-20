@@ -8,6 +8,9 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.filter.ClientFilter;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -77,17 +80,17 @@ public class AuthFilter extends ClientFilter {
         String holdMethod = request.getMethod();
         URI holdUri = request.getURI();
         Object holdEntity = request.getEntity();
-        String holdType = (String) request.getHeaders().getFirst( RestUtil.HEADER_CONTENT_TYPE );
+        String holdType = (String) request.getHeaders().getFirst( HttpHeaders.CONTENT_TYPE );
 
         // login
         MultivaluedMap<String, String> params = new MultivaluedMapImpl();
         params.putSingle( PARAM_USER_ID, config.getUsername() );
         params.putSingle( PARAM_PASSWORD, config.getPassword() );
 
-        request.setMethod( RestUtil.METHOD_POST );
+        request.setMethod( HttpMethod.POST );
         request.setURI( request.getURI().resolve( "/cdp-rest/v1/admin/login" ) );
         request.setEntity( params );
-        request.getHeaders().putSingle( RestUtil.HEADER_CONTENT_TYPE, RestUtil.TYPE_FORM_DATA );
+        request.getHeaders().putSingle( HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_TYPE );
 
         ClientResponse response = getNext().handle( request );
 
@@ -100,7 +103,7 @@ public class AuthFilter extends ClientFilter {
         request.setMethod( holdMethod );
         request.setURI( holdUri );
         request.setEntity( holdEntity );
-        request.getHeaders().putSingle( RestUtil.HEADER_CONTENT_TYPE, holdType );
+        request.getHeaders().putSingle( HttpHeaders.CONTENT_TYPE, holdType );
 
         attachSessionToken( request );
     }
