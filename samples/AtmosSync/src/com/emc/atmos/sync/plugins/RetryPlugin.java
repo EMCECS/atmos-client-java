@@ -25,6 +25,7 @@
 package com.emc.atmos.sync.plugins;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;
@@ -37,6 +38,10 @@ import com.emc.esu.api.EsuException;
  */
 public class RetryPlugin extends SyncPlugin {
 	private static final Logger l4j = Logger.getLogger(RetryPlugin.class);
+	private static final String RETRY_OPTION = "retries";
+	private static final String RETRY_DESC = "Activates the retry plugin and " +
+			"sets the max number of retries";
+	private static final String RETRY_OPT_DESC = "max-retries";
 
 	private int maxRetries = 3;
 
@@ -94,10 +99,16 @@ public class RetryPlugin extends SyncPlugin {
 	 * 
 	 * @see com.emc.atmos.sync.plugins.SyncPlugin#getOptions()
 	 */
+	@SuppressWarnings("static-access")
 	@Override
 	public Options getOptions() {
-		// TODO Auto-generated method stub
-		return null;
+		Options opts = new Options();
+		
+		opts.addOption(OptionBuilder.withLongOpt(RETRY_OPTION)
+				.withDescription(RETRY_DESC).hasArg()
+				.withArgName(RETRY_OPT_DESC).create());
+		
+		return opts;
 	}
 
 	/*
@@ -109,8 +120,14 @@ public class RetryPlugin extends SyncPlugin {
 	 */
 	@Override
 	public boolean parseOptions(CommandLine line) {
-		// TODO Auto-generated method stub
-		return false;
+		if(line.hasOption(RETRY_OPTION)) {
+			setMaxRetries(Integer.parseInt(line.getOptionValue(RETRY_OPTION)));
+			LogMF.info(l4j, "Operations will be retried up to {0} times.", 
+					maxRetries);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	/*
@@ -122,8 +139,16 @@ public class RetryPlugin extends SyncPlugin {
 	 */
 	@Override
 	public void validateChain(SyncPlugin first) {
-		// TODO Auto-generated method stub
-
+		while(first != null) {
+			if(first.getNext() == null) {
+				// Dest
+				if(!(first instanceof AtmosDestination)) {
+					throw new RuntimeException("The RetryPlugin can only be " +
+							"used with an Atmos destination");
+				}
+			}
+			first = first.getNext();
+		}
 	}
 
 	/*
@@ -133,8 +158,7 @@ public class RetryPlugin extends SyncPlugin {
 	 */
 	@Override
 	public String getName() {
-		// TODO Auto-generated method stub
-		return null;
+		return "Retry";
 	}
 
 	/*
@@ -144,8 +168,14 @@ public class RetryPlugin extends SyncPlugin {
 	 */
 	@Override
 	public String getDocumentation() {
-		// TODO Auto-generated method stub
-		return null;
+		return "Allows for retrying operations on an Atmos destination.  On " +
+				"any non-client error (e.g. HTTP 5XXs), the operation will " +
+				"be retried.  In the case of Atmos code 1040 (server busy), " +
+				"the plugin will pause the thread for 5 seconds before it " +
+				"retries.  Note that if you are using multiple plugins " +
+				"between the source and destination, you should use a Spring " +
+				"configuration since when using plugins from the command " + 
+				"line you cannot guarantee execution order.";
 	}
 
 	/**

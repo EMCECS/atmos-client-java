@@ -57,6 +57,7 @@ import com.emc.atmos.sync.plugins.FilesystemSource;
 import com.emc.atmos.sync.plugins.GladinetMapper;
 import com.emc.atmos.sync.plugins.IdLoggerPlugin;
 import com.emc.atmos.sync.plugins.MetadataPlugin;
+import com.emc.atmos.sync.plugins.RetryPlugin;
 import com.emc.atmos.sync.plugins.S3Source;
 import com.emc.atmos.sync.plugins.SourcePlugin;
 import com.emc.atmos.sync.plugins.StripAclPlugin;
@@ -91,6 +92,7 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 		plugins.add(new FilesystemDestination());
 		plugins.add(new GladinetMapper());
 		plugins.add(new S3Source());
+		plugins.add(new RetryPlugin());
 		
 		Map<String,SyncPlugin> optionMap = new HashMap<String, SyncPlugin>();
 		
