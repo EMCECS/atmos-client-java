@@ -1375,4 +1375,50 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 	 * is ahead of the client, it will be negative.
 	 */
 	public abstract long calculateServerOffset();
+
+    //---------- Features supported by the Atmos 2.0 REST API. ----------\\
+
+    @Override
+    public ObjectId createObjectWithKey( String keyPool, String key, Acl acl, MetadataList metadata,
+                                         byte[] data, long length, String mimeType ) {
+        return createObjectWithKeyFromSegment( keyPool, key, acl, metadata,
+                                               new BufferSegment( data, 0, (int) length ), mimeType );
+    }
+
+    @Override
+    public ObjectId createObjectWithKey( String keyPool, String key, Acl acl, MetadataList metadata,
+                                         byte[] data, long length, String mimeType, Checksum checksum ) {
+        return createObjectWithKeyFromSegment( keyPool, key, acl, metadata,
+                                               new BufferSegment( data, 0, (int) length ), mimeType, checksum );
+    }
+
+    @Override
+    public ObjectId createObjectWithKeyFromSegment( String keyPool, String key, Acl acl, MetadataList metadata,
+                                                    BufferSegment data, String mimeType ) {
+        return createObjectWithKeyFromSegment( keyPool, key, acl, metadata, data, mimeType, null );
+    }
+
+    @Override
+    public byte[] readObjectWithKey( String keyPool, String key, Extent extent, byte[] buffer ) {
+        return readObjectWithKey( keyPool, key, extent, buffer, null );
+    }
+
+    @Override
+    public void updateObjectWithKey( String keyPool, String key, Acl acl, MetadataList metadata,
+                                     Extent extent, byte[] data, String mimeType ) {
+        updateObjectWithKeyFromSegment( keyPool, key, acl, metadata, extent, new BufferSegment( data ), mimeType );
+    }
+
+    @Override
+    public void updateObjectWithKey( String keyPool, String key, Acl acl, MetadataList metadata,
+                                     Extent extent, byte[] data, String mimeType, Checksum checksum ) {
+        updateObjectWithKeyFromSegment( keyPool, key, acl, metadata, extent,
+                                        new BufferSegment( data ), mimeType, checksum );
+    }
+
+    @Override
+    public void updateObjectWithKeyFromSegment( String keyPool, String key, Acl acl, MetadataList metadata,
+                                                Extent extent, BufferSegment data, String mimeType ) {
+        updateObjectWithKeyFromSegment( keyPool, key, acl, metadata, extent, data, mimeType, null );
+    }
 }

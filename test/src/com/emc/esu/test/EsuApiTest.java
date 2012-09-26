@@ -2131,18 +2131,6 @@ public abstract class EsuApiTest {
     }
 
     /**
-     * NOTE: This method does not actually test that the custom headers are sent over the wire. Run tcpmon or wireshark
-     * to verify
-     */
-    @Test
-    public void testCustomHeaders() throws Exception {
-        Map<String, String> customHeaders = new HashMap<String, String>();
-        customHeaders.put( "myCustomHeader", "Hello World!" );
-        ((EsuRestApi) this.esu).setCustomHeaders( customHeaders );
-        this.esu.getServiceInformation();
-    }
-    
-    /**
      * Tests fetching data with a MultiExtent.
      */
     //@Test
@@ -2166,4 +2154,175 @@ public abstract class EsuApiTest {
     	Assert.assertEquals("Content incorrect", "ages ago", out);
     }
 
+    //---------- Features supported by the Atmos 2.0 REST API. ----------\\
+
+    @Test
+    public void testHardLink() throws Exception {
+        ObjectPath op1 = new ObjectPath("/" + rand8char() + ".tmp");
+        ObjectPath op2 = new ObjectPath("/" + rand8char() + ".tmp");
+
+        ObjectId id = this.esu.createObjectOnPath( op1, null, null, "Four score and seven years ago".getBytes( "UTF-8" ), "text/plain" );
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        l4j.info("nlink after create: " + this.esu.getSystemMetadata(
+                op1, null).getMetadata("nlink").getValue());
+
+        // Rename
+        this.esu.hardLink( op1, op2 );
+
+        l4j.info("nlink after hardlink: " + this.esu.getSystemMetadata(
+                op1, null).getMetadata("nlink").getValue());
+
+        // Read back the content
+        String content = new String( this.esu.readObject( op2, null, null ), "UTF-8" );
+        Assert.assertEquals( "object content wrong", "Four score and seven years ago", content );
+
+        this.esu.deleteObject(op2);
+
+        l4j.info("nlink after delete: " + this.esu.getSystemMetadata(
+                op1, null).getMetadata("nlink").getValue());
+
+    }
+
+    @Test
+    public void testGetShareableUrlAndDisposition() throws Exception {
+        // Create an object with content.
+        String str = "Four score and twenty years ago";
+        ObjectId id = this.esu.createObject( null, null, str.getBytes( "UTF-8" ), "text/plain" );
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        String disposition="attachment; filename=\"foo bar.txt\"";
+
+        Calendar c = Calendar.getInstance();
+        c.add( Calendar.HOUR, 4 );
+        Date expiration = c.getTime();
+        URL u = this.esu.getShareableUrl( id, expiration, disposition );
+
+        l4j.debug( "Sharable URL: " + u );
+
+        InputStream stream = (InputStream)u.getContent();
+        BufferedReader br = new BufferedReader( new InputStreamReader( stream ) );
+        String content = br.readLine();
+        l4j.debug( "Content: " + content );
+        Assert.assertEquals( "URL does not contain proper content",
+                             str, content.toString() );
+    }
+
+    @Test
+    public void testGetShareableUrlWithPathAndDisposition() throws Exception {
+        // Create an object with content.
+        String str = "Four score and twenty years ago";
+        ObjectPath op = new ObjectPath( "/" + rand8char() + ".txt" );
+        ObjectId id = this.esu.createObjectOnPath( op, null, null, str.getBytes( "UTF-8" ), "text/plain" );
+        Assert.assertNotNull( "null ID returned", id );
+        //cleanup.add( op );
+
+        String disposition="attachment; filename=\"foo bar.txt\"";
+
+        Calendar c = Calendar.getInstance();
+        c.add( Calendar.HOUR, 4 );
+        Date expiration = c.getTime();
+        URL u = this.esu.getShareableUrl( op, expiration, disposition );
+
+        l4j.debug( "Sharable URL: " + u );
+
+        InputStream stream = (InputStream)u.getContent();
+        BufferedReader br = new BufferedReader( new InputStreamReader( stream ) );
+        String content = br.readLine();
+        l4j.debug( "Content: " + content );
+        Assert.assertEquals( "URL does not contain proper content",
+                             str, content.toString() );
+    }
+
+    @Test
+    public void testGetShareableUrlWithPathAndUTF8Disposition() throws Exception {
+        // Create an object with content.
+        String str = "Four score and twenty years ago";
+        ObjectPath op = new ObjectPath( "/" + rand8char() + ".txt" );
+        ObjectId id = this.esu.createObjectOnPath( op, null, null, str.getBytes( "UTF-8" ), "text/plain" );
+        Assert.assertNotNull( "null ID returned", id );
+        //cleanup.add( op );
+
+        // One cryllic, one accented, and one japanese character
+        // RFC5987
+        String disposition="attachment; filename=\"no UTF support.txt\"; filename*=UTF-8''" + URLEncoder.encode("бöｼ.txt", "UTF-8");
+
+        Calendar c = Calendar.getInstance();
+        c.add( Calendar.HOUR, 4 );
+        Date expiration = c.getTime();
+        URL u = this.esu.getShareableUrl( op, expiration, disposition );
+
+        l4j.debug( "Sharable URL: " + u );
+
+        InputStream stream = (InputStream)u.getContent();
+        BufferedReader br = new BufferedReader( new InputStreamReader( stream ) );
+        String content = br.readLine();
+        l4j.debug( "Content: " + content );
+        Assert.assertEquals( "URL does not contain proper content",
+                             str, content.toString() );
+    }
+
+    @Test
+    public void testGetServiceInformationFeatures() throws Exception {
+        ServiceInformation info = this.esu.getServiceInformation();
+        l4j.info("Supported features: " + info.getFeatures());
+
+        Assert.assertTrue("Expected at least one feature", info.getFeatures().size()>0);
+
+    }
+
+    @Test
+    public void testBug23750() throws Exception {
+        byte[] data = new byte[1000];
+        Arrays.fill( data, (byte) 0 );
+        MetadataList mdList = new MetadataList();
+        mdList.addMetadata( new Metadata( "test", null, true ) );
+
+        Checksum sha1 = new Checksum( Checksum.Algorithm.SHA1 );
+        ObjectId oid = this.esu.createObject( null, mdList, data, null, sha1 );
+
+        try {
+            Extent extent = new Extent( 1000, 1000 );
+            Checksum sha0 = new Checksum( Checksum.Algorithm.SHA0 );
+            sha0.update( data, 0, 1000 );
+            this.esu.updateObject( oid, null, mdList, extent, data, null, sha0 );
+
+            Assert.fail("Should have triggered an exception");
+        } catch (EsuException e) {
+            // expected
+        }
+    }
+
+    @Test
+    public void testCrudKeys() throws Exception {
+        String keyPool = "test-key-pool"; // keypools can only have lower-case letters and dashes (where is this documented?)
+        String key = "KEY_TEST";
+        String content = "Hello World!";
+        byte[] data = content.getBytes("UTF-8");
+
+        ObjectId oid = this.esu.createObjectWithKey( keyPool, key, null, null, data, data.length, "text/plain" );
+
+        Assert.assertNotNull( "Null object ID returned", oid );
+
+        String readContent = new String( this.esu.readObjectWithKey( keyPool, key, null, null ), "UTF-8" );
+        Assert.assertEquals( "content mismatch", content, readContent );
+
+        content = "Hello Waldo!";
+        data = content.getBytes( "UTF-8" );
+        this.esu.updateObjectWithKey( keyPool, key, null, null, null, data, null );
+
+        readContent = new String( this.esu.readObjectWithKey( keyPool, key, null, null ), "UTF-8" );
+        Assert.assertEquals( "content mismatch", content, readContent );
+
+        this.esu.deleteObjectWithKey( keyPool, key );
+
+        try {
+            this.esu.readObjectWithKey( keyPool, key, null, null );
+            Assert.fail("Object still exists");
+        } catch (EsuException e) {
+            if (e.getHttpCode() != 404) throw e;
+        }
+    }
 }

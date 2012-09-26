@@ -2360,7 +2360,7 @@ public class EsuRestApi extends AbstractEsuRestApi {
      *         of the response data.
      * @throws IOException if reading the response stream fails.
      */
-    private byte[] readResponse(HttpURLConnection con, byte[] buffer)
+    protected byte[] readResponse(HttpURLConnection con, byte[] buffer)
             throws IOException {
         InputStream in = null;
         if (con.getResponseCode() > 299) {
@@ -2437,5 +2437,679 @@ public class EsuRestApi extends AbstractEsuRestApi {
 
     public void setCustomHeaders(Map<String, String> customHeaders) {
         this.customHeaders = customHeaders;
+    }
+
+    //---------- Features supported by the Atmos 2.0 REST API. ----------\\
+
+    @Override
+    public void hardLink( ObjectPath source, ObjectPath target ) {
+        try {
+            String resource = getResourcePath( context, source );
+            String query = "hardlink";
+            URL u = buildUrl( resource, query );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            headers.put( "x-emc-uid", uid );
+
+            String destPath = target.toString();
+            if ( destPath.startsWith( "/" ) ) {
+                destPath = destPath.substring( 1 );
+            }
+            headers.put( "x-emc-path", destPath );
+
+            // Add date
+            headers.put( "Date", getDateHeader() );
+
+            // Compute checksum
+            // Sign request
+            signRequest( "POST", resource, query, headers );
+            configureRequest( con, "POST", headers );
+
+            con.connect();
+
+            // Check response
+            if ( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+
+            con.disconnect();
+
+        } catch ( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch ( IOException e ) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch ( GeneralSecurityException e ) {
+            throw new EsuException( "Error computing request signature", e );
+        } catch ( URISyntaxException e ) {
+            throw new EsuException( "Invalid URL", e );
+        }
+
+    }
+
+    @Override
+    public ObjectId createObjectWithKeyFromSegment( String keyPool, String key, Acl acl, MetadataList metadata,
+                                                    BufferSegment data, String mimeType, Checksum checksum ) {
+        try {
+            String resource = context + "/namespace/" + key;
+            URL u = buildUrl( resource, null );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            // Figure out the mimetype
+            if ( mimeType == null ) {
+                mimeType = "application/octet-stream";
+            }
+
+            headers.put( "Content-Type", mimeType );
+            headers.put( "x-emc-uid", uid );
+            headers.put( "x-emc-pool", keyPool );
+
+            // Process metadata
+            if ( metadata != null ) {
+                processMetadata( metadata, headers );
+            }
+
+            l4j.debug( "meta " + headers.get( "x-emc-meta" ) );
+
+            // Add acl
+            if ( acl != null ) {
+                processAcl( acl, headers );
+            }
+
+            // Process data
+            if ( data == null ) {
+                data = new BufferSegment( new byte[0] );
+            }
+            con.setFixedLengthStreamingMode( data.getSize() );
+            con.setDoOutput( true );
+
+            // Add date
+            headers.put( "Date", getDateHeader() );
+
+            // Compute checksum
+            if ( checksum != null ) {
+                checksum.update( data.getBuffer(), data.getOffset(), data.getSize() );
+                headers.put( "x-emc-wschecksum", checksum.toString() );
+            }
+
+            // Sign request
+            signRequest( "POST", resource, null, headers );
+            configureRequest( con, "POST", headers );
+
+            con.connect();
+
+            // post data
+            OutputStream out = null;
+            try {
+                out = con.getOutputStream();
+                out.write( data.getBuffer(), data.getOffset(), data.getSize() );
+                out.close();
+            } catch ( IOException e ) {
+                silentClose( out );
+                con.disconnect();
+                throw new EsuException( "Error posting data", e );
+            }
+
+            // Check response
+            if ( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+
+            // The new object ID is returned in the location response header
+            String location = con.getHeaderField( "location" );
+            con.disconnect();
+
+            // Parse the value out of the URL
+            return getObjectId( location );
+        } catch ( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch ( IOException e ) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch ( GeneralSecurityException e ) {
+            throw new EsuException( "Error computing request signature", e );
+        } catch ( URISyntaxException e ) {
+            throw new EsuException( "Invalid URL", e );
+        }
+    }
+
+    @Override
+    public ObjectId createObjectWithKeyFromStream( String keyPool, String key, Acl acl, MetadataList metadata,
+                                                   InputStream data, long length, String mimeType ) {
+        try {
+            String resource = context + "/namespace/" + key;
+            URL u = buildUrl( resource, null );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            if ( data == null ) {
+                throw new IllegalArgumentException( "Input stream is required" );
+            }
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            // Figure out the mimetype
+            if ( mimeType == null ) {
+                mimeType = "application/octet-stream";
+            }
+
+            headers.put( "Content-Type", mimeType );
+            headers.put( "x-emc-uid", uid );
+            headers.put( "x-emc-pool", keyPool );
+
+            // Process metadata
+            if ( metadata != null ) {
+                processMetadata( metadata, headers );
+            }
+
+            l4j.debug( "meta " + headers.get( "x-emc-meta" ) );
+
+            // Add acl
+            if ( acl != null ) {
+                processAcl( acl, headers );
+            }
+
+            con.setFixedLengthStreamingMode( (int) length );
+            con.setDoOutput( true );
+
+            // Add date
+            headers.put( "Date", getDateHeader() );
+
+            // Sign request
+            signRequest( "POST", resource, null, headers );
+            configureRequest( con, "POST", headers );
+
+            con.connect();
+
+            // post data
+            OutputStream out = null;
+            byte[] buffer = new byte[128 * 1024];
+            int read = 0;
+            try {
+                out = con.getOutputStream();
+                while ( read < length ) {
+                    int c = data.read( buffer );
+                    if ( c == -1 ) {
+                        throw new EsuException(
+                                "EOF encountered reading data stream" );
+                    }
+                    out.write( buffer, 0, c );
+                    read += c;
+                }
+                out.close();
+            } catch ( IOException e ) {
+                silentClose( out );
+                con.disconnect();
+                throw new EsuException( "Error posting data", e );
+            }
+
+            // Check response
+            if ( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+
+            // The new object ID is returned in the location response header
+            String location = con.getHeaderField( "location" );
+            con.disconnect();
+
+            // Parse the value out of the URL
+            return getObjectId( location );
+        } catch ( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch ( IOException e ) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch ( GeneralSecurityException e ) {
+            throw new EsuException( "Error computing request signature", e );
+        } catch ( URISyntaxException e ) {
+            throw new EsuException( "Invalid URL", e );
+        }
+    }
+
+    @Override
+    public void deleteObjectWithKey( String keyPool, String key ) {
+        try {
+            String resource = context + "/namespace/" + key;
+            URL u = buildUrl( resource, null );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            headers.put( "x-emc-uid", uid );
+            headers.put( "x-emc-pool", keyPool );
+
+            // Add date
+            headers.put( "Date", getDateHeader() );
+
+            // Sign request
+            signRequest( "DELETE", resource, null, headers );
+            configureRequest( con, "DELETE", headers );
+
+            con.connect();
+
+            // Check response
+            if ( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+            con.disconnect();
+
+        } catch ( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch ( IOException e ) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch ( GeneralSecurityException e ) {
+            throw new EsuException( "Error computing request signature", e );
+        } catch ( URISyntaxException e ) {
+            throw new EsuException( "Invalid URL", e );
+        }
+    }
+
+    @Override
+    public ObjectMetadata getAllMetadata( String keyPool, String key ) {
+        try {
+            String resource = context + "/namespace/" + key;
+            URL u = buildUrl( resource, null );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            headers.put( "x-emc-uid", uid );
+            headers.put( "x-emc-pool", keyPool );
+
+            if ( unicodeEnabled ) {
+                headers.put( "x-emc-utf8", "true" );
+            }
+
+            // Add date
+            headers.put( "Date", getDateHeader() );
+
+            // Sign request
+            signRequest( "HEAD", resource, null, headers );
+            configureRequest( con, "HEAD", headers );
+
+            con.connect();
+
+            // Check response
+            if ( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+
+            // Parse return headers. User grants are in x-emc-useracl and
+            // group grants are in x-emc-groupacl
+            Acl acl = new Acl();
+            readAcl( acl, con.getHeaderField( "x-emc-useracl" ),
+                     Grantee.GRANT_TYPE.USER );
+            readAcl( acl, con.getHeaderField( "x-emc-groupacl" ),
+                     Grantee.GRANT_TYPE.GROUP );
+
+            // Parse return headers. Regular metadata is in x-emc-meta and
+            // listable metadata is in x-emc-listable-meta
+            MetadataList meta = new MetadataList();
+            readMetadata( meta, con.getHeaderField( "x-emc-meta" ), false );
+            readMetadata( meta, con.getHeaderField( "x-emc-listable-meta" ), true );
+
+            ObjectMetadata om = new ObjectMetadata();
+            om.setAcl( acl );
+            om.setMetadata( meta );
+            om.setMimeType( con.getContentType() );
+
+            return om;
+
+        } catch ( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch ( IOException e ) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch ( GeneralSecurityException e ) {
+            throw new EsuException( "Error computing request signature", e );
+        } catch ( URISyntaxException e ) {
+            throw new EsuException( "Invalid URL", e );
+        }
+    }
+
+    @Override
+    public MetadataList getSystemMetadata( String keyPool, String key, MetadataTags tags ) {
+        try {
+            String resource = context + "/namespace/" + key;
+            String query = "metadata/system";
+            URL u = buildUrl( resource, query );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            headers.put( "x-emc-uid", uid );
+            headers.put( "x-emc-pool", keyPool );
+
+            // process tags
+            if ( tags != null ) {
+                processTags( tags, headers );
+            }
+
+            // Add date
+            headers.put( "Date", getDateHeader() );
+
+            // Sign request
+            signRequest( "GET", resource, query, headers );
+            configureRequest( con, "GET", headers );
+
+            con.connect();
+
+            // Check response
+            if ( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+
+            // Parse return headers. Regular metadata is in x-emc-meta and
+            // listable metadata is in x-emc-listable-meta
+            MetadataList meta = new MetadataList();
+            readMetadata( meta, con.getHeaderField( "x-emc-meta" ), false );
+            readMetadata( meta, con.getHeaderField( "x-emc-listable-meta" ), true );
+
+            con.disconnect();
+            return meta;
+
+        } catch ( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch ( IOException e ) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch ( GeneralSecurityException e ) {
+            throw new EsuException( "Error computing request signature", e );
+        } catch ( URISyntaxException e ) {
+            throw new EsuException( "Invalid URL", e );
+        }
+    }
+
+    @Override
+    public byte[] readObjectWithKey( String keyPool, String key, Extent extent, byte[] buffer, Checksum checksum ) {
+        try {
+            String resource = context + "/namespace/" + key;
+            URL u = buildUrl( resource, null );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            headers.put( "x-emc-uid", uid );
+            headers.put( "x-emc-pool", keyPool );
+
+            // Add date
+            headers.put( "Date", getDateHeader() );
+
+            // Add extent if needed
+            if ( extent != null && !extent.equals( Extent.ALL_CONTENT ) ) {
+                headers.put( extent.getHeaderName(), extent.toString() );
+            }
+
+            // Sign request
+            signRequest( "GET", resource, null, headers );
+            configureRequest( con, "GET", headers );
+
+            con.connect();
+
+            // Check response
+            if ( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+
+            if ( buffer != null && extent != null ) {
+                if ( extent.getSize() > (long) buffer.length ) {
+                    throw new IllegalArgumentException(
+                            "The buffer is smaller than the requested extent" );
+                }
+            }
+
+            // The requested content is in the response body.
+            byte[] data = readResponse( con, buffer );
+
+            // See if a checksum was returned.
+            String checksumStr = con.getHeaderField( "x-emc-wschecksum" );
+            if ( checksumStr != null && checksum != null ) {
+                l4j.debug( "Checksum header: " + checksumStr );
+                checksum.setExpectedValue( checksumStr );
+                if ( con.getContentLength() != -1 ) {
+                    checksum.update( data, 0, con.getContentLength() );
+                } else {
+                    // readResponse should return a new content-sized buffer in this case
+                    checksum.update( data, 0, data.length );
+                }
+            }
+
+            con.disconnect();
+            return data;
+
+        } catch ( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch ( IOException e ) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch ( GeneralSecurityException e ) {
+            throw new EsuException( "Error computing request signature", e );
+        } catch ( URISyntaxException e ) {
+            throw new EsuException( "Invalid URL", e );
+        }
+    }
+
+    @Override
+    public InputStream readObjectStreamWithKey( String keyPool, String key, Extent extent ) {
+        try {
+            String resource = context + "/namespace/" + key;
+            URL u = buildUrl( resource, null );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            headers.put( "x-emc-uid", uid );
+            headers.put( "x-emc-pool", keyPool );
+
+            // Add date
+            headers.put( "Date", getDateHeader() );
+
+            // Add extent if needed
+            if ( extent != null && !extent.equals( Extent.ALL_CONTENT ) ) {
+                headers.put( extent.getHeaderName(), extent.toString() );
+            }
+
+            // Sign request
+            signRequest( "GET", resource, null, headers );
+            configureRequest( con, "GET", headers );
+
+            con.connect();
+
+            // Check response
+            if ( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+
+            return new HttpInputStreamWrapper( con.getInputStream(), con );
+
+        } catch ( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch ( IOException e ) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch ( GeneralSecurityException e ) {
+            throw new EsuException( "Error computing request signature", e );
+        } catch ( URISyntaxException e ) {
+            throw new EsuException( "Invalid URL", e );
+        }
+    }
+
+    @Override
+    public void updateObjectWithKeyFromStream( String keyPool, String key, Acl acl, MetadataList metadata,
+                                               Extent extent, InputStream data, long length, String mimeType ) {
+        try {
+            String resource = context + "/namespace/" + key;
+            URL u = buildUrl( resource, null );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            // Figure out the mimetype
+            if ( mimeType == null ) {
+                mimeType = "application/octet-stream";
+            }
+
+            headers.put( "Content-Type", mimeType );
+            headers.put( "x-emc-uid", uid );
+            headers.put( "x-emc-pool", keyPool );
+
+            // Process metadata
+            if ( metadata != null ) {
+                processMetadata( metadata, headers );
+            }
+
+            l4j.debug( "meta " + headers.get( "x-emc-meta" ) );
+
+            // Add acl
+            if ( acl != null ) {
+                processAcl( acl, headers );
+            }
+
+            // Add extent if needed
+            if ( extent != null && !extent.equals( Extent.ALL_CONTENT ) ) {
+                headers.put( extent.getHeaderName(), extent.toString() );
+            }
+
+            con.setFixedLengthStreamingMode( (int) length );
+            con.setDoOutput( true );
+
+            // Add date
+            headers.put( "Date", getDateHeader() );
+
+            // Sign request
+            signRequest( "PUT", resource, null, headers );
+            configureRequest( con, "PUT", headers );
+
+            con.connect();
+
+            // post data
+            OutputStream out = null;
+            byte[] buffer = new byte[128 * 1024];
+            int read = 0;
+            try {
+                out = con.getOutputStream();
+                while ( read < length ) {
+                    int c = data.read( buffer );
+                    if ( c == -1 ) {
+                        throw new EsuException(
+                                "EOF encountered reading data stream" );
+                    }
+                    out.write( buffer, 0, c );
+                    read += c;
+                }
+                out.close();
+            } catch ( IOException e ) {
+                silentClose( out );
+                con.disconnect();
+                throw new EsuException( "Error posting data", e );
+            }
+
+            // Check response
+            if ( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+            con.disconnect();
+        } catch ( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch ( IOException e ) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch ( GeneralSecurityException e ) {
+            throw new EsuException( "Error computing request signature", e );
+        } catch ( URISyntaxException e ) {
+            throw new EsuException( "Invalid URL", e );
+        }
+    }
+
+    @Override
+    public void updateObjectWithKeyFromSegment( String keyPool, String key, Acl acl, MetadataList metadata,
+                                                Extent extent, BufferSegment data, String mimeType,
+                                                Checksum checksum ) {
+        try {
+            String resource = context + "/namespace/" + key;
+            URL u = buildUrl( resource, null );
+            HttpURLConnection con = (HttpURLConnection) u.openConnection();
+
+            // Build headers
+            Map<String, String> headers = new HashMap<String, String>();
+
+            // Figure out the mimetype
+            if ( mimeType == null ) {
+                mimeType = "application/octet-stream";
+            }
+
+            headers.put( "Content-Type", mimeType );
+            headers.put( "x-emc-uid", uid );
+            headers.put( "x-emc-pool", keyPool );
+
+            // Process metadata
+            if ( metadata != null ) {
+                processMetadata( metadata, headers );
+            }
+
+            l4j.debug( "meta " + headers.get( "x-emc-meta" ) );
+
+            // Add acl
+            if ( acl != null ) {
+                processAcl( acl, headers );
+            }
+
+            // Add extent if needed
+            if ( extent != null && !extent.equals( Extent.ALL_CONTENT ) ) {
+                headers.put( extent.getHeaderName(), extent.toString() );
+            }
+
+            // Process data
+            if ( data == null ) {
+                data = new BufferSegment( new byte[0] );
+            }
+            con.setFixedLengthStreamingMode( data.getSize() );
+            con.setDoOutput( true );
+
+            // Add date
+            headers.put( "Date", getDateHeader() );
+
+            // Compute checksum
+            if ( checksum != null ) {
+                checksum.update( data.getBuffer(), data.getOffset(), data.getSize() );
+                headers.put( "x-emc-wschecksum", checksum.toString() );
+            }
+
+            // Sign request
+            signRequest( "PUT", resource, null, headers );
+            configureRequest( con, "PUT", headers );
+
+            con.connect();
+
+            // post data
+            OutputStream out = null;
+            try {
+                out = con.getOutputStream();
+                out.write( data.getBuffer(), data.getOffset(), data.getSize() );
+                out.close();
+            } catch ( IOException e ) {
+                silentClose( out );
+                con.disconnect();
+                throw new EsuException( "Error posting data", e );
+            }
+
+            // Check response
+            if ( con.getResponseCode() > 299 ) {
+                handleError( con );
+            }
+            con.disconnect();
+        } catch ( MalformedURLException e ) {
+            throw new EsuException( "Invalid URL", e );
+        } catch ( IOException e ) {
+            throw new EsuException( "Error connecting to server", e );
+        } catch ( GeneralSecurityException e ) {
+            throw new EsuException( "Error computing request signature", e );
+        } catch ( URISyntaxException e ) {
+            throw new EsuException( "Invalid URL", e );
+        }
     }
 }

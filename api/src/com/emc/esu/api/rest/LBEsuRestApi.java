@@ -38,7 +38,7 @@ import org.apache.log4j.Logger;
  * threaded environment by distributing requests against a number of hosts.
  * @author cwikj
  */
-public class LBEsuRestApi extends EsuRestApi20 {
+public class LBEsuRestApi extends EsuRestApi {
 	private static final Logger l4j = Logger.getLogger(LBEsuRestApi.class);
 	
 	public static enum LBMode { ROUND_ROBIN, ROUND_ROBIN_THREADS };

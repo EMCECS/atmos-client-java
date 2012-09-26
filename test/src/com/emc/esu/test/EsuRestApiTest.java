@@ -26,8 +26,12 @@ package com.emc.esu.test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.emc.esu.api.EsuApi;
+import com.emc.esu.api.rest.LBEsuRestApi;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -89,8 +93,8 @@ public class EsuRestApiTest extends EsuApiTest {
      */
     @Before
     public void setUp() throws Exception {
-        esu = new EsuRestApi( host, port, uid2, secret );
-        //((EsuRestApi)esu).setUnicodeEnabled(true);
+        esu = new LBEsuRestApi( Arrays.asList( new String[]{host} ), port, uid2, secret );
+        esu.setUnicodeEnabled(true);
         uid = uid2;
         SysMgmtApi.disableCertificateValidation();
     }
@@ -139,5 +143,15 @@ public class EsuRestApiTest extends EsuApiTest {
     	l4j.info("Server offset: " + offset + " milliseconds");
     }
 
-
+    /**
+     * NOTE: This method does not actually test that the custom headers are sent over the wire. Run tcpmon or wireshark
+     * to verify
+     */
+    @Test
+    public void testCustomHeaders() throws Exception {
+        Map<String, String> customHeaders = new HashMap<String, String>();
+        customHeaders.put( "myCustomHeader", "Hello World!" );
+        ((EsuRestApi) this.esu).setCustomHeaders( customHeaders );
+        this.esu.getServiceInformation();
+    }
 }
