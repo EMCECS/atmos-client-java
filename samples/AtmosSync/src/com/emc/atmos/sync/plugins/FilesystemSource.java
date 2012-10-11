@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Date;
+import java.util.Map;
 
 import javax.activation.MimetypesFileTypeMap;
 
@@ -42,6 +43,7 @@ import org.apache.log4j.Logger;
 
 import com.emc.atmos.sync.util.AtmosMetadata;
 import com.emc.atmos.sync.util.CountingInputStream;
+import com.emc.esu.api.Metadata;
 
 /**
  * The filesystem source reads data from a file or directory.
@@ -178,6 +180,7 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 		
 	public class ReadFileTask implements Runnable {
 		private File f;
+		private Map<String, String> extraMetadata;
 
 		public ReadFileTask(File f) {
 			this.f = f;
@@ -188,6 +191,13 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 			FileSyncObject fso = null;
 			try {
 				fso = new FileSyncObject(f);
+				if(extraMetadata != null) {
+					for(String key : extraMetadata.keySet()) {
+						String value = extraMetadata.get(key);
+						fso.getMetadata().getMetadata().addMetadata(
+								new Metadata(key, value, false));
+					}
+				}
 			} catch(Exception e) {
 				l4j.error("Error creating FileSyncObject: " + e, e);
 				return;
@@ -232,6 +242,20 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 				failed(fso, e);
 			}
 			
+		}
+
+		/**
+		 * @return the extraMetadata
+		 */
+		public Map<String, String> getExtraMetadata() {
+			return extraMetadata;
+		}
+
+		/**
+		 * @param extraMetadata the extraMetadata to set
+		 */
+		public void setExtraMetadata(Map<String, String> extraMetadata) {
+			this.extraMetadata = extraMetadata;
 		}		
 		
 	}

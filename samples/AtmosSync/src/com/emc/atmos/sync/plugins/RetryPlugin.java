@@ -142,7 +142,7 @@ public class RetryPlugin extends SyncPlugin {
 		while(first != null) {
 			if(first.getNext() == null) {
 				// Dest
-				if(!(first instanceof AtmosDestination) || !(first instanceof DummyDestination)) {
+				if(!(first instanceof AtmosDestination || first instanceof DummyDestination)) {
 					throw new RuntimeException("The RetryPlugin can only be " +
 							"used with an Atmos or dummy destination");
 				}

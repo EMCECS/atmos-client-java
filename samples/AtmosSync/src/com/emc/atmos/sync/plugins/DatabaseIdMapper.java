@@ -41,6 +41,7 @@ import org.apache.commons.cli.Options;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.util.Assert;
 
@@ -77,15 +78,15 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 	public static final String JDBC_PASSWORD_ARG_NAME = "password";
 	
 	public static final String JDBC_SELECT_OPT = "id-map-select-sql";
-	public static final String JDBC_SELECT_DESC = "The SQL statement to lookup a destination ID, e.g. \"SELECT dest FROM id_map WHERE src=?\".  It is assumed that the query will have one argument: the source ID.  If the query does not return a row, a new object will be created in the destination.  Optional.  If omitted, all objects will be created new in the destination.";
+	public static final String JDBC_SELECT_DESC = "The SQL statement to lookup a destination ID, e.g. \"SELECT dest FROM id_map WHERE src=:source_id\".  It is assumed that the query will have one argument: the source (:source_id).  If the query does not return a row, a new object will be created in the destination.  Optional.  If omitted, all objects will be created new in the destination.";
 	public static final String JDBC_SELECT_ARG_NAME = "sql-statement";
 	
 	public static final String JDBC_MAP_OPT = "id-map-insert-sql";
-	public static final String JDBC_MAP_DESC = "The SQL statement to insert mapped IDs, e.g. \"INSERT INTO id_map(src,dest) VALUES(?,?)\".  It is assumed that the query will have two arguments: source and destination in that order.";
+	public static final String JDBC_MAP_DESC = "The SQL statement to insert mapped IDs, e.g. \"INSERT INTO id_map(src,dest) VALUES(:source_id,:dest_id)\".  It is assumed that the query will have two arguments: source (:source_id) and destination (:dest_id).";
 	public static final String JDBC_MAP_ARG_NAME = "sql-statement";
 	
 	public static final String JDBC_ERROR_OPT = "id-map-error-sql";
-	public static final String JDBC_ERROR_DESC = "The SQL statement to insert error messages, e.g. \"INSERT INTO id_error(src,msg) VALUES(?,?)\".  This is optional.  If not specified, errors will not be logged to the database.";
+	public static final String JDBC_ERROR_DESC = "The SQL statement to insert error messages, e.g. \"INSERT INTO id_error(src,msg) VALUES(:source_id,:error_msg)\".  This is optional.  If not specified, errors will not be logged to the database.";
 	public static final String JDBC_ERROR_ARG_NAME = "sql-statement";
 	
 	public static final String JDBC_RAW_IDS_OPT = "id-map-raw-ids";
@@ -130,33 +131,37 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 				NamedParameterJdbcTemplate tmpl = new NamedParameterJdbcTemplate(dataSource);
 				Map<String,String> params = Collections.singletonMap(SOURCE_PARAM, getSource(obj));
 				// Could use as update instead of mapping
-				if(mapQuery.toLowerCase().startsWith("update") || mapQuery.toLowerCase().startsWith("insert")) {
-					tmpl.update(mapQuery, params);
+				if(selectQuery.toLowerCase().startsWith("update") || selectQuery.toLowerCase().startsWith("insert")) {
+					tmpl.update(selectQuery, params);
 				} else {
-					String id = tmpl.queryForObject(mapQuery, params, String.class);
-					
-					if(id != null) {
-						// Looks like an ID already exists.
-						ObjectId oid = null;
-						if(rawIds) {
-							oid = new ObjectId(id);
-						} else {
-							// Parse out of the URI.
-							try {
-								URI uri = new URI(id);
-								id = uri.getPath();
-								if(id.startsWith("/")) {
-									id = id.substring(1);
-								}
+					try {
+						String id = tmpl.queryForObject(selectQuery, params, String.class);
+						
+						if(id != null) {
+							// Looks like an ID already exists.
+							ObjectId oid = null;
+							if(rawIds) {
 								oid = new ObjectId(id);
-							} catch (URISyntaxException e) {
-								throw new RuntimeException("Could not parse Atmos ID from URI: " + id, e);
+							} else {
+								// Parse out of the URI.
+								try {
+									URI uri = new URI(id);
+									id = uri.getPath();
+									if(id.startsWith("/")) {
+										id = id.substring(1);
+									}
+									oid = new ObjectId(id);
+								} catch (URISyntaxException e) {
+									throw new RuntimeException("Could not parse Atmos ID from URI: " + id, e);
+								}
+								
 							}
-							
+							DestinationAtmosId dai = new DestinationAtmosId(oid);
+							obj.addAnnotation(dai);
+							alreadyMapped = true;
 						}
-						DestinationAtmosId dai = new DestinationAtmosId(oid);
-						obj.addAnnotation(dai);
-						alreadyMapped = true;
+					} catch (IncorrectResultSizeDataAccessException e) {
+						// OK -- Row not found.
 					}
 
 				}
