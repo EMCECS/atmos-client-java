@@ -57,6 +57,11 @@ public class EsuRestApiTest extends EsuApiTest {
     private String host;
 
     /**
+     * Comma-delimited list of access nodes.  Set in atmos.properties or -Datmos.hosts
+     */
+    private String hosts;
+
+    /**
      * Port of ESU server (usually 80 or 443). Set in atmos.properties or -Datmos.port
      */
     private int port = 80;
@@ -85,6 +90,7 @@ public class EsuRestApiTest extends EsuApiTest {
     	if( host == null ) {
     		throw new RuntimeException( "atmos.host is null.  Set in atmos.properties or on command line with -Datmos.host" );
     	}
+        hosts = System.getProperty( "atmos.hosts" );
     	port = Integer.parseInt( System.getProperty( "atmos.port" ) );
     }
 
@@ -93,7 +99,8 @@ public class EsuRestApiTest extends EsuApiTest {
      */
     @Before
     public void setUp() throws Exception {
-        esu = new LBEsuRestApi( Arrays.asList( new String[]{host} ), port, uid2, secret );
+        esu = new LBEsuRestApi( Arrays.asList( (hosts == null) ? new String[]{host} : hosts.split( "," ) ),
+                                port, uid2, secret );
         esu.setUnicodeEnabled(true);
         uid = uid2;
         SysMgmtApi.disableCertificateValidation();
