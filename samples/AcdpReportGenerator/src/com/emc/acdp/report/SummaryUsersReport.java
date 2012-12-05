@@ -24,7 +24,7 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.acdp.report;
 
-import com.emc.acdp.api.AcdpException;
+import com.emc.acdp.AcdpException;
 import com.emc.cdp.services.rest.model.*;
 import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;

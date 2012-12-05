@@ -38,7 +38,7 @@
         <copy todir="${classes}">
             <fileset dir="${src}" includes="log4j.*" />
         </copy>
-        <jar destfile="${dist}/AcdpReportGenerator.jar" manifest="src/MANIFEST.MF" filesetmanifest="mergewithoutmain">
+        <jar destfile="${dist}/AcdpReportGenerator.jar" filesetmanifest="mergewithoutmain">
             <manifest>
                 <attribute name="Main-Class" value="com.emc.acdp.report.AcdpReportGenerator"/>
                 <attribute name="Class-Path" value="."/>
@@ -47,7 +47,6 @@
             <fileset dir="${esu_java_path}/classes"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/commons-codec-1.4.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jdom.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-apache-client-1.13.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-client-1.13.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-core-1.13.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/log4j-1.2.16.jar"/>

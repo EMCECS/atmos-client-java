@@ -24,7 +24,7 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.acdp.report;
 
-import com.emc.acdp.api.AcdpException;
+import com.emc.acdp.AcdpException;
 import com.emc.cdp.services.rest.model.*;
 import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;
@@ -135,7 +135,7 @@ public class SummaryUsageReport extends AcdpReport {
                      seededRow.getIndex(), accountId, subscriptionId );
 
         // get the subtenant id (the only way to get it is to make a separate call per subscription)
-        Subtenant subtenant = null;
+        Subtenant subtenant;
         try {
             subtenant = adminApi.getSubtenant( accountId, subscriptionId );
             LogMF.debug( log, "||Row Index {0}||: Found subtenant ({1})",
@@ -286,6 +286,7 @@ public class SummaryUsageReport extends AcdpReport {
     }
 
     @Override
+    @SuppressWarnings( "unchecked" )
     protected List<Map<String, String>> getReportNotes() {
         Map<String, String> notesMap = new HashMap<String, String>();
         notesMap.put( ACCOUNT_ID, "NOTE: bandwidth values are aggregated over the past week" );

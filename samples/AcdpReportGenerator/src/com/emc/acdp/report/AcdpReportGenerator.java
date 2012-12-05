@@ -24,9 +24,9 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.acdp.report;
 
+import com.emc.acdp.AcdpException;
 import com.emc.acdp.api.AcdpAdminApi;
-import com.emc.acdp.api.AcdpConfig;
-import com.emc.acdp.api.AcdpException;
+import com.emc.acdp.api.AcdpAdminConfig;
 import com.emc.acdp.api.jersey.AcdpAdminApiClient;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Logger;
@@ -190,7 +190,7 @@ public class AcdpReportGenerator implements StatusListener {
     private boolean parse( CommandLine line ) throws URISyntaxException {
         if ( !line.hasOption( ADMIN_URI_OPTION ) ) return false;
 
-        AcdpConfig config = new AcdpConfig();
+        AcdpAdminConfig config = new AcdpAdminConfig();
         Pattern p = Pattern.compile( URI_PATTERN );
         String source = line.getOptionValue( ADMIN_URI_OPTION );
         Matcher m = p.matcher( source );
