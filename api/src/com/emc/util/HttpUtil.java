@@ -5,10 +5,45 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
-public class HttpUtil {
+public final class HttpUtil {
+    private static final DateFormat headerFormat = new SimpleDateFormat( "EEE, d MMM yyyy HH:mm:ss z", Locale.ENGLISH );
+    private static final DateFormat iso8601Format = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss'Z'" );
     private static final Logger l4j = Logger.getLogger( HttpUtil.class );
+
+    static {
+        headerFormat.setTimeZone( TimeZone.getTimeZone( "GMT" ) );
+    }
+
+    public static synchronized String headerFormat( Date date ) {
+        return headerFormat.format( date );
+    }
+
+    public static String encodeUtf8( String value ) {
+        // Use %20, not +
+        try {
+            return URLEncoder.encode( value, "UTF-8" ).replace( "+", "%20" );
+        } catch ( UnsupportedEncodingException e ) {
+            throw new RuntimeException( "UTF-8 encoding isn't supported on this system", e ); // unrecoverable
+        }
+    }
+
+    public static String decodeUtf8( String value ) {
+        try {
+            return URLDecoder.decode( value, "UTF-8" );
+        } catch ( UnsupportedEncodingException e ) {
+            throw new RuntimeException( "UTF-8 encoding isn't supported on this system", e ); // unrecoverable
+        }
+    }
 
     /**
      * Reads the response body and returns it as a string.

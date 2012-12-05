@@ -1,9 +1,6 @@
 package com.emc.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 public class StreamUtil {
     public static String readAsString( InputStream in ) throws IOException {
@@ -59,6 +56,42 @@ public class StreamUtil {
                 in.close();
             }
         }
+    }
+
+    /**
+     * Reads from the input stream until a linefeed is encountered. All data up until that point is returned as a
+     * string. If the byte preceding the linefeed is a carriage return, that is also removed from the returned value.
+     */
+    public static String readLine( InputStream in ) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        int c = in.read();
+        if ( c == -1 || c == '\n' ) return "";
+        int c2 = in.read();
+
+        while ( c2 != -1 && (char) c2 != '\n' ) {
+            baos.write( c );
+            c = c2;
+            c2 = in.read();
+        }
+
+        if ( (char) c != '\r' ) baos.write( c );
+
+        return new String( baos.toByteArray(), "UTF-8" );
+    }
+
+    public static long copy( InputStream is, OutputStream os, long maxBytes ) throws IOException {
+        byte[] buffer = new byte[1024 * 64]; // 64k buffer
+        long count = 0;
+        int read = 0, maxRead;
+
+        while ( count < maxBytes ) {
+            maxRead = (int) Math.min( (long) buffer.length, maxBytes - count );
+            if ( -1 == (read = is.read( buffer, 0, maxRead )) ) break;
+            os.write( buffer, 0, read );
+            count += read;
+        }
+        return count;
     }
 
     private StreamUtil() {
