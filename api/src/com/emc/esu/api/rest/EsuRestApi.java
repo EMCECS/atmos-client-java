@@ -170,8 +170,10 @@ public class EsuRestApi extends AbstractEsuRestApi {
     		try {
     			out = con.getOutputStream();
     			while (read < length) {
-    				int c = data.read(buffer);
-    				if (c == -1) {
+                    // make sure we don't write past the content-length
+                    int maxRead = (int) Math.min( (long) buffer.length, length - read );
+                    int c = data.read( buffer, 0, maxRead );
+                    if (c == -1) {
     					throw new EsuException(
     							"EOF encountered reading data stream");
     				}
@@ -277,7 +279,9 @@ public class EsuRestApi extends AbstractEsuRestApi {
             try {
                 out = con.getOutputStream();
                 while (read < length) {
-                    int c = data.read(buffer);
+                    // make sure we don't write past the content-length
+                    int maxRead = (int) Math.min( (long) buffer.length, length - read );
+                    int c = data.read( buffer, 0, maxRead );
                     if (c == -1) {
                         throw new EsuException(
                                 "EOF encountered reading data stream");
@@ -1585,7 +1589,9 @@ public class EsuRestApi extends AbstractEsuRestApi {
             try {
                 out = con.getOutputStream();
                 while (read < length) {
-                    int c = data.read(buffer);
+                    // make sure we don't write past the content-length
+                    int maxRead = (int) Math.min( (long) buffer.length, length - read );
+                    int c = data.read( buffer, 0, maxRead );
                     if (c == -1) {
                         throw new EsuException(
                                 "EOF encountered reading data stream");
@@ -2632,7 +2638,9 @@ public class EsuRestApi extends AbstractEsuRestApi {
             try {
                 out = con.getOutputStream();
                 while ( read < length ) {
-                    int c = data.read( buffer );
+                    // make sure we don't write past the content-length
+                    int maxRead = (int) Math.min( (long) buffer.length, length - read );
+                    int c = data.read( buffer, 0, maxRead );
                     if ( c == -1 ) {
                         throw new EsuException(
                                 "EOF encountered reading data stream" );
@@ -2994,7 +3002,9 @@ public class EsuRestApi extends AbstractEsuRestApi {
             try {
                 out = con.getOutputStream();
                 while ( read < length ) {
-                    int c = data.read( buffer );
+                    // make sure we don't write past the content-length
+                    int maxRead = (int) Math.min( (long) buffer.length, length - read );
+                    int c = data.read( buffer, 0, maxRead );
                     if ( c == -1 ) {
                         throw new EsuException(
                                 "EOF encountered reading data stream" );
