@@ -41,6 +41,9 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Implements testcases that are independent of the protocol (REST vs. SOAP).
@@ -59,7 +62,7 @@ public abstract class EsuApiTest {
     protected EsuApi esu;
     protected String uid;
 
-    protected List<Identifier> cleanup = new ArrayList<Identifier>();
+    protected List<Identifier> cleanup = Collections.synchronizedList( new ArrayList<Identifier>() );
 
     /**
      * Tear down after a test is run.  Cleans up objects that were created
@@ -198,7 +201,7 @@ public abstract class EsuApiTest {
 
         // create crazy-name object
         this.esu.createObjectOnPath( path, null, null, content, "text/plain" );
-        
+
         cleanup.add(path);
 
         // verify name in directory list
@@ -244,7 +247,7 @@ public abstract class EsuApiTest {
      */
     @Test
     public void testCreateObjectWithContent() throws Exception {
-        ObjectId id = this.esu.createObject( null, null, "hello".getBytes( "UTF-8" ), "text\\plain" );
+        ObjectId id = this.esu.createObject( null, null, "hello".getBytes( "UTF-8" ), "text/plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
 
@@ -597,7 +600,7 @@ public abstract class EsuApiTest {
         Assert.assertTrue( "version 1 not found in version list", versions.contains( vid1 ) );
         Assert.assertTrue( "version 2 not found in version list", versions.contains( vid2 ) );
     }
-    
+
     /**
      * Test listing the versions of an object
      */
@@ -2087,7 +2090,7 @@ public abstract class EsuApiTest {
 
         l4j.debug( "Hash: " + hashOut );
     }
-    
+
     @Test
     public void testDirectoryMetadata() throws Exception {
     	ObjectPath dir = new ObjectPath("/" + rand8char() + "/");
@@ -2127,7 +2130,7 @@ public abstract class EsuApiTest {
         Assert.assertEquals( "'listable3' is not listable", true, meta.getMetadata( "listable3" ).isListable() );
         Assert.assertEquals( "'unlistable' is listable", false, meta.getMetadata( "unlistable" ).isListable() );
         Assert.assertEquals( "'unlistable2' is listable", false, meta.getMetadata( "unlistable2" ).isListable() );
-    	
+
     }
 
     /**
@@ -2139,15 +2142,15 @@ public abstract class EsuApiTest {
     	ObjectId id = esu.createObject(null, null, input.getBytes("UTF-8"), "text/plain");
     	cleanup.add(id);
     	Assert.assertNotNull("Object null", id);
-    	
+
     	MultiExtent me = new MultiExtent();
     	me.add(new Extent(27,2)); //ag
     	me.add(new Extent(9,1)); // e
     	me.add(new Extent(5,1)); // s
     	me.add(new Extent(4,1)); // ' '
     	me.add(new Extent(27,3)); // ago
-    	
-    	Assert.assertEquals("Extent string wrong", 
+
+    	Assert.assertEquals("Extent string wrong",
     			"bytes=27-28,9-9,5-5,4-4,27-29", me.toString());
     	byte[] data = esu.readObject(id, me, null);
     	String out = new String(data, "UTF-8");
@@ -2156,6 +2159,7 @@ public abstract class EsuApiTest {
 
     //---------- Features supported by the Atmos 2.0 REST API. ----------\\
 
+    // TODO: If this is not supported, remove it
     @Test
     public void testHardLink() throws Exception {
         ObjectPath op1 = new ObjectPath("/" + rand8char() + ".tmp");
@@ -2323,6 +2327,44 @@ public abstract class EsuApiTest {
             Assert.fail("Object still exists");
         } catch (EsuException e) {
             if (e.getHttpCode() != 404) throw e;
+        }
+    }
+
+    @Test
+    public void testIssue9() throws Exception {
+        int threadCount = 10;
+        final byte[] randomBuffer = new byte[10 * 1024]; // 10k buffer of random bytes
+        new Random().nextBytes( randomBuffer );
+
+        final MetadataList list = new MetadataList();
+        list.addMetadata( new Metadata( "test-data", null, true ) );
+        final EsuApi api = esu;
+        final List<Identifier> cleanupList = cleanup;
+        ThreadPoolExecutor executor = new ThreadPoolExecutor( threadCount, threadCount, 0, TimeUnit.SECONDS,
+                                                              new LinkedBlockingQueue<Runnable>() );
+        try {
+            for ( int i = 0; i < threadCount; i++ ) {
+                executor.execute( new Thread() {
+                    public void run() {
+                        ObjectId oid = api.createObjectFromStream( null, list, new InputStream() {
+                            int i = 0;
+
+                            @Override
+                            public int read() throws IOException {
+                                int ret = (int) randomBuffer[i++ % randomBuffer.length];
+                                return ret;
+                            }
+                        }, 10 * 1000 * 1000, null );
+                        cleanupList.add( oid );
+                    }
+                } );
+            }
+            while ( true ) {
+                Thread.sleep( 1000 );
+                if ( executor.getActiveCount() < 1 ) break;
+            }
+        } finally {
+            executor.shutdown();
         }
     }
 }
