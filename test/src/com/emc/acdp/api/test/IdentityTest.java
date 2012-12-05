@@ -25,7 +25,8 @@
 
 package com.emc.acdp.api.test;
 
-import com.emc.acdp.api.AcdpConfig;
+import com.emc.acdp.api.AcdpAdminConfig;
+import com.emc.acdp.api.AcdpMgmtConfig;
 import com.emc.acdp.api.jersey.AcdpAdminApiClient;
 import com.emc.acdp.api.jersey.AcdpMgmtApiClient;
 import com.emc.cdp.services.rest.model.Identity;
@@ -50,10 +51,8 @@ public class IdentityTest {
 
     @Before
     public void setUp() throws Exception {
-        AcdpConfig mgmtConfig = loadMgmtConfig( "acdp.properties" );
-        AcdpConfig adminConfig = loadAdminConfig( "acdp.properties" );
-        mgmt = new AcdpMgmtApiClient( mgmtConfig );
-        admin = new AcdpAdminApiClient( adminConfig );
+        mgmt = new AcdpMgmtApiClient( loadMgmtConfig( "acdp.properties" ) );
+        admin = new AcdpAdminApiClient( loadAdminConfig( "acdp.properties" ) );
     }
 
     @Test
@@ -155,19 +154,19 @@ public class IdentityTest {
         return sb.toString();
     }
 
-    private AcdpConfig loadMgmtConfig( String fileName ) throws URISyntaxException {
+    private AcdpMgmtConfig loadMgmtConfig( String fileName ) throws URISyntaxException {
         URI endpoint = new URI( PropertiesUtil.getProperty( fileName, "acdp.mgmt.endpoint" ) );
         String username = PropertiesUtil.getProperty( fileName, "acdp.mgmt.username" );
         String password = PropertiesUtil.getProperty( fileName, "acdp.mgmt.password" );
 
-        return new AcdpConfig( endpoint.getScheme(), endpoint.getHost(), endpoint.getPort(), username, password );
+        return new AcdpMgmtConfig( endpoint.getScheme(), endpoint.getHost(), endpoint.getPort(), username, password );
     }
 
-    private AcdpConfig loadAdminConfig( String fileName ) throws URISyntaxException {
+    private AcdpAdminConfig loadAdminConfig( String fileName ) throws URISyntaxException {
         URI endpoint = new URI( PropertiesUtil.getProperty( fileName, "acdp.admin.endpoint" ) );
         String username = PropertiesUtil.getProperty( fileName, "acdp.admin.username" );
         String password = PropertiesUtil.getProperty( fileName, "acdp.admin.password" );
 
-        return new AcdpConfig( endpoint.getScheme(), endpoint.getHost(), endpoint.getPort(), username, password );
+        return new AcdpAdminConfig( endpoint.getScheme(), endpoint.getHost(), endpoint.getPort(), username, password );
     }
 }

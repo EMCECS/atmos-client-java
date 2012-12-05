@@ -24,8 +24,8 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.acdp.api.test;
 
-import com.emc.acdp.api.AcdpConfig;
 import com.emc.acdp.api.AcdpAdminApi;
+import com.emc.acdp.api.AcdpAdminConfig;
 import com.emc.acdp.api.jersey.AcdpAdminApiClient;
 import com.emc.cdp.services.rest.model.Account;
 import com.emc.esu.api.EsuException;
@@ -46,10 +46,10 @@ import java.util.Random;
  * @author cwikj
  */
 public class AdminProvisionTest {
-    private AcdpConfig config;
+    private AcdpAdminConfig config;
 
     public AdminProvisionTest() throws Exception {
-        config = loadAcdpConfig( "acdp.properties" );
+        config = loadAdminConfig( "acdp.properties" );
     }
 
     @Test
@@ -158,11 +158,11 @@ public class AdminProvisionTest {
         return sb.toString();
     }
 
-    private AcdpConfig loadAcdpConfig( String fileName ) throws URISyntaxException {
+    private AcdpAdminConfig loadAdminConfig( String fileName ) throws URISyntaxException {
         URI endpoint = new URI( PropertiesUtil.getProperty( fileName, "acdp.admin.endpoint" ) );
         String username = PropertiesUtil.getProperty( fileName, "acdp.admin.username" );
         String password = PropertiesUtil.getProperty( fileName, "acdp.admin.password" );
 
-        return new AcdpConfig( endpoint.getScheme(), endpoint.getHost(), endpoint.getPort(), username, password );
+        return new AcdpAdminConfig( endpoint.getScheme(), endpoint.getHost(), endpoint.getPort(), username, password );
     }
 }

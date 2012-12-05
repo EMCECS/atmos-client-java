@@ -25,9 +25,9 @@
 
 package com.emc.acdp.api.jersey;
 
+import com.emc.acdp.AcdpException;
 import com.emc.acdp.api.AcdpAdminApi;
-import com.emc.acdp.api.AcdpConfig;
-import com.emc.acdp.api.AcdpException;
+import com.emc.acdp.api.AcdpAdminConfig;
 import com.emc.cdp.services.rest.model.*;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -43,15 +43,28 @@ import java.util.List;
 
 /**
  * @author cwikj
+ * @author arnetc
  */
 public class AcdpAdminApiClient implements AcdpAdminApi {
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat( "yyyy-MM-dd" );
 
-    private AcdpConfig config;
+    private AcdpAdminConfig config;
+    private Client client;
     private WebResource adminResource;
 
-    public AcdpAdminApiClient( AcdpConfig config ) {
+    public AcdpAdminApiClient( AcdpAdminConfig config ) {
         this.config = config;
+        this.client = JerseyUtil.createClient( config );
+    }
+
+    /**
+     * Note that this constructor cannot disable SSL validation, so that configuration option is ignored here. You are
+     * responsible for configuring the client with any proxy, ssl or other options prior to calling this constructor.
+     */
+    public AcdpAdminApiClient( AcdpAdminConfig config, Client client ) {
+        this.config = config;
+        JerseyUtil.configureClient( client, config );
+        this.client = client;
     }
 
     @Override
@@ -383,7 +396,6 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
 
     private WebResource getAdminResource() {
         if ( adminResource == null ) {
-            Client client = JerseyUtil.createClient( config );
             adminResource = client.resource( config.getBaseUri() + "/cdp-rest/v1/admin" );
         }
         return adminResource;

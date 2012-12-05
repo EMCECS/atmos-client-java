@@ -1,4 +1,4 @@
-package com.emc.acdp.api;
+package com.emc.acdp;
 
 public class AcdpException extends RuntimeException {
     private int httpCode = 0;

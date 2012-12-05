@@ -1,4 +1,4 @@
-package com.emc.util;
+package com.emc.acdp.util;
 
 import com.emc.cdp.services.rest.model.ObjectFactory;
 

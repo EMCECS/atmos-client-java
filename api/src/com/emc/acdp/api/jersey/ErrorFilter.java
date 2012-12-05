@@ -1,6 +1,6 @@
 package com.emc.acdp.api.jersey;
 
-import com.emc.acdp.api.AcdpException;
+import com.emc.acdp.AcdpException;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;

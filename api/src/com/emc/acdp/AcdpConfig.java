@@ -1,6 +1,6 @@
-package com.emc.acdp.api;
+package com.emc.acdp;
 
-public class AcdpConfig {
+public abstract class AcdpConfig {
     private String proto;
     private boolean disableSslValidation = false;
     private String host;
@@ -20,6 +20,10 @@ public class AcdpConfig {
         this.username = username;
         this.password = password;
     }
+
+    public abstract String getLoginPath();
+
+    public abstract boolean isSecureRequest( String path, String method );
 
     public String getProto() {
         return proto;
@@ -79,7 +83,7 @@ public class AcdpConfig {
 
     public String getBaseUri() {
         String url = proto + "://" + host;
-        if (port > 0) url += ":" + port;
+        if ( port > 0 ) url += ":" + port;
         return url;
     }
 }

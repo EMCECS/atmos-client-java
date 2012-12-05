@@ -1,27 +1,48 @@
 package com.emc.acdp.api.jersey;
 
-import com.emc.acdp.api.AcdpConfig;
 import com.emc.acdp.api.AcdpMgmtApi;
+import com.emc.acdp.api.AcdpMgmtConfig;
 import com.emc.cdp.services.rest.model.Identity;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 
 public class AcdpMgmtApiClient implements AcdpMgmtApi {
-    private AcdpConfig config;
+    private AcdpMgmtConfig config;
     private Client client;
 
-    public AcdpMgmtApiClient( AcdpConfig config ) {
+    public AcdpMgmtApiClient( AcdpMgmtConfig config ) {
         this.config = config;
         this.client = JerseyUtil.createClient( config );
+    }
+
+    /**
+     * Note that this constructor cannot disable SSL validation, so that configuration option is ignored here. You are
+     * responsible for configuring the client with any proxy, ssl or other options prior to calling this constructor.
+     */
+    public AcdpMgmtApiClient( AcdpMgmtConfig config, Client client ) {
+        this.config = config;
+        JerseyUtil.configureClient( client, config );
+        this.client = client;
     }
 
     @Override
     public void createIdentity( Identity identity ) {
         WebResource resource = client.resource( getMgmtUri() + "/identities" );
-        resource.type( MediaType.TEXT_XML );
-        resource.post( identity );
+        resource.type( MediaType.TEXT_XML ).post( identity );
+    }
+
+    @Override
+    public void createAccount( String serviceId ) {
+        WebResource.Builder builder = client.resource( getMgmtUri() + "/accounts" ).getRequestBuilder();
+
+        MultivaluedMap<String, String> params = new MultivaluedMapImpl();
+        params.putSingle( "serviceId", serviceId );
+
+        builder.type( MediaType.APPLICATION_FORM_URLENCODED ).post( params );
     }
 
     private String getMgmtUri() {

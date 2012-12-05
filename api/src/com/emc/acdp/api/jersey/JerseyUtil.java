@@ -1,7 +1,7 @@
 package com.emc.acdp.api.jersey;
 
-import com.emc.acdp.api.AcdpConfig;
-import com.emc.acdp.api.AcdpException;
+import com.emc.acdp.AcdpConfig;
+import com.emc.acdp.AcdpException;
 import com.emc.util.SslUtil;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.config.ClientConfig;
@@ -21,13 +21,21 @@ public class JerseyUtil {
             }
 
             Client client = Client.create( clientConfig );
-            client.addFilter( new ErrorFilter() );
-            client.addFilter( new AuthFilter( config ) );
+            configureClient( client, config );
             return client;
 
         } catch ( Exception e ) {
             throw new AcdpException( "Error configuring REST client", e );
         }
+    }
+
+    /**
+     * Note that this method cannot disable SSL validation, so that configuration option is ignored here. You are
+     * responsible for configuring the client with any proxy, ssl or other options prior to calling this constructor.
+     */
+    public static void configureClient( Client client, AcdpConfig config ) {
+        client.addFilter( new ErrorFilter() );
+        client.addFilter( new AuthFilter( config ) );
     }
 
     private JerseyUtil() {

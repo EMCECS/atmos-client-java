@@ -1,7 +1,7 @@
 package com.emc.acdp.api.jersey;
 
-import com.emc.acdp.api.AcdpConfig;
-import com.emc.acdp.api.AcdpException;
+import com.emc.acdp.AcdpConfig;
+import com.emc.acdp.AcdpException;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
@@ -28,6 +28,9 @@ public class AuthFilter extends ClientFilter {
 
     @Override
     public ClientResponse handle( ClientRequest request ) throws ClientHandlerException {
+        if ( !config.isSecureRequest( request.getURI().getPath(), request.getMethod() ) )
+            return getNext().handle( request );
+
         if ( config.getSessionToken() == null ) {
 
             // must login
@@ -36,7 +39,7 @@ public class AuthFilter extends ClientFilter {
             attachSessionToken( request );
         }
 
-        ClientResponse response = null;
+        ClientResponse response;
         try {
             response = getNext().handle( request );
 
@@ -80,7 +83,7 @@ public class AuthFilter extends ClientFilter {
         String holdMethod = request.getMethod();
         URI holdUri = request.getURI();
         Object holdEntity = request.getEntity();
-        String holdType = (String) request.getHeaders().getFirst( HttpHeaders.CONTENT_TYPE );
+        Object holdType = request.getHeaders().getFirst( HttpHeaders.CONTENT_TYPE );
 
         // login
         MultivaluedMap<String, String> params = new MultivaluedMapImpl();
@@ -88,7 +91,7 @@ public class AuthFilter extends ClientFilter {
         params.putSingle( PARAM_PASSWORD, config.getPassword() );
 
         request.setMethod( HttpMethod.POST );
-        request.setURI( request.getURI().resolve( "/cdp-rest/v1/admin/login" ) );
+        request.setURI( request.getURI().resolve( config.getLoginPath() ) );
         request.setEntity( params );
         request.getHeaders().putSingle( HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_TYPE );
 
