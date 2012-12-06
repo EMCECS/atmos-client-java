@@ -61,12 +61,17 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 	
 	public static final String ABSOLUTE_PATH_OPT = "use-absolute-path";
 	public static final String ABSOLUTE_PATH_DESC = "Uses the absolute path to the file when storing it instead of the relative path from the source dir.";
+	
+	public static final String DELETE_OLDER_OPT = "delete-older-than";
+	public static final String DELETE_OLDER_DESC = "when --delete is used, add this option to only delete files that have been modified more than <delete-age> milliseconds ago";
+	public static final String DELETE_OLDER_ARG_NAME = "delete-age";
 
 	private File source;
 	private boolean recursive;
 	private boolean useAbsolutePath = false;
 	private boolean ignoreMeta = false;
 	private boolean delete = false;
+	private long deleteOlderThan = 0;
 	
 	private MimetypesFileTypeMap mimeMap;
 
@@ -109,6 +114,9 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 				.withLongOpt(IGNORE_META_OPT).create());
 		opts.addOption(OptionBuilder.withDescription(ABSOLUTE_PATH_DESC)
 				.withLongOpt(ABSOLUTE_PATH_OPT).create());
+		opts.addOption(OptionBuilder.withLongOpt(DELETE_OLDER_OPT)
+				.withDescription(DELETE_OLDER_DESC)
+				.hasArg().withArgName(DELETE_OLDER_ARG_NAME).create());
 		addOptions(opts);
 		
 		return opts;
@@ -143,6 +151,9 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 			}
 			if(line.hasOption(CommonOptions.DELETE_OPTION)) {
 				delete = true;
+			}
+			if(line.hasOption(DELETE_OLDER_OPT)) {
+				deleteOlderThan = Long.parseLong(line.getOptionValue(DELETE_OLDER_OPT));
 			}
 			
 			// Parse threading options
@@ -225,23 +236,34 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 							LogMF.warn(l4j, "Failed to delete {0}", f);
 						}						
 					} else {
-						RandomAccessFile raf = null;
-						try {
-							raf = new RandomAccessFile(f, "rw");
-							FileChannel fc = raf.getChannel();
-							FileLock flock = fc.lock();
-							// If we got here, we should be good.
-							flock.release();
-							if(!f.delete()) {
-								LogMF.warn(l4j, "Failed to delete {0}", f);
+						boolean tryDelete = true;
+						if(deleteOlderThan > 0) {
+							if(System.currentTimeMillis() - f.lastModified() < deleteOlderThan) {
+								LogMF.debug(l4j, 
+										"Not deleting {0}; it is not at least {1} ms old", 
+										f, deleteOlderThan);
+								tryDelete = false;
 							}
-						} catch(IOException e) {
-							LogMF.info(l4j, 
-									"File {0} not deleted, it appears to be open: {1}", 
-									f, e.getMessage());
-						} finally {
-							if(raf != null) {
-								raf.close();
+						}
+						RandomAccessFile raf = null;
+						if(tryDelete) {
+							try {
+								raf = new RandomAccessFile(f, "rw");
+								FileChannel fc = raf.getChannel();
+								FileLock flock = fc.lock();
+								// If we got here, we should be good.
+								flock.release();
+								if(!f.delete()) {
+									LogMF.warn(l4j, "Failed to delete {0}", f);
+								}
+							} catch(IOException e) {
+								LogMF.info(l4j, 
+										"File {0} not deleted, it appears to be open: {1}", 
+										f, e.getMessage());
+							} finally {
+								if(raf != null) {
+									raf.close();
+								}
 							}
 						}
 					}

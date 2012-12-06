@@ -354,11 +354,21 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 							while((c = in.read(buffer)) != -1) {
 								BufferSegment bs = new BufferSegment(buffer, 0, c);
 								if(read == 0) {
-									// Truncate
-									atmos.updateObjectFromSegment(destId, 
+									// You cannot update a checksummed object.
+									// Delete and replace.
+									if(destId instanceof ObjectId) {
+										throw new RuntimeException(
+												"Cannot update checksummed " +
+												"object by ObjectID, only " +
+												"namespace objects are " +
+												"supported");
+									}
+									atmos.deleteObject(destId);
+									atmos.createObjectFromSegmentOnPath(
+											(ObjectPath)destId, 
 											obj.getMetadata().getAcl(), 
 											obj.getMetadata().getMetadata(), 
-											null, bs, 
+											bs,
 											obj.getMetadata().getContentType(), 
 											ck);
 								} else {
