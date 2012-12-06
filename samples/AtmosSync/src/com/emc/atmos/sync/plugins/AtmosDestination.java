@@ -27,6 +27,7 @@ package com.emc.atmos.sync.plugins;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -45,8 +46,12 @@ import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.InitializingBean;
 
+import com.emc.esu.api.BufferSegment;
+import com.emc.esu.api.Checksum;
+import com.emc.esu.api.Checksum.Algorithm;
 import com.emc.esu.api.EsuApi;
 import com.emc.esu.api.EsuException;
+import com.emc.esu.api.Extent;
 import com.emc.esu.api.Identifier;
 import com.emc.esu.api.Metadata;
 import com.emc.esu.api.MetadataList;
@@ -73,6 +78,10 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	public static final String DEST_NO_UPDATE_OPTION = "no-update";
 	public static final String DEST_NO_UPDATE_DESC = "If specified, no updates will be applied to the destination";
 	
+	public static final String DEST_CHECKSUM_OPT = "atmos-dest-checksum";
+	public static final String DEST_CHECKSUM_DESC = "If specified, the atmos wschecksum feature will be applied to uploads.  Valid algorithms are SHA0 for Atmos < 2.1 and SHA0, SHA1, or MD5 for 2.1+";
+	public static final String DEST_CHECKSUM_ARG_NAME = "checksum-alg";
+	
 	public static final String ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 	
 	private static final Logger l4j = Logger.getLogger(AtmosDestination.class);
@@ -87,6 +96,7 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	private boolean force;
 	private boolean noUpdate;
 	private DateFormat iso8601;
+	private String checksum;
 	
 	public AtmosDestination() {
 		super();
@@ -154,16 +164,46 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 						InputStream in = null;
 						try {
 							in = obj.getInputStream();
-							ObjectId id;
+							ObjectId id = null;
 							if(in == null) {
 								// Create an empty object
 								id = atmos.createObjectOnPath(destPath, 
 										obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), 
 										null, obj.getMetadata().getContentType());
 							} else {
-								id = atmos.createObjectFromStreamOnPath(destPath, 
-									obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), in, 
-									obj.getSize(), obj.getMetadata().getContentType());
+								if(checksum != null) {
+									Checksum ck = new Checksum(Algorithm.valueOf(checksum));
+									byte[] buffer = new byte[1024*1024];
+									long read = 0;
+									int c = 0;
+									while((c = in.read(buffer)) != -1) {
+										BufferSegment bs = new BufferSegment(buffer, 0, c);
+										if(read == 0) {
+											// Create
+											id = atmos.createObjectFromSegmentOnPath(
+													destPath,
+													obj.getMetadata().getAcl(), 
+													obj.getMetadata().getMetadata(), 
+													bs, 
+													obj.getMetadata().getContentType(), 
+													ck);
+										} else {
+											// Append
+											Extent e = new Extent(read, c);
+											atmos.updateObjectFromSegment(id, 
+													obj.getMetadata().getAcl(), 
+													obj.getMetadata().getMetadata(), 
+													e, bs, 
+													obj.getMetadata().getContentType(), 
+													ck);
+										}
+										read += c;
+									}
+								} else {
+									id = atmos.createObjectFromStreamOnPath(destPath, 
+										obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), in, 
+										obj.getSize(), obj.getMetadata().getContentType());
+								}
 							}
 							
 							DestinationAtmosId destId = new DestinationAtmosId();
@@ -208,9 +248,38 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 									obj.getMetadata().getMetadata(), null, 
 									obj.getMetadata().getContentType());
 						} else {
-							id = atmos.createObjectFromStream(obj.getMetadata().getAcl(), 
-									obj.getMetadata().getMetadata(), 
-									in, obj.getSize(), obj.getMetadata().getContentType());
+							if(checksum != null) {
+								Checksum ck = new Checksum(Algorithm.valueOf(checksum));
+								byte[] buffer = new byte[1024*1024];
+								long read = 0;
+								int c = 0;
+								while((c = in.read(buffer)) != -1) {
+									BufferSegment bs = new BufferSegment(buffer, 0, c);
+									if(read == 0) {
+										// Create
+										id = atmos.createObjectFromSegment(
+												obj.getMetadata().getAcl(), 
+												obj.getMetadata().getMetadata(), 
+												bs, 
+												obj.getMetadata().getContentType(), 
+												ck);
+									} else {
+										// Append
+										Extent e = new Extent(read, c);
+										atmos.updateObjectFromSegment(id, 
+												obj.getMetadata().getAcl(), 
+												obj.getMetadata().getMetadata(), 
+												e, bs, 
+												obj.getMetadata().getContentType(), 
+												ck);
+									}
+									read += c;
+								}
+							} else {
+								id = atmos.createObjectFromStream(obj.getMetadata().getAcl(), 
+										obj.getMetadata().getMetadata(), 
+										in, obj.getSize(), obj.getMetadata().getContentType());
+							}
 						}
 						obj.setDestURI(new URI(protocol, uid + ":"+ secret, 
 								hosts.get(0), port, "/"+id.toString(), null, null));
@@ -276,10 +345,45 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 					}
 				} else {
 					LogMF.debug(l4j, "Updating {0}", destId);
-					atmos.updateObjectFromStream(destId, 
-							obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), 
-							null, in, obj.getSize(), 
-							obj.getMetadata().getContentType());
+					if(checksum != null) {
+						try {
+							Checksum ck = new Checksum(Algorithm.valueOf(checksum));
+							byte[] buffer = new byte[1024*1024];
+							long read = 0;
+							int c = 0;
+							while((c = in.read(buffer)) != -1) {
+								BufferSegment bs = new BufferSegment(buffer, 0, c);
+								if(read == 0) {
+									// Truncate
+									atmos.updateObjectFromSegment(destId, 
+											obj.getMetadata().getAcl(), 
+											obj.getMetadata().getMetadata(), 
+											null, bs, 
+											obj.getMetadata().getContentType(), 
+											ck);
+								} else {
+									// Append
+									Extent e = new Extent(read, c);
+									atmos.updateObjectFromSegment(destId, 
+											obj.getMetadata().getAcl(), 
+											obj.getMetadata().getMetadata(), 
+											e, bs, 
+											obj.getMetadata().getContentType(), 
+											ck);
+								}
+								read += c;
+							}
+						} catch (NoSuchAlgorithmException e) {
+							throw new RuntimeException(
+									"Incorrect checksum method: " + checksum, 
+									e);
+						}
+					} else {
+						atmos.updateObjectFromStream(destId, 
+								obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), 
+								null, in, obj.getSize(), 
+								obj.getMetadata().getContentType());
+					}
 				}
 			} finally {
 				if(in != null) {
@@ -389,6 +493,10 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 		opts.addOption(OptionBuilder.withDescription(DEST_NO_UPDATE_DESC)
 				.withLongOpt(DEST_NO_UPDATE_OPTION).create());
 		
+		opts.addOption(OptionBuilder.withLongOpt(DEST_CHECKSUM_OPT)
+				.withDescription(DEST_CHECKSUM_DESC)
+				.hasArg().withArgName(DEST_CHECKSUM_ARG_NAME).create());
+		
 		return opts;
 	}
 
@@ -435,6 +543,12 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 			if(line.hasOption(DEST_NO_UPDATE_OPTION)) {
 				noUpdate = true;
 				l4j.info("Overwrite/update destination objects disabled");
+			}
+			
+			if(line.hasOption(DEST_CHECKSUM_OPT)) {
+				checksum = line.getOptionValue(DEST_CHECKSUM_OPT);
+			} else {
+				checksum = null;
 			}
 			
 			// Create and verify Atmos connection

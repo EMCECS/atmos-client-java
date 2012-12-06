@@ -60,6 +60,7 @@ import com.emc.atmos.sync.plugins.MetadataPlugin;
 import com.emc.atmos.sync.plugins.OverrideMimetypePlugin;
 import com.emc.atmos.sync.plugins.RetryPlugin;
 import com.emc.atmos.sync.plugins.S3Source;
+import com.emc.atmos.sync.plugins.ShellCommandPlugin;
 import com.emc.atmos.sync.plugins.SourcePlugin;
 import com.emc.atmos.sync.plugins.StripAclPlugin;
 import com.emc.atmos.sync.plugins.SyncPlugin;
@@ -95,6 +96,7 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 		plugins.add(new S3Source());
 		plugins.add(new RetryPlugin());
 		plugins.add(new OverrideMimetypePlugin());
+		plugins.add(new ShellCommandPlugin());
 		
 		Map<String,SyncPlugin> optionMap = new HashMap<String, SyncPlugin>();
 		

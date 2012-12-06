@@ -27,9 +27,13 @@ package com.emc.atmos.sync.plugins;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.Date;
 import java.util.Map;
 
@@ -62,6 +66,7 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 	private boolean recursive;
 	private boolean useAbsolutePath = false;
 	private boolean ignoreMeta = false;
+	private boolean delete = false;
 	
 	private MimetypesFileTypeMap mimeMap;
 
@@ -136,6 +141,9 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 			if(line.hasOption(IGNORE_META_OPT)) {
 				ignoreMeta = true;
 			}
+			if(line.hasOption(CommonOptions.DELETE_OPTION)) {
+				delete = true;
+			}
 			
 			// Parse threading options
 			super.parseOptions(line);
@@ -204,6 +212,43 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 			}
 			try {
 				getNext().filter(fso);
+				
+				if(delete) {
+					// Try to lock the file first.  If this fails, the file is
+					// probably open for write somewhere.
+					// Note that on a mac, you can apparently delete files that
+					// someone else has open for writing, and can lock files 
+					// too.
+					if(f.isDirectory()) {
+						// Just try and delete
+						if(!f.delete()) {
+							LogMF.warn(l4j, "Failed to delete {0}", f);
+						}						
+					} else {
+						RandomAccessFile raf = null;
+						try {
+							raf = new RandomAccessFile(f, "rw");
+							FileChannel fc = raf.getChannel();
+							FileLock flock = fc.lock();
+							// If we got here, we should be good.
+							flock.release();
+							if(!f.delete()) {
+								LogMF.warn(l4j, "Failed to delete {0}", f);
+							}
+						} catch(IOException e) {
+							LogMF.info(l4j, 
+									"File {0} not deleted, it appears to be open: {1}", 
+									f, e.getMessage());
+						} finally {
+							if(raf != null) {
+								raf.close();
+							}
+						}
+					}
+
+					
+				}
+				
 				complete(fso);
 			} catch(Exception e) {
 				failed(fso, e);
