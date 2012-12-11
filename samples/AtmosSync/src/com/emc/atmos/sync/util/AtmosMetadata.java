@@ -65,7 +65,6 @@ import com.google.gson.JsonParser;
  * @author cwikj
  */
 public class AtmosMetadata {
-	private static final String ISO_8601_DATE_Z = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 	private static final String VALUE_PROP = "value";
 	private static final String LISTABLE_PROP = "listable";
 	private static final String PERMISSION_PROP = "permission";
@@ -76,12 +75,16 @@ public class AtmosMetadata {
 	private static final String CONTENT_TYPE_PROP = "contentType";
 	private static final String ACL_PROP = "acl";
 	private static final String METADATA_PROP = "metadata";
-	private static final Logger l4j = Logger.getLogger(AtmosMetadata.class);
+    private static final String RETENTION_END_PROP = "retentionEndDate";
+    private static final String EXPIRATION_PROP = "expirationDate";
+    private static final Logger l4j = Logger.getLogger(AtmosMetadata.class);
 	
 	private MetadataList metadata;
 	private MetadataList systemMetadata;
 	private Acl acl;
 	private String contentType;
+    private Date retentionEndDate;
+    private Date expirationDate;
 	
 	public static final String META_DIR = ".atmosmeta"; // Special subdir for Atmos metadata
 	public static final String DIR_META = ".dirmeta"; // Special file for directory-level metadata
@@ -105,7 +108,7 @@ public class AtmosMetadata {
 	private static final Set<String> SYSTEM_TAGS = 
 			Collections.unmodifiableSet(
 					new HashSet<String>(Arrays.asList(SYSTEM_METADATA_TAGS)));
-	
+
 	/**
 	 * Creates an instance of AtmosMetadata based on an ObjectMetadata
 	 * retrieved through the Atmos API.  This separates the system metadata
@@ -190,6 +193,8 @@ public class AtmosMetadata {
 		JsonArray jsonAcl = (JsonArray) mdata.get(ACL_PROP);
 		JsonElement jsonMime = mdata.get(CONTENT_TYPE_PROP);
 		JsonObject jsonSysmeta = (JsonObject) mdata.get(SYSTEM_METADATA_PROP);
+        JsonElement jsonRetentionEnd = mdata.get(RETENTION_END_PROP);
+        JsonElement jsonExpiration = mdata.get(EXPIRATION_PROP);
 		
 		if(jsonMetadata != null) {
 			am.setMetadata(decodeMetadata(jsonMetadata));
@@ -209,8 +214,12 @@ public class AtmosMetadata {
 		} else {
 			am.setSystemMetadata(new MetadataList());
 		}
-		
-		return am;
+        if (jsonRetentionEnd != null)
+            am.setRetentionEndDate(Iso8601Util.parse(jsonRetentionEnd.getAsString()));
+        if (jsonExpiration != null)
+            am.setExpirationDate(Iso8601Util.parse(jsonExpiration.getAsString()));
+
+        return am;
 	}
 	
 	private static Acl decodeAcl(JsonArray jsonAcl) {
@@ -305,8 +314,24 @@ public class AtmosMetadata {
 	public void setContentType(String contentType) {
 		this.contentType = contentType;
 	}
-	
-	/**
+
+    public Date getRetentionEndDate() {
+        return retentionEndDate;
+    }
+
+    public void setRetentionEndDate( Date retentionEndDate ) {
+        this.retentionEndDate = retentionEndDate;
+    }
+
+    public Date getExpirationDate() {
+        return expirationDate;
+    }
+
+    public void setExpirationDate( Date expirationDate ) {
+        this.expirationDate = expirationDate;
+    }
+
+    /**
 	 * Convenience method to locate and parse the mtime attribute into a 
 	 * Java Date object.  If the mtime cannot be found or parsed, null will
 	 * be returned.
@@ -316,25 +341,12 @@ public class AtmosMetadata {
 			return null;
 		}
 		String mtime = systemMetadata.getMetadata("mtime").getValue();
-		try {
-			DateFormat df = new SimpleDateFormat( ISO_8601_DATE_Z );
-			df.setTimeZone( TimeZone.getTimeZone("UTC") );
-			return df.parse( mtime );
-		} catch(Exception e) {
-			LogMF.warn(l4j, "Could not parse date {0}: {1}", mtime, e.getMessage());
-			return null;
-		}
+		return Iso8601Util.parse( mtime );
 	}
 	
 	public void setMtime(Date mtime) {
-		try {
-			DateFormat df = new SimpleDateFormat( ISO_8601_DATE_Z );
-			df.setTimeZone( TimeZone.getTimeZone("UTC") );
-			String smtime = df.format(mtime);
-			systemMetadata.addMetadata(new Metadata("mtime", smtime, false));
-		} catch(Exception e) {
-			LogMF.warn(l4j, "Could not parse date {0}: {1}", mtime, e.getMessage());
-		}
+		String smtime = Iso8601Util.format(mtime);
+		systemMetadata.addMetadata(new Metadata("mtime", smtime, false));
 	}
 	
 	/**
@@ -347,14 +359,7 @@ public class AtmosMetadata {
 			return null;
 		}
 		String ctime = systemMetadata.getMetadata("ctime").getValue();
-		try {
-			DateFormat df = new SimpleDateFormat( ISO_8601_DATE_Z );
-			df.setTimeZone( TimeZone.getTimeZone("UTC") );
-			return df.parse( ctime );
-		} catch(Exception e) {
-			LogMF.warn(l4j, "Could not parse date {0}: {1}", ctime, e.getMessage());
-			return null;
-		}
+		return Iso8601Util.parse( ctime );
 	}
 	
 	
@@ -367,7 +372,11 @@ public class AtmosMetadata {
 		JsonArray acl = new JsonArray();
 		root.add(ACL_PROP, acl);
 		root.addProperty(CONTENT_TYPE_PROP, contentType);
-		
+        if (retentionEndDate != null)
+            root.addProperty(RETENTION_END_PROP, Iso8601Util.format(retentionEndDate));
+		if (expirationDate != null)
+            root.addProperty(EXPIRATION_PROP, Iso8601Util.format(expirationDate));
+
 		writeMetadata(this.metadata, metadata);
 		writeMetadata(this.systemMetadata, sysmeta);
 		writeAcl(this.acl, acl);

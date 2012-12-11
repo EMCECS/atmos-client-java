@@ -7,8 +7,11 @@ import org.apache.commons.cli.Options;
 public class CommonOptions extends SyncPlugin {
 	public static final String METADATA_ONLY_OPTION = "metadata-only";
 	public static final String METADATA_ONLY_DESC = "Instructs the destination plugin to only synchronize metadata";
-	
-	public static final String FORCE_OPTION = "force";
+
+    public static final String INCLUDE_RETENTION_EXPIRATION_OPTION = "include-retention-expiration";
+    public static final String INCLUDE_RETENTION_EXPIRATION_DESC = "Instructs the destination plugin to *attempt* to replicate the source retention/expiration end-dates for each object (if enabled).  If the destination is an Atmos cloud, the target policy must enable retention/deletion immediately for this to work.";
+
+    public static final String FORCE_OPTION = "force";
 	public static final String FORCE_DESC = "Instructs the destination plugin to overwrite any existing objects";
 	
 	public static final String DELETE_OPTION = "delete";
@@ -55,6 +58,8 @@ public class CommonOptions extends SyncPlugin {
 		Options opts = new Options();
 		opts.addOption(OptionBuilder.withDescription(METADATA_ONLY_DESC)
 				.withLongOpt(METADATA_ONLY_OPTION).create());
+        opts.addOption(OptionBuilder.withDescription(INCLUDE_RETENTION_EXPIRATION_DESC)
+                .withLongOpt(INCLUDE_RETENTION_EXPIRATION_OPTION).create());
 		opts.addOption(OptionBuilder.withDescription(FORCE_DESC)
 				.withLongOpt(FORCE_OPTION).create());
 		opts.addOption(OptionBuilder.withDescription(SOURCE_THREADS_DESC)

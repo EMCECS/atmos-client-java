@@ -24,6 +24,7 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
+import com.emc.esu.api.Metadata;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 
@@ -128,5 +129,18 @@ public abstract class SyncPlugin {
 	public void setNext(SyncPlugin next) {
 		this.next = next;
 	}
-	
+
+    protected String getMetaValue(SyncObject obj, String tagName) {
+        if (obj.getMetadata() != null) {
+            if (obj.getMetadata().getSystemMetadata() != null) {
+                Metadata meta = obj.getMetadata().getSystemMetadata().getMetadata(tagName);
+                if (meta != null) return meta.getValue();
+            }
+            if (obj.getMetadata().getMetadata() != null) {
+                Metadata meta = obj.getMetadata().getMetadata().getMetadata(tagName);
+                if (meta != null) return meta.getValue();
+            }
+        }
+        return null;
+    }
 }

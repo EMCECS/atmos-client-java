@@ -49,7 +49,7 @@
     <target name="create_run_jar" depends="compile">
         <jar destfile="${dist}/AtmosSync.jar" filesetmanifest="mergewithoutmain">
             <manifest>
-                <attribute name="Main-Class" value="com.emc.atmos.sync.AtmosSync"/>
+                <attribute name="Main-Class" value="com.emc.atmos.sync.AtmosSync2"/>
                 <attribute name="Class-Path" value="."/>
             </manifest>
             <fileset dir="classes"/>
@@ -65,6 +65,8 @@
             <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.context.support-3.1.0.RELEASE.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.core-3.1.0.RELEASE.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.expression-3.1.0.RELEASE.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.jdbc-3.1.0.RELEASE.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.transaction-3.1.0.RELEASE.jar"/>
             <fileset dir="${esu_java_path}/classes"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jdom.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/log4j-1.2.16.jar"/>

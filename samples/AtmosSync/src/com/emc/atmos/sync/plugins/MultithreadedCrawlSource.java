@@ -185,11 +185,11 @@ public abstract class MultithreadedCrawlSource extends SourcePlugin {
 	 * 
 	 * @param obj
 	 *            the object that has failed
-	 * @param e
+	 * @param t
 	 *            the Exception that caused the failure.
 	 */
-	public synchronized void failed(SyncObject obj, Exception e) {
-		LogMF.warn(l4j, "Object {0} failed: {1}", obj, e);
+	public synchronized void failed(SyncObject obj, Throwable t) {
+		LogMF.warn(l4j, "Object {0} failed: {1}", obj, t);
 		failedCount++;
 		if (rememberFailed) {
 			failedItems.add(obj);

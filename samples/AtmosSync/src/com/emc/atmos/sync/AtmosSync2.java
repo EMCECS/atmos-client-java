@@ -134,7 +134,15 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 			help(plugins);
 			System.exit(0);
 		}
-		
+
+        if (l4j.isDebugEnabled()) {
+            for (Option option : line.getOptions()) {
+                if (option.hasArg())
+                    LogMF.debug(l4j, "Parsed option {0}: {1}", option.getLongOpt(), line.getOptionValue(option.getLongOpt()));
+                else
+                    LogMF.debug(l4j, "Parsed option {0}", option.getLongOpt());
+            }
+        }
 		
 		AtmosSync2 sync = null;
 		// Special check for Spring configuration

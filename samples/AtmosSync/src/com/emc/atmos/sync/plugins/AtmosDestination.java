@@ -24,21 +24,11 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.security.NoSuchAlgorithmException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import com.emc.atmos.AtmosException;
+import com.emc.atmos.sync.util.Iso8601Util;
+import com.emc.esu.api.*;
+import com.emc.esu.api.Checksum.Algorithm;
+import com.emc.esu.api.rest.LBEsuRestApiApache;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
@@ -46,20 +36,16 @@ import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.InitializingBean;
 
-import com.emc.esu.api.BufferSegment;
-import com.emc.esu.api.Checksum;
-import com.emc.esu.api.Checksum.Algorithm;
-import com.emc.esu.api.EsuApi;
-import com.emc.esu.api.EsuException;
-import com.emc.esu.api.Extent;
-import com.emc.esu.api.Identifier;
-import com.emc.esu.api.Metadata;
-import com.emc.esu.api.MetadataList;
-import com.emc.esu.api.ObjectId;
-import com.emc.esu.api.ObjectMetadata;
-import com.emc.esu.api.ObjectPath;
-import com.emc.esu.api.ServiceInformation;
-import com.emc.esu.api.rest.LBEsuRestApiApache;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Stores objects into an Atmos system.
@@ -77,12 +63,15 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	
 	public static final String DEST_NO_UPDATE_OPTION = "no-update";
 	public static final String DEST_NO_UPDATE_DESC = "If specified, no updates will be applied to the destination";
+
+    public static final String RETENTION_DELAY_WINDOW_OPTION = "retention-delay-window";
+    public static final String RETENTION_DELAY_WINDOW_DESC = "If include-retention-expiration is set, use this option to specify the Start Delay Window in the retention policy.  Default is 1 second (the minimum).";
+    public static final String RETENTION_DELAY_WINDOW_ARG_NAME = "seconds";
+
 	
 	public static final String DEST_CHECKSUM_OPT = "atmos-dest-checksum";
 	public static final String DEST_CHECKSUM_DESC = "If specified, the atmos wschecksum feature will be applied to uploads.  Valid algorithms are SHA0 for Atmos < 2.1 and SHA0, SHA1, or MD5 for 2.1+";
 	public static final String DEST_CHECKSUM_ARG_NAME = "checksum-alg";
-	
-	public static final String ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 	
 	private static final Logger l4j = Logger.getLogger(AtmosDestination.class);
 
@@ -95,15 +84,10 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	private EsuApi atmos;
 	private boolean force;
 	private boolean noUpdate;
-	private DateFormat iso8601;
-	private String checksum;
-	
-	public AtmosDestination() {
-		super();
-		iso8601 = new SimpleDateFormat(ISO_8601);
-		iso8601.setTimeZone(TimeZone.getTimeZone("UTC"));
-	}
-	
+    private boolean includeRetentionExpiration;
+    private long retentionDelayWindow = 1; // 1 second by default
+    private String checksum;
+
 	/**
 	 * @see com.emc.atmos.sync.plugins.SyncPlugin#filter(com.emc.atmos.sync.plugins.SyncObject)
 	 */
@@ -205,6 +189,8 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 										obj.getSize(), obj.getMetadata().getContentType());
 								}
 							}
+
+                            updateRetentionExpiration(obj, id);
 							
 							DestinationAtmosId destId = new DestinationAtmosId();
 							destId.setId(id);
@@ -281,7 +267,10 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 										in, obj.getSize(), obj.getMetadata().getContentType());
 							}
 						}
-						obj.setDestURI(new URI(protocol, uid + ":"+ secret, 
+
+                        updateRetentionExpiration(obj, id);
+
+                        obj.setDestURI(new URI(protocol, uid + ":"+ secret,
 								hosts.get(0), port, "/"+id.toString(), null, null));
 						DestinationAtmosId destId = new DestinationAtmosId();
 						destId.setId(id);
@@ -426,6 +415,48 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 		}
 	}
 
+    private void updateRetentionExpiration(SyncObject obj, Identifier destId) {
+        if (includeRetentionExpiration) {
+            MetadataList metaList = new MetadataList();
+
+            Date retentionEnd = obj.getMetadata().getRetentionEndDate();
+            Date expiration = obj.getMetadata().getExpirationDate();
+
+            if (retentionEnd != null) {
+                try {
+                    // wait for retention to kick in (it must be enabled before we can update the end-date)
+                    Thread.sleep((retentionDelayWindow * 1000) + 300);
+                } catch (InterruptedException e) {
+                    LogMF.warn(l4j, "Interrupted while waiting for retention delay window (destId {0})", destId);
+                }
+                LogMF.debug(l4j, "Retention enabled (destId {0} is retained until {1})", destId, Iso8601Util.format(retentionEnd));
+                metaList.addMetadata(new Metadata("user.maui.retentionEnd", Iso8601Util.format(retentionEnd), false));
+            }
+
+            if (expiration != null) {
+                LogMF.debug(l4j, "Expiration enabled (destId {0} will expire at {1})", destId, Iso8601Util.format(expiration));
+                metaList.addMetadata(new Metadata("user.maui.expirationEnd", Iso8601Util.format(expiration), false));
+            }
+
+            if (metaList.count() > 0) {
+                try {
+                    atmos.setUserMetadata(destId, metaList); // manually set retention/expiration end-dates
+                } catch (AtmosException e) {
+                    LogMF.error( l4j, "Failed to manually set retention/expiration\n" +
+                                      "(destId: {0}, retentionEnd: {1}, expiration: {2})\n" +
+                                      "[http: {3}, atmos: {4}, msg: {5}]", new Object[]{
+                            destId, Iso8601Util.format( retentionEnd ), Iso8601Util.format( expiration ),
+                            e.getHttpCode(), e.getErrorCode(), e.getMessage()} );
+                } catch (Exception e) {
+                    LogMF.error( l4j, "Failed to manually set retention/expiration\n" +
+                                      "(destId: {0}, retentionEnd: {1}, expiration: {2})\n[error: {3}]", new Object[]{
+                            destId, Iso8601Util.format( retentionEnd ), Iso8601Util.format( expiration ), e.getMessage()
+                    } );
+                }
+            }
+        }
+    }
+
 	/**
 	 * Gets the metadata for an object.  IFF the object does not exist, null
 	 * is returned.  If any other error condition exists, the exception is
@@ -457,14 +488,7 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 		if(m == null || m.getValue() == null) {
 			return null;
 		}
-		try {
-			synchronized(iso8601) {
-				return iso8601.parse(m.getValue());
-			}
-		} catch(ParseException e) {
-			LogMF.debug(l4j, "Failed to parse date {0}: {1}", m.getValue(), e.getMessage());
-			return null;
-		}
+		return Iso8601Util.parse( m.getValue() );
 	}
 
 	/**
@@ -502,6 +526,10 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 		
 		opts.addOption(OptionBuilder.withDescription(DEST_NO_UPDATE_DESC)
 				.withLongOpt(DEST_NO_UPDATE_OPTION).create());
+
+        opts.addOption(OptionBuilder.withDescription(RETENTION_DELAY_WINDOW_DESC)
+                .withLongOpt(RETENTION_DELAY_WINDOW_OPTION).hasArg()
+                .withArgName(RETENTION_DELAY_WINDOW_ARG_NAME).create());
 		
 		opts.addOption(OptionBuilder.withLongOpt(DEST_CHECKSUM_OPT)
 				.withDescription(DEST_CHECKSUM_DESC)
@@ -560,8 +588,15 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 			} else {
 				checksum = null;
 			}
-			
-			// Create and verify Atmos connection
+
+            includeRetentionExpiration = line.hasOption(CommonOptions.INCLUDE_RETENTION_EXPIRATION_OPTION);
+
+            if (line.hasOption(RETENTION_DELAY_WINDOW_OPTION)) {
+                retentionDelayWindow = Long.parseLong(line.getOptionValue(RETENTION_DELAY_WINDOW_OPTION));
+                l4j.info("Retention start delay window set to " + retentionDelayWindow);
+            }
+
+            // Create and verify Atmos connection
 			afterPropertiesSet();
 			
 			return true;
@@ -582,7 +617,7 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 		
 		// Use unicode if available
 		if(info.isUnicodeMetadataSupported()) {
-			((LBEsuRestApiApache)atmos).setUnicodeEnabled(true);
+			atmos.setUnicodeEnabled(true);
 			l4j.info("Unicode metadata enabled");
 		} else {
 			l4j.info("The destination Atmos server does not support unicode " +

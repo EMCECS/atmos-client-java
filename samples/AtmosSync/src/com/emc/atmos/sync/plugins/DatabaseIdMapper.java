@@ -24,17 +24,8 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
-import java.beans.PropertyVetoException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.sql.Connection;
-import java.text.MessageFormat;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.sql.DataSource;
-
+import com.emc.esu.api.ObjectId;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
@@ -45,8 +36,15 @@ import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.util.Assert;
 
-import com.emc.esu.api.ObjectId;
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import javax.sql.DataSource;
+import java.beans.PropertyVetoException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.sql.Connection;
+import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Maps IDs from source and destinations into a database.  Note that while it
@@ -82,7 +80,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 	public static final String JDBC_SELECT_ARG_NAME = "sql-statement";
 	
 	public static final String JDBC_MAP_OPT = "id-map-insert-sql";
-	public static final String JDBC_MAP_DESC = "The SQL statement to insert mapped IDs, e.g. \"INSERT INTO id_map(src,dest) VALUES(:source_id,:dest_id)\".  It is assumed that the query will have two arguments: source (:source_id) and destination (:dest_id).";
+	public static final String JDBC_MAP_DESC = "The SQL statement to insert mapped IDs, e.g. \"INSERT INTO id_map(src,dest) VALUES(:source_id,:dest_id)\".  It is assumed that the query will have two arguments: source (:source_id) and destination (:dest_id) unless id-map-add-metadata is specified, in which case it must also contain a parameter for each tag in the tag-list.";
 	public static final String JDBC_MAP_ARG_NAME = "sql-statement";
 	
 	public static final String JDBC_ERROR_OPT = "id-map-error-sql";
@@ -91,8 +89,12 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 	
 	public static final String JDBC_RAW_IDS_OPT = "id-map-raw-ids";
 	public static final String JDBC_RAW_IDS_DESC = "If specified, the 'raw' Atmos identifiers (ObjectID or Namespace Path) will be inserted into the database instead of the full URIs.";
-	
-	private static final String SOURCE_PARAM = "source_id";
+
+    public static final String JDBC_ADD_META_OPT = "id-map-add-metadata";
+    public static final String JDBC_ADD_META_DESC = "A comma-separated list of metadata names whose values should be added as parameters to the insert-sql statement, e.g. \"size,mtime,ctime\".  This is optional.  If specified, each value will be pulled from the source object and added to the id-map-insert-sql statement as named JDBC parameters using the name of the tag (e.g. :size, :mtime, :ctime).  Note that the insert-sql must then contain these parameters.";
+    public static final String JDBC_ADD_META_ARG_NAME = "tag-list";
+
+    private static final String SOURCE_PARAM = "source_id";
 	private static final String DEST_PARAM = "dest_id";
 	private static final String ERROR_PARAM = "error_msg";
 	
@@ -101,6 +103,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 	private String errorQuery;
 	private String selectQuery;
 	private boolean rawIds;
+    private String[] metaTags;
 	
 
 	/**
@@ -136,7 +139,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 				} else {
 					try {
 						String id = tmpl.queryForObject(selectQuery, params, String.class);
-						
+
 						if(id != null) {
 							// Looks like an ID already exists.
 							ObjectId oid = null;
@@ -166,15 +169,20 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 
 				}
 			}
-			
+
 			getNext().filter(obj);
-			
+
 			if(!alreadyMapped) {
 				NamedParameterJdbcTemplate tmpl = new NamedParameterJdbcTemplate(dataSource);
 				Map<String,String> params = new HashMap<String, String>();
 				params.put(SOURCE_PARAM, getSource(obj));
 				params.put(DEST_PARAM, getDest(obj));
-				tmpl.update(mapQuery, params);
+                if (metaTags != null) {
+                    for(String tag : metaTags) {
+                        params.put(tag, getMetaValue(obj, tag));
+                    }
+                }
+                tmpl.update(mapQuery, params);
 			}
 			
 		} catch(RuntimeException e) {
@@ -296,6 +304,10 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 		
 		opts.addOption(OptionBuilder.withDescription(JDBC_RAW_IDS_DESC)
 				.withLongOpt(JDBC_RAW_IDS_OPT).create());
+
+        opts.addOption(OptionBuilder.withDescription(JDBC_ADD_META_DESC)
+                .withLongOpt(JDBC_ADD_META_OPT).hasArg()
+                .withArgName( JDBC_ADD_META_ARG_NAME ).create());
 		
 		return opts;
 	}
@@ -332,6 +344,14 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 			if(line.hasOption(JDBC_RAW_IDS_OPT)) {
 				rawIds = true;
 			}
+
+            if (line.hasOption(JDBC_ADD_META_OPT)) {
+                metaTags = line.getOptionValue(JDBC_ADD_META_OPT).split(",");
+                for (String tag : metaTags) {
+                    if (!tag.matches( "^[_a-zA-Z][_a-zA-Z0-9]*$" ))
+                        throw new RuntimeException(MessageFormat.format("Only metadata with valid JDBC parameter names can be recorded ({0} is invalid)", tag));
+                }
+            }
 			
 			// Initialize a c3p0 pool
 			ComboPooledDataSource cpds = new ComboPooledDataSource();
@@ -463,4 +483,11 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 		this.selectQuery = selectQuery;
 	}
 
+    public String[] getMetaTags() {
+        return metaTags;
+    }
+
+    public void setMetaTags( String[] metaTags ) {
+        this.metaTags = metaTags;
+    }
 }
