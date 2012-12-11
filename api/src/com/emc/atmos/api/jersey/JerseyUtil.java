@@ -1,7 +1,7 @@
 package com.emc.atmos.api.jersey;
 
-import com.emc.atmos.api.AtmosConfig;
 import com.emc.atmos.AtmosException;
+import com.emc.atmos.api.AtmosConfig;
 import com.emc.util.SslUtil;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandler;
@@ -40,6 +40,7 @@ public class JerseyUtil {
      */
     public static void configureClient( Client client, AtmosConfig config ) {
         client.addFilter( new ErrorFilter() );
+        if ( config.isEnableRetry() ) client.addFilter( new RetryFilter( config ) );
         client.addFilter( new AuthFilter( config ) );
     }
 

@@ -2504,15 +2504,114 @@ public class AtmosApiTest {
         Assert.assertEquals( "policy differs", policy, token );
     }
 
+    @Test
+    public void testRetryFilter() throws Exception {
+        final int retries = 3, delay = 500;
+        final String flagMessage = "XXXXX";
+
+        config.setEnableRetry( true );
+        config.setMaxRetries( retries );
+        config.setRetryDelayMillis( delay );
+
+        CreateObjectRequest request;
+        try {
+            request = new CreateObjectRequest().content( new RetryInputStream( config, flagMessage ) )
+                                               .contentLength( 1 ).contentType( "text/plain" );
+            api.createObject( request );
+            Assert.fail( "Retried more than maxRetries times" );
+        } catch ( ClientHandlerException e ) {
+            Assert.assertEquals( "Wrong exception thrown", flagMessage, e.getCause().getMessage() );
+        }
+
+        config.setMaxRetries( retries + 1 );
+
+        request = new CreateObjectRequest().content( new RetryInputStream( config, flagMessage ) )
+                                           .contentLength( 1 ).contentType( "text/plain" );
+        ObjectId oid = api.createObject( request ).getObjectId();
+        cleanup.add( oid );
+        byte[] content = api.readObject( oid, null, byte[].class );
+        Assert.assertEquals( "Content wrong size", 1, content.length );
+        Assert.assertEquals( "Wrong content", (byte) 65, content[0] );
+
+        try {
+            request = new CreateObjectRequest().content( new InputStream() {
+                @Override
+                public int read() throws IOException {
+                    throw new AtmosException( "should not retry", 400 );
+                }
+            } ).contentLength( 1 ).contentType( "text/plain" );
+            api.createObject( request );
+            Assert.fail( "HTTP 400 was retried and should not be" );
+        } catch ( ClientHandlerException e ) {
+            Assert.assertEquals( "Wrong http code", 400, ((AtmosException) e.getCause()).getHttpCode() );
+        }
+
+        try {
+            request = new CreateObjectRequest().content( new InputStream() {
+                @Override
+                public int read() throws IOException {
+                    throw new RuntimeException( flagMessage );
+                }
+            } ).contentLength( 1 ).contentType( "text/plain" );
+            api.createObject( request );
+            Assert.fail( "RuntimeException was retried and should not be" );
+        } catch ( ClientHandlerException e ) {
+            Assert.assertEquals( "Wrong exception message", flagMessage, e.getCause().getMessage() );
+        }
+    }
+
     private AtmosConfig loadAtmosConfig( String fileName ) throws URISyntaxException {
         String[] endpoints = PropertiesUtil.getProperty( fileName, "atmos.endpoints" ).split( "," );
         List<URI> uris = new ArrayList<URI>();
         for ( String endpoint : endpoints ) {
             uris.add( new URI( endpoint ) );
         }
-        String tokenId = PropertiesUtil.getProperty( fileName, "atmos.tokenId" );
-        String secretKey = PropertiesUtil.getProperty( fileName, "atmos.secretKey" );
+        String tokenId = PropertiesUtil.getProperty( fileName, "atmos.uid" );
+        String secretKey = PropertiesUtil.getProperty( fileName, "atmos.secret" );
 
         return new AtmosConfig( tokenId, secretKey, uris.toArray( new URI[uris.size()] ) );
+    }
+
+    private class RetryInputStream extends InputStream {
+        private int callCount = 0;
+        private long now;
+        private long lastTime;
+        private AtmosConfig config;
+        private String flagMessage;
+
+        public RetryInputStream( AtmosConfig config, String flagMessage ) {
+            this.config = config;
+            this.flagMessage = flagMessage;
+        }
+
+        @Override
+        public int read() throws IOException {
+            switch ( callCount++ ) {
+                case 0:
+                    lastTime = System.currentTimeMillis();
+                    throw new AtmosException( "foo", 500 );
+                case 1:
+                    now = System.currentTimeMillis();
+                    Assert.assertTrue( "Retry delay for 500 error was not honored",
+                                       now - lastTime >= config.getRetryDelayMillis() );
+                    lastTime = now;
+                    throw new AtmosException( "bar", 500, 1040 );
+                case 2:
+                    now = System.currentTimeMillis();
+                    Assert.assertTrue( "Retry delay for 1040 error was not honored",
+                                       now - lastTime >= config.getRetryDelayMillis() + 300 );
+                    lastTime = now;
+                    throw new IOException( "baz" );
+                case 3:
+                    now = System.currentTimeMillis();
+                    Assert.assertTrue( "Retry delay for IOException was not honored",
+                                       now - lastTime >= config.getRetryDelayMillis() );
+                    lastTime = now;
+                    throw new AtmosException( flagMessage, 500 );
+                case 4:
+                    return 65;
+            }
+            return -1;
+        }
     }
 }

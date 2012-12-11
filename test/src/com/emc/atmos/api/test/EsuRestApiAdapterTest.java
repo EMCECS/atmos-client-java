@@ -78,8 +78,8 @@ public class EsuRestApiAdapterTest extends EsuApiTest {
         for ( String endpoint : endpoints ) {
             uris.add( new URI( endpoint ) );
         }
-        String tokenId = PropertiesUtil.getProperty( fileName, "atmos.tokenId" );
-        String secretKey = PropertiesUtil.getProperty( fileName, "atmos.secretKey" );
+        String tokenId = PropertiesUtil.getProperty( fileName, "atmos.uid" );
+        String secretKey = PropertiesUtil.getProperty( fileName, "atmos.secret" );
 
         return new AtmosConfig( tokenId, secretKey, uris.toArray( new URI[uris.size()] ) );
     }

@@ -12,6 +12,9 @@ public class AtmosConfig extends AbstractConfig {
     private String tokenId;
     private byte[] secretKey;
     private long serverClockSkew;
+    private boolean enableRetry = true;
+    private int retryDelayMillis = 0;
+    private int maxRetries = 2;
 
     public AtmosConfig() {
         super( DEFAULT_CONTEXT );
@@ -25,6 +28,30 @@ public class AtmosConfig extends AbstractConfig {
         } catch ( UnsupportedEncodingException e ) {
             throw new RuntimeException( "UTF-8 encoding isn't supported on this system", e ); // unrecoverable
         }
+    }
+
+    public boolean isEnableRetry() {
+        return enableRetry;
+    }
+
+    public void setEnableRetry( boolean enableRetry ) {
+        this.enableRetry = enableRetry;
+    }
+
+    public int getMaxRetries() {
+        return maxRetries;
+    }
+
+    public void setMaxRetries( int maxRetries ) {
+        this.maxRetries = maxRetries;
+    }
+
+    public int getRetryDelayMillis() {
+        return retryDelayMillis;
+    }
+
+    public void setRetryDelayMillis( int retryDelayMillis ) {
+        this.retryDelayMillis = retryDelayMillis;
     }
 
     public byte[] getSecretKey() {
