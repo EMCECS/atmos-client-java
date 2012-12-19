@@ -1,3 +1,27 @@
+// Copyright (c) 2012, EMC Corporation.
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//     + Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     + Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in the
+//       documentation and/or other materials provided with the distribution.
+//     + The name of EMC Corporation may not be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
+//
+//      THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+//      "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+//      TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+//      PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+//      BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//      CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//      SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//      INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//      CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.api.test;
 
 import com.emc.atmos.AtmosException;
@@ -35,33 +59,40 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class AtmosApiTest {
-    public static Logger l4j = Logger.getLogger( AtmosApiTest.class );
+public class AtmosApiClientTest {
+    public static Logger l4j = Logger.getLogger( AtmosApiClientTest.class );
 
     /**
      * Use this as a prefix for namespace object paths and you won't have to clean up after yourself.
      * This also keeps all test objects under one folder, which is easy to delete should something go awry.
      */
-    protected static final String TESTDIR = "/test_" + AtmosApiTest.class.getSimpleName() + "/";
+    protected static final String TESTDIR = "/test_" + AtmosApiClientTest.class.getSimpleName() + "/";
 
     protected AtmosConfig config;
-    protected AbstractAtmosApi api;
+    protected AtmosApi api;
 
     protected List<ObjectIdentifier> cleanup = Collections.synchronizedList( new ArrayList<ObjectIdentifier>() );
 
-    public AtmosApiTest() throws Exception {
+    public AtmosApiClientTest() throws Exception {
         config = loadAtmosConfig( "atmos.properties" );
+        config.setDisableSslValidation( false );
+        config.setEnableExpect100Continue( false );
+        config.setEnableRetry( false );
         api = new AtmosApiClient( config );
     }
 
     @After
     public void tearDown() {
-        for ( ObjectIdentifier cleanItem : cleanup ) {
-            try {
-                this.api.delete( cleanItem );
-            } catch ( Exception e ) {
-                System.out.println( "Failed to delete " + cleanItem + ": " + e.getMessage() );
-            }
+        for ( final ObjectIdentifier cleanItem : cleanup ) {
+            new Thread() {
+                public void run() {
+                    try {
+                        api.delete( cleanItem );
+                    } catch ( Throwable t ) {
+                        System.out.println( "Failed to delete " + cleanItem + ": " + t.getMessage() );
+                    }
+                }
+            }.start();
         }
         try { // if the test directory exists, recursively delete it
             this.api.getSystemMetadata( new ObjectPath( TESTDIR ) );
@@ -72,7 +103,7 @@ public class AtmosApiTest {
             }
         }
         try {
-            ListAccessTokensResponse response = this.api.listAccessTokens();
+            ListAccessTokensResponse response = this.api.listAccessTokens( new ListAccessTokensRequest() );
             if ( response.getTokens() != null ) {
                 for ( AccessToken token : response.getTokens() ) {
                     this.api.deleteAccessToken( token.getId() );
@@ -236,23 +267,15 @@ public class AtmosApiTest {
         String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
         String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
         byte[] content = (oneByteCharacters + twoByteCharacters + fourByteCharacters).getBytes( "UTF-8" );
-        ObjectPath path = new ObjectPath( TESTDIR + "utf8Content.txt" );
 
         // create object with multi-byte UTF-8 content
-        this.api.createObject( path, content, "text/plain" );
+        ObjectId oid = api.createObject( content, "text/plain" );
+        cleanup.add( oid );
+
+        byte[] readContent = this.api.readObject( oid, null, byte[].class );
 
         // verify content
-        Assert.assertTrue( "content does not match",
-                           Arrays.equals( content, this.api.readObject( path, null, byte[].class ) ) );
-    }
-
-    protected String rand8char() {
-        Random r = new Random();
-        StringBuilder sb = new StringBuilder( 8 );
-        for ( int i = 0; i < 8; i++ ) {
-            sb.append( (char) ('a' + r.nextInt( 26 )) );
-        }
-        return sb.toString();
+        Assert.assertTrue( "content does not match", Arrays.equals( content, readContent ) );
     }
 
     /**
@@ -1305,17 +1328,17 @@ public class AtmosApiTest {
      */
     @Test
     public void testDotDirectories() throws Exception {
-        String parentPath = "/dottest/";
+        String parentPath = TESTDIR + "dottest/";
         String dotPath = parentPath + "./";
         String dotdotPath = parentPath + "../";
-        String filename = "test.txt";
+        String filename = rand8char();
         byte[] content = "Hello World!".getBytes( "UTF-8" );
 
         // isolate this test in the namespace
         ObjectId parentId = this.api.createDirectory( new ObjectPath( parentPath ) );
 
         // test single dot path (./)
-        ObjectId fileId = this.api.createObject( new ObjectPath( parentPath + "hidden.txt" ), content, "text/plain" );
+        ObjectId fileId = this.api.createObject( new ObjectPath( parentPath + rand8char() ), content, "text/plain" );
         cleanup.add( fileId );
         ObjectId dirId = this.api.createDirectory( new ObjectPath( dotPath ) );
         Assert.assertNotNull( "null ID returned on dot path creation", dirId );
@@ -1622,7 +1645,7 @@ public class AtmosApiTest {
 
     @Test
     public void testUtf8Values() throws Exception {
-        String utf8String = "Hello ,\u0080\t \n";
+        String utf8String = "Hello ,\u0080\t \n \t\u000b";
 
         CreateObjectRequest request = new CreateObjectRequest();
         request.userMetadata( new Metadata( "utf8Key", utf8String, false ) );
@@ -2202,7 +2225,7 @@ public class AtmosApiTest {
 
         final CreateObjectRequest request = new CreateObjectRequest();
         request.userMetadata( new Metadata( "test-data", null, true ) );
-        final AbstractAtmosApi atmosApi = api;
+        final AtmosApi atmosApi = api;
         final List<ObjectIdentifier> cleanupList = new ArrayList<ObjectIdentifier>();
         ThreadPoolExecutor executor = new ThreadPoolExecutor( threadCount, threadCount, 0, TimeUnit.SECONDS,
                                                               new LinkedBlockingQueue<Runnable>() );
@@ -2288,8 +2311,7 @@ public class AtmosApiTest {
         final Map<String, String> customHeaders = new HashMap<String, String>();
         customHeaders.put( "myCustomHeader", "Hello World!" );
 
-        Client client = Client.create();
-        client.addFilter( new ClientFilter() {
+        ((AtmosApiClient) api).addClientFilter( new ClientFilter() {
             @Override
             public ClientResponse handle( ClientRequest clientRequest ) throws ClientHandlerException {
                 for ( String name : customHeaders.keySet() )
@@ -2298,8 +2320,7 @@ public class AtmosApiTest {
             }
         } );
 
-        AbstractAtmosApi customApi = new AtmosApiClient( config, client );
-        customApi.getServiceInformation();
+        api.getServiceInformation();
     }
 
     @Test
@@ -2491,7 +2512,7 @@ public class AtmosApiTest {
         request = new CreateAccessTokenRequest().identifier( path ).policy( policy );
         URL tokenUrl2 = api.createAccessToken( request ).getTokenUrl();
 
-        ListAccessTokensResponse response = api.listAccessTokens();
+        ListAccessTokensResponse response = api.listAccessTokens( new ListAccessTokensRequest() );
         Assert.assertNotNull( "access token list is null", response.getTokens() );
         Assert.assertEquals( "access token count wrong", 2, response.getTokens().size() );
 
@@ -2505,6 +2526,20 @@ public class AtmosApiTest {
     }
 
     @Test
+    public void testDisableSslValidation() throws Exception {
+        config.setDisableSslValidation( true );
+        api = new AtmosApiClient( config );
+        List<URI> sslUris = new ArrayList<URI>();
+        for ( URI uri : config.getEndpoints() ) {
+            sslUris.add( new URI( "https", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(),
+                                  uri.getQuery(), uri.getFragment() ) );
+        }
+        config.setEndpoints( sslUris.toArray( new URI[sslUris.size()] ) );
+
+        cleanup.add( api.createObject( "Hello SSL!", null ) );
+    }
+
+    @Test
     public void testRetryFilter() throws Exception {
         final int retries = 3, delay = 500;
         final String flagMessage = "XXXXX";
@@ -2512,12 +2547,11 @@ public class AtmosApiTest {
         config.setEnableRetry( true );
         config.setMaxRetries( retries );
         config.setRetryDelayMillis( delay );
+        api = new AtmosApiClient( config );
 
-        CreateObjectRequest request;
+        CreateObjectRequest request = new CreateObjectRequest().contentLength( 1 ).contentType( "text/plain" );
         try {
-            request = new CreateObjectRequest().content( new RetryInputStream( config, flagMessage ) )
-                                               .contentLength( 1 ).contentType( "text/plain" );
-            api.createObject( request );
+            api.createObject( request.content( new RetryInputStream( config, flagMessage ) ) );
             Assert.fail( "Retried more than maxRetries times" );
         } catch ( ClientHandlerException e ) {
             Assert.assertEquals( "Wrong exception thrown", flagMessage, e.getCause().getMessage() );
@@ -2525,39 +2559,145 @@ public class AtmosApiTest {
 
         config.setMaxRetries( retries + 1 );
 
-        request = new CreateObjectRequest().content( new RetryInputStream( config, flagMessage ) )
-                                           .contentLength( 1 ).contentType( "text/plain" );
-        ObjectId oid = api.createObject( request ).getObjectId();
+        ObjectId oid = api.createObject( request.content( new RetryInputStream( config, flagMessage ) ) ).getObjectId();
         cleanup.add( oid );
         byte[] content = api.readObject( oid, null, byte[].class );
         Assert.assertEquals( "Content wrong size", 1, content.length );
         Assert.assertEquals( "Wrong content", (byte) 65, content[0] );
 
         try {
-            request = new CreateObjectRequest().content( new InputStream() {
+            api.createObject( request.content( new RetryInputStream( null, null ) {
                 @Override
                 public int read() throws IOException {
-                    throw new AtmosException( "should not retry", 400 );
+                    switch ( callCount++ ) {
+                        case 0:
+                            throw new AtmosException( "should not retry", 400 );
+                        case 1:
+                            return 65;
+                    }
+                    return -1;
                 }
-            } ).contentLength( 1 ).contentType( "text/plain" );
-            api.createObject( request );
+            } ) );
             Assert.fail( "HTTP 400 was retried and should not be" );
         } catch ( ClientHandlerException e ) {
             Assert.assertEquals( "Wrong http code", 400, ((AtmosException) e.getCause()).getHttpCode() );
         }
 
         try {
-            request = new CreateObjectRequest().content( new InputStream() {
+            api.createObject( request.content( new RetryInputStream( null, null ) {
                 @Override
                 public int read() throws IOException {
-                    throw new RuntimeException( flagMessage );
+                    switch ( callCount++ ) {
+                        case 0:
+                            throw new RuntimeException( flagMessage );
+                        case 1:
+                            return 65;
+                    }
+                    return -1;
                 }
-            } ).contentLength( 1 ).contentType( "text/plain" );
-            api.createObject( request );
+            } ) );
             Assert.fail( "RuntimeException was retried and should not be" );
         } catch ( ClientHandlerException e ) {
             Assert.assertEquals( "Wrong exception message", flagMessage, e.getCause().getMessage() );
         }
+    }
+
+    @Test
+    public void testExpect100Continue() throws Exception {
+        config.setEnableExpect100Continue( true );
+
+        String tokenId = config.getTokenId();
+        config.setTokenId( "bogustokenid" );
+
+        InputStream is = new InputStream() {
+            private int count = 5;
+
+            @Override
+            public int read() throws IOException {
+                return --count;
+            }
+
+            @Override
+            public int available() throws IOException {
+                return count;
+            }
+        };
+
+        CreateObjectRequest request = new CreateObjectRequest().content( is ).contentLength( 5 );
+        try {
+            api.createObject( request );
+        } catch ( AtmosException e ) {
+            Assert.assertEquals( "wrong error code", 1033, e.getErrorCode() );
+            Assert.assertEquals( "input stream was read", 5, is.available() );
+        } finally {
+            config.setTokenId( tokenId );
+        }
+
+        cleanup.add( api.createObject( request ).getObjectId() );
+    }
+
+    @Test
+    public void testMultiThreadedBufferedWriter() throws Exception {
+        int threadCount = 20;
+        ThreadPoolExecutor executor = new ThreadPoolExecutor( threadCount, threadCount, 5000, TimeUnit.MILLISECONDS,
+                                                              new LinkedBlockingQueue<Runnable>() );
+
+        // test with String
+        List<Throwable> errorList = Collections.synchronizedList( new ArrayList<Throwable>() );
+        for ( int i = 0; i < threadCount; i++ ) {
+            executor.execute( new ObjectTestThread<String>( "Test thread " + i,
+                                                            "text/plain",
+                                                            String.class,
+                                                            errorList ) );
+        }
+        do {
+            Thread.sleep( 500 );
+        } while ( executor.getActiveCount() > 0 );
+        if ( !errorList.isEmpty() ) {
+            for ( Throwable t : errorList ) t.printStackTrace();
+            Assert.fail( "At least one thread failed" );
+        }
+
+        // test with JAXB bean
+        try {
+            for ( int i = 0; i < threadCount; i++ ) {
+                executor.execute( new ObjectTestThread<AccessTokenPolicy>( createTestTokenPolicy( "Test thread " + i,
+                                                                                                  "x.x.x." + i ),
+                                                                           "text/xml",
+                                                                           AccessTokenPolicy.class,
+                                                                           errorList ) );
+            }
+            do {
+                Thread.sleep( 500 );
+            } while ( executor.getActiveCount() > 0 );
+        } finally {
+            executor.shutdown();
+        }
+        if ( !errorList.isEmpty() ) {
+            for ( Throwable t : errorList ) t.printStackTrace();
+            Assert.fail( "At least one thread failed" );
+        }
+    }
+
+    protected String rand8char() {
+        Random r = new Random();
+        StringBuilder sb = new StringBuilder( 8 );
+        for ( int i = 0; i < 8; i++ ) {
+            sb.append( (char) ('a' + r.nextInt( 26 )) );
+        }
+        return sb.toString();
+    }
+
+    private AccessTokenPolicy createTestTokenPolicy( String allow, String deny ) {
+        AccessTokenPolicy.Source source = new AccessTokenPolicy.Source();
+        source.setAllowList( Arrays.asList( allow ) );
+        source.setDenyList( Arrays.asList( deny ) );
+        AccessTokenPolicy policy = new AccessTokenPolicy();
+        policy.setExpiration( new Date( 1355897000000L ) );
+        policy.setMaxDownloads( 5 );
+        policy.setMaxUploads( 10 );
+        policy.setSource( source );
+        return policy;
     }
 
     private AtmosConfig loadAtmosConfig( String fileName ) throws URISyntaxException {
@@ -2573,7 +2713,7 @@ public class AtmosApiTest {
     }
 
     private class RetryInputStream extends InputStream {
-        private int callCount = 0;
+        protected int callCount = 0;
         private long now;
         private long lastTime;
         private AtmosConfig config;
@@ -2612,6 +2752,44 @@ public class AtmosApiTest {
                     return 65;
             }
             return -1;
+        }
+
+        @Override
+        public synchronized void reset() throws IOException {
+        }
+
+        @Override
+        public boolean markSupported() {
+            return true;
+        }
+    }
+
+    private class ObjectTestThread<T> implements Runnable {
+        private T content;
+        private String contentType;
+        private Class<T> objectType;
+        private List<Throwable> errorList;
+
+        public ObjectTestThread( T content,
+                                 String contentType,
+                                 Class<T> objectType,
+                                 List<Throwable> errorList ) {
+            this.content = content;
+            this.contentType = contentType;
+            this.objectType = objectType;
+            this.errorList = errorList;
+        }
+
+        @Override
+        public void run() {
+            try {
+                ObjectId oid = api.createObject( content, contentType );
+                cleanup.add( oid );
+                T readContent = api.readObject( oid, null, objectType );
+                Assert.assertEquals( "Content for object " + oid + " not equal", content, readContent );
+            } catch ( Throwable t ) {
+                errorList.add( t );
+            }
         }
     }
 }

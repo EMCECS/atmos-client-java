@@ -1,3 +1,27 @@
+// Copyright (c) 2012, EMC Corporation.
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//     + Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     + Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in the
+//       documentation and/or other materials provided with the distribution.
+//     + The name of EMC Corporation may not be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
+//
+//      THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+//      "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+//      TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+//      PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+//      BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//      CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//      SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//      INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//      CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.api.request;
 
 import com.emc.atmos.api.Range;
@@ -8,6 +32,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+/**
+ * Represents an Atmos read-object request.
+ */
 public class ReadObjectRequest extends ObjectRequest<ReadObjectRequest> {
     protected List<Range> ranges;
 
@@ -27,7 +54,7 @@ public class ReadObjectRequest extends ObjectRequest<ReadObjectRequest> {
 
         RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
 
-        if ( ranges != null )
+        if ( ranges != null && !ranges.isEmpty() )
             RestUtil.addValue( headers, RestUtil.HEADER_RANGE, "bytes=" + RestUtil.join( ranges, "," ) );
 
         return headers;
@@ -38,15 +65,25 @@ public class ReadObjectRequest extends ObjectRequest<ReadObjectRequest> {
         return this;
     }
 
+    /**
+     * Builder method for {@link #setRanges(java.util.List)}
+     */
     public ReadObjectRequest ranges( Range... range ) {
-        this.ranges = Arrays.asList( range );
+        if ( range == null || (range.length == 1 && range[0] == null) ) range = new Range[0];
+        setRanges( Arrays.asList( range ) );
         return this;
     }
 
+    /**
+     * Returns the list of byte ranges to read from the target object.
+     */
     public List<Range> getRanges() {
         return ranges;
     }
 
+    /**
+     * Sets the list of byte ranges to read from the target object.
+     */
     public void setRanges( List<Range> ranges ) {
         this.ranges = ranges;
     }

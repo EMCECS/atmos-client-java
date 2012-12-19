@@ -31,7 +31,7 @@
 	<target name="doc" depends="prepare">
 		<javadoc source="1.5" destdir="${doc}" classpathref="classpath">
 			<header>EMC Cloud Optimized Storage API for Java</header>
-			<bottom>Copyright (c) 2008 EMC</bottom>
+			<bottom>Copyright (c) 2012 EMC</bottom>
 		    <fileset dir="${src}">
 		    	<include name="**/*.java"/>
 		    </fileset>

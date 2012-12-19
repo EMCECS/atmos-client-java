@@ -1,4 +1,4 @@
-// Copyright (c) 2008, EMC Corporation.
+// Copyright (c) 2012, EMC Corporation.
 // Redistribution and use in source and binary forms, with or without modification, 
 // are permitted provided that the following conditions are met:
 //
@@ -32,7 +32,9 @@ import java.util.List;
 /**
  * This interface defines the basic operations available through the ESU web
  * services.
+ * @deprecated Use {@link com.emc.atmos.api.AtmosApi} instead
  */
+@Deprecated
 public interface EsuApi {
 
     boolean isUnicodeEnabled();

@@ -1,3 +1,27 @@
+// Copyright (c) 2012, EMC Corporation.
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//     + Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     + Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in the
+//       documentation and/or other materials provided with the distribution.
+//     + The name of EMC Corporation may not be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
+//
+//      THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+//      "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+//      TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+//      PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+//      BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//      CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//      SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//      INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//      CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.api.jersey;
 
 import com.emc.atmos.AtmosException;
@@ -9,9 +33,12 @@ import com.emc.util.HttpUtil;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.filter.ClientFilter;
 import org.apache.log4j.Logger;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.MessageBodyWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -19,18 +46,101 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
+/**
+ * Reference implementation of AtmosApi.
+ * <p/>
+ * This implementation uses the JAX-RS reference implementation (Jersey) as it's REST client.  When sending or
+ * receiving data, the following content handlers are supported by default.  You may add your own
+ * MessageBodyReader/MessageBodyWriter implementations by using the optional constructor, however be sure to return a
+ * positive value from MessageBodyWriter.getSize() as this sets the content-length of the request, which is required by
+ * Atmos.  Be sure to use the appropriate content-type associated with each object type or the handlers will not
+ * understand the request.
+ * <p/>
+ * <table>
+ * <tr><th>Object Type (class)</th><th>Expected Content-Type(s)</th></tr>
+ * <tr><td>byte[]</td><td>*any*</td></tr>
+ * <tr><td>java.lang.String</td><td>*any*</td></tr>
+ * <tr><td>java.io.File (send-only)</td><td>*any*</td></tr>
+ * <tr><td>java.io.InputStream (send-only)</td><td>*any*</td></tr>
+ * <tr><td>com.emc.atmos.api.BufferSegment (send-only)</td><td>*any*</td></tr>
+ * <tr><td>any annotated JAXB root element bean</td><td>text/xml, application/xml</td></tr>
+ * <tr><td>com.emc.atmos.api.multipart.MultipartEntity (receive-only)</td><td>multipart/*</td></tr>
+ * </table>
+ * <p/>
+ * Also keep in mind that you can always send/receive byte[] and do your own conversion as that has always been
+ * supported.
+ * <p/>
+ * Note: this implementation is <b>not</b> supported with Atmos versions below 1.4.2.
+ * <p/>
+ * To use, simply pass a new AtmosConfig object to the constructor like so:
+ * <pre>
+ *     URI atmosEndpoint = new URI( "http://api.atmosonline.com" ); // or use your private cloud endpoint/load balancer
+ *     AtmosApi atmos = new AtmosApiClient( new AtmosConfig( "my_full_token_id", "my_secret_key", atmosEndpoint ) );
+ * </pre>
+ * <p/>
+ * You can also specify multiple endpoints and have each request round-robin between them like so:
+ * <pre>
+ *     URI endpoint1 = new URI( "https://10.0.0.101" ); // 1st Atmos node
+ *     URI endpoint2 = new URI( "https://10.0.0.102" ); // 2nd Atmos node
+ *     URI endpoint3 = new URI( "https://10.0.0.103" ); // 3rd Atmos node
+ *     URI endpoint4 = new URI( "https://10.0.0.104" ); // 4th Atmos node
+ *     AtmosApi atmos = new AtmosApiClient( new AtmosConfig( "my_full_token_id", "my_secret_key",
+ *                                          endpoint1, endpoint2, endpoint3, endpoint4 ) );
+ * </pre>
+ * <p/>
+ * To create an object, simply pass the object in to one of the createObject methods. The object type must be one of
+ * the supported types above.
+ * <pre>
+ *     String stringContent = "Hello World!";
+ *     ObjectId oid1 = atmos.createObject( stringContent, "text/plain" );
+ *
+ *     File fileContent = new File( "spreadsheet.xls" );
+ *     ObjectId oid2 = atmos.createObject( fileContent, "application/vnd.ms-excel" );
+ *
+ *     byte[] binaryContent;
+ *     ... // load binary content to store as an object
+ *     ObjectId oid3 = atmos.createObject( binaryContent, null ); // default content-type is application/octet-stream
+ * </pre>
+ * <p/>
+ * To read an object, specify the type of object you want to receive from a readObject method. The same rules apply to
+ * this type.
+ * <pre>
+ *     String stringContent = atmos.readObject( oid1, String.class );
+ *
+ *     byte[] fileContent = atmos.readObject( oid2, byte[].class );
+ *     // do something with file content (stream to client? save in local filesystem?)
+ *
+ *     byte[] binaryContent = atmos.readObject( oid3, byte[].class );
+ * </pre>
+ */
 public class AtmosApiClient extends AbstractAtmosApi {
     private static final Logger l4j = Logger.getLogger( AtmosApiClient.class );
 
     private Client client;
+    private Client client100;
 
     public AtmosApiClient( AtmosConfig config ) {
-        this( config, null );
+        this( config, null, null );
     }
 
-    public AtmosApiClient( AtmosConfig config, Client client ) {
+    public AtmosApiClient( AtmosConfig config,
+                           List<Class<MessageBodyReader<?>>> readers,
+                           List<Class<MessageBodyWriter<?>>> writers ) {
         super( config );
-        this.client = JerseyUtil.createClient( config, client );
+        this.client = JerseyUtil.createApacheClient( config, false, readers, writers );
+
+        // without writing our own client implementation, the only way to discriminate requests that enable
+        // Expect: 100-continue behavior is to have two clients; one with the feature enabled and one without.
+        this.client100 = JerseyUtil.createApacheClient( config, true, readers, writers );
+    }
+
+    /**
+     * Adds a ClientFilter to the Jersey client used to make REST requests.  Useful to provide your own in-line content
+     * or header manipulation.
+     */
+    public void addClientFilter( ClientFilter filter ) {
+        client.addFilter( filter );
+        client100.addFilter( filter );
     }
 
     @Override
@@ -49,6 +159,8 @@ public class AtmosApiClient extends AbstractAtmosApi {
         if ( utf8String != null && Boolean.valueOf( utf8String ) )
             serviceInformation.addFeature( ServiceInformation.Feature.Utf8 );
 
+        response.close();
+
         return serviceInformation;
     }
 
@@ -60,12 +172,17 @@ public class AtmosApiClient extends AbstractAtmosApi {
             throw new AtmosException( "Response date is null", response.getStatus() );
 
         config.setServerClockSkew( System.currentTimeMillis() - response.getResponseDate().getTime() );
+
+        response.close();
+
         return config.getServerClockSkew();
     }
 
     @Override
     public CreateObjectResponse createObject( CreateObjectRequest request ) {
         ClientResponse response = build( request ).post( ClientResponse.class, getContent( request ) );
+
+        response.close();
 
         return fillResponse( new CreateObjectResponse(), response );
     }
@@ -78,8 +195,11 @@ public class AtmosApiClient extends AbstractAtmosApi {
                       objectType.getSimpleName() );
 
         ClientResponse response = build( request ).get( ClientResponse.class );
+        ReadObjectResponse<T> ret = new ReadObjectResponse<T>( response.getEntity( objectType ) );
 
-        return fillResponse( new ReadObjectResponse<T>( response.getEntity( objectType ) ), response );
+        response.close();
+
+        return fillResponse( ret, response );
     }
 
     @Override
@@ -92,6 +212,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
     @Override
     public BasicResponse updateObject( UpdateObjectRequest request ) {
         ClientResponse response = build( request ).put( ClientResponse.class, getContent( request ) );
+
+        response.close();
+
         return fillResponse( new BasicResponse(), response );
     }
 
@@ -105,6 +228,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
         CreateObjectRequest request = new CreateObjectRequest().identifier( path );
 
         ClientResponse response = build( request ).post( ClientResponse.class );
+
+        response.close();
+
         return RestUtil.parseObjectId( response.getLocation().getPath() );
     }
 
@@ -114,6 +240,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
         request.userMetadata( metadata );
 
         ClientResponse response = build( request ).post( ClientResponse.class );
+
+        response.close();
+
         return RestUtil.parseObjectId( response.getLocation().getPath() );
     }
 
@@ -125,16 +254,21 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
         request.setToken( response.getHeaders().getFirst( RestUtil.XHEADER_TOKEN ) );
         if ( request.getToken() != null )
-            l4j.warn( "Results truncated. Call listDirectory again for next page of results." );
+            l4j.info( "Results truncated. Call listDirectory again for next page of results." );
 
-        return fillResponse( response.getEntity( ListDirectoryResponse.class ), response );
+        ListDirectoryResponse ret = response.getEntity( ListDirectoryResponse.class );
+
+        response.close();
+
+        return fillResponse( ret, response );
     }
 
     @Override
     public void move( ObjectPath oldPath, ObjectPath newPath, boolean overwrite ) {
         WebResource resource = client.resource( config.resolvePath( oldPath.getRelativeResourcePath(), "rename" ) );
         WebResource.Builder builder = resource.getRequestBuilder();
-        builder.header( RestUtil.XHEADER_UTF8, "true" ).header( RestUtil.XHEADER_PATH, newPath.getPath() );
+        builder.header( RestUtil.XHEADER_UTF8, "true" )
+               .header( RestUtil.XHEADER_PATH, HttpUtil.encodeUtf8( newPath.getPath() ) );
         if ( overwrite ) builder.header( RestUtil.XHEADER_FORCE, "true" );
         builder.post();
     }
@@ -160,6 +294,8 @@ public class AtmosApiClient extends AbstractAtmosApi {
                 metaNames.put( HttpUtil.decodeUtf8( name.trim() ), true );
         }
 
+        response.close();
+
         return metaNames;
     }
 
@@ -170,7 +306,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
         if ( metadataNames != null ) {
             for ( String name : metadataNames ) {
-                builder.header( RestUtil.XHEADER_TAGS, name );
+                builder.header( RestUtil.XHEADER_TAGS, HttpUtil.encodeUtf8( name ) );
             }
         }
 
@@ -179,9 +315,10 @@ public class AtmosApiClient extends AbstractAtmosApi {
         Map<String, Metadata> metaMap = new TreeMap<String, Metadata>();
         metaMap.putAll( RestUtil.parseMetadataHeader( response.getHeaders().getFirst( RestUtil.XHEADER_META ),
                                                       false ) );
-        metaMap.putAll( RestUtil.parseMetadataHeader( response.getHeaders()
-                                                              .getFirst( RestUtil.XHEADER_LISTABLE_META ),
+        metaMap.putAll( RestUtil.parseMetadataHeader( response.getHeaders().getFirst( RestUtil.XHEADER_LISTABLE_META ),
                                                       true ) );
+
+        response.close();
 
         return metaMap;
     }
@@ -193,11 +330,13 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
         if ( metadataNames != null ) {
             for ( String name : metadataNames ) {
-                builder.header( RestUtil.XHEADER_TAGS, name );
+                builder.header( RestUtil.XHEADER_TAGS, HttpUtil.encodeUtf8( name ) );
             }
         }
 
         ClientResponse response = builder.header( RestUtil.XHEADER_UTF8, "true" ).get( ClientResponse.class );
+
+        response.close();
 
         return RestUtil.parseMetadataHeader( response.getHeaders().getFirst( RestUtil.XHEADER_META ), false );
     }
@@ -218,6 +357,8 @@ public class AtmosApiClient extends AbstractAtmosApi {
         metaMap.putAll( RestUtil.parseMetadataHeader( response.getHeaders()
                                                               .getFirst( RestUtil.XHEADER_LISTABLE_META ),
                                                       true ) );
+
+        response.close();
 
         return new ObjectMetadata( metaMap, acl, response.getType().toString() );
     }
@@ -264,6 +405,8 @@ public class AtmosApiClient extends AbstractAtmosApi {
         for ( String name : headerValue.split( "," ) )
             names.add( HttpUtil.decodeUtf8( name.trim() ) );
 
+        response.close();
+
         return names;
     }
 
@@ -286,9 +429,13 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
         request.setToken( response.getHeaders().getFirst( RestUtil.XHEADER_TOKEN ) );
         if ( request.getToken() != null )
-            l4j.warn( "Results truncated. Call listObjects again for next page of results." );
+            l4j.info( "Results truncated. Call listObjects again for next page of results." );
 
-        return fillResponse( response.getEntity( ListObjectsResponse.class ), response );
+        ListObjectsResponse ret = response.getEntity( ListObjectsResponse.class );
+
+        response.close();
+
+        return fillResponse( ret, response );
     }
 
     @Override
@@ -299,6 +446,8 @@ public class AtmosApiClient extends AbstractAtmosApi {
         Acl acl = new Acl();
         acl.setUserAcl( RestUtil.parseAclHeader( response.getHeaders().getFirst( RestUtil.XHEADER_USER_ACL ) ) );
         acl.setGroupAcl( RestUtil.parseAclHeader( response.getHeaders().getFirst( RestUtil.XHEADER_GROUP_ACL ) ) );
+
+        response.close();
 
         return acl;
     }
@@ -327,6 +476,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
         ClientResponse response = client.resource(
                 config.resolvePath( identifier.getRelativeResourcePath(), "versions" ) )
                                         .post( ClientResponse.class );
+
+        response.close();
+
         return RestUtil.parseObjectId( response.getLocation().getPath() );
     }
 
@@ -336,9 +488,13 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
         request.setToken( response.getHeaders().getFirst( RestUtil.XHEADER_TOKEN ) );
         if ( request.getToken() != null )
-            l4j.warn( "Results truncated. Call listVersions again for next page of results." );
+            l4j.info( "Results truncated. Call listVersions again for next page of results." );
 
-        return fillResponse( response.getEntity( ListVersionsResponse.class ), response );
+        ListVersionsResponse ret = response.getEntity( ListVersionsResponse.class );
+
+        response.close();
+
+        return fillResponse( ret, response );
     }
 
     @Override
@@ -359,6 +515,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
             throws MalformedURLException {
         ClientResponse response = build( request ).post( ClientResponse.class, request.getPolicy() );
         URI tokenUri = config.resolvePath( response.getLocation().getPath(), response.getLocation().getQuery() );
+
+        response.close();
+
         return fillResponse( new CreateAccessTokenResponse( tokenUri.toURL() ), response );
     }
 
@@ -367,7 +526,11 @@ public class AtmosApiClient extends AbstractAtmosApi {
         URI uri = config.resolvePath( "accesstokens/" + accessTokenId, "info" );
         ClientResponse response = client.resource( uri ).get( ClientResponse.class );
 
-        return fillResponse( new GetAccessTokenResponse( response.getEntity( AccessToken.class ) ), response );
+        GetAccessTokenResponse ret = new GetAccessTokenResponse( response.getEntity( AccessToken.class ) );
+
+        response.close();
+
+        return fillResponse( ret, response );
     }
 
     @Override
@@ -376,24 +539,49 @@ public class AtmosApiClient extends AbstractAtmosApi {
     }
 
     @Override
-    public ListAccessTokensResponse listAccessTokens() {
-        URI uri = config.resolvePath( "accesstokens", null );
-        ClientResponse response = client.resource( uri ).get( ClientResponse.class );
-        return fillResponse( response.getEntity( ListAccessTokensResponse.class ), response );
+    public ListAccessTokensResponse listAccessTokens( ListAccessTokensRequest request ) {
+        ClientResponse response = build( request ).get( ClientResponse.class );
+
+        request.setToken( response.getHeaders().getFirst( RestUtil.XHEADER_TOKEN ) );
+        if ( request.getToken() != null )
+            l4j.info( "Results truncated. Call listAccessTokens again for next page of results." );
+
+        ListAccessTokensResponse ret = response.getEntity( ListAccessTokensResponse.class );
+
+        response.close();
+
+        return fillResponse( ret, response );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
     public <T> GenericResponse<T> execute( PreSignedRequest request, Class<T> resultType, Object content )
             throws URISyntaxException {
         WebResource.Builder builder = client.resource( request.getUrl().toURI() ).getRequestBuilder();
         addHeaders( builder, request.getHeaders() ).type( request.getContentType() );
         ClientResponse response = builder.method( request.getMethod(), ClientResponse.class, content );
-        return fillResponse( new GenericResponse<T>( response.getEntity( resultType ) ), response );
+
+        GenericResponse<T> ret;
+        if ( InputStream.class.equals( resultType ) ) {
+            ret = (GenericResponse<T>) new GenericResponse<InputStream>( response.getEntityInputStream() );
+        } else {
+            ret = new GenericResponse<T>( response.getEntity( resultType ) );
+            response.close();
+        }
+
+        return fillResponse( ret, response );
     }
 
     protected WebResource.Builder build( Request request ) {
-        WebResource resource = client.resource( config.resolvePath( request.getServiceRelativePath(),
-                                                                    request.getQuery() ) );
+        WebResource resource;
+        if ( request.supports100Continue() && config.isEnableExpect100Continue() ) {
+            // use client with Expect: 100-continue
+            l4j.debug( "Expect: 100-continue is enabled for this request" );
+            resource = client100.resource( config.resolvePath( request.getServiceRelativePath(), request.getQuery() ) );
+        } else {
+            resource = client.resource( config.resolvePath( request.getServiceRelativePath(), request.getQuery() ) );
+        }
+
         WebResource.Builder builder = resource.getRequestBuilder();
 
         if ( request instanceof ContentRequest ) {
@@ -414,6 +602,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
         return builder;
     }
 
+    /**
+     * Populates a response object with data from the ClientResponse.
+     */
     protected <T extends BasicResponse> T fillResponse( T response, ClientResponse clientResponse ) {
         ClientResponse.Status status = clientResponse.getClientResponseStatus();
         MediaType type = clientResponse.getType();
@@ -430,18 +621,18 @@ public class AtmosApiClient extends AbstractAtmosApi {
     }
 
     protected Object getContent( ContentRequest request ) {
-        if ( request.getContent() == null ) return ""; // need this to provide Content-Length: 0
+        Object content = request.getContent();
+        if ( content == null ) return new byte[0]; // need this to provide Content-Length: 0
 
-        else if ( request.getContent() instanceof InputStream ) {
+        else if ( content instanceof InputStream ) {
             if ( request.getContentLength() < 0 )
                 throw new UnsupportedOperationException(
                         "Content request with input stream must provide content length" );
 
             if ( request.getContentLength() == 0 )
-                l4j.warn( "Content request with input stream and zero-length will not send any data" );
+                l4j.info( "Content request with input stream and zero-length will not send any data" );
 
-            return new MeasuredInputStream( (InputStream) request.getContent(), request.getContentLength() );
-
-        } else return request.getContent();
+            return new MeasuredInputStream( (InputStream) content, request.getContentLength() );
+        } else return content;
     }
 }

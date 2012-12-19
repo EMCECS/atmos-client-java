@@ -1,91 +1,61 @@
 -----------------------------
-| Java REST API for EMC ESU |
+| Java REST API for EMC Atmos |
 -----------------------------
 
-This API allows Java developers to easily connect to EMC's ESU 
+This API allows Java developers to easily connect to EMC's Atmos
 Storage.  It handles all of the low-level tasks such as generating and signing 
-requests, connecting to the server, and parsing server responses.  It also 
-includes helper classes to help automate basic tasks such as creating, updating,
-and downloading object content from the cloud.
+requests, connecting to the server, and parsing server responses.
 
 Requirements
 ------------
- * Java 1.5+
+ * Java 6+
  * Log4J 1.2+ (included, Apache License)
  * JDOM 1.0+  (included, see jdom-license.txt)
- * Apache Commons Codec v1.3+ (Included, Apache License.)
+ * Apache Commons Codec v1.4+ (Included, Apache License.)
  * Apache Ant 1.7+ (for running build scripts only)
- * Apache HTTP Client (optional, required to use EsuRestApiApache)
+ * Apache HTTP Client (included, Apache license)
  
 Usage
 -----
-To use the API, include emcesu.jar as well as the required above libraries to
+To use the API, include atmos-api-x.x.x.x.jar as well as the required above libraries to
 your project's classpath.
 
-In order to use the API, you need to construct an instance of the EcuRestApi
-class.  This class contains the parameters used to connect to the server.
+In order to use the API, you need to construct an instance of the AtmosApiClient
+class, passing in an instance of AtmosConfig.  This class contains the parameters
+used to connect to the server.
 
-EsuApi esu= new EsuRestApiApache( "host", port, "uid", "shared secret" );
+AtmosApi atmos = new AtmosApiClient( new AtmosConfig( "uid",
+                                                      "shared secret",
+                                                      new URI( "http://host:port" ) ) );
 
-Where host is the hostname or IP address of an ESU node that you're authorized
+Where host is the hostname or IP address of an Atmos node that you're authorized
 to access, port is the IP port number used to connect to the server (generally
-80 for HTTP), UID is the username to connect as, and the shared secret is the
+80 for HTTP), UID is the full token ID to connect as, and the shared secret is the
 shared secret key assigned to the UID you're using.  The UID and shared secret
-are available from your ESU tennant administrator.  The secret key should be
-a base-64 encoded string as shown in the tennant administration console, e.g
+are available from your Atmos tenant administrator.  The secret key should be
+a base-64 encoded string as shown in the tenant administration console, e.g
 "jINDh7tV/jkry7o9D+YmauupIQk=".
 
-After you have created your EsuRestApi object, you can use the methods on the
+After you have created your AtmosApiClient object, you can use the methods on the
 object to manipulate data in the cloud.  For instance, to create a new, empty
 object in the cloud, you can simply call:
 
-ObjectId id = esu.createObject( null, null, null, null );
+ObjectId id = atmos.createObject( null, null );
 
 The createObject method will return an ObjectId you can use in subsequent calls
 to modify the object.
 
-The helper classes provide some basic functionality when working with ESU like
-uploading a file to the cloud.  To create a helper, simply construct the
-appropriate class (UploadHelper or DownloadHelper).  The first, required 
-argument is your EsuResApi object.  The second argument is optional and defines
-the transfer size used for requests.  By default, your file will be uploaded
-to the server in 4MB chunks.  After constructing the helper object, there are
-a couple ways to upload and download objects.  You can either give the helper
-a file to transfer or a stream.  When passing a stream, you can optionally pass
-an extra argument telling the helper whether you want the descriptor closed 
-after the transfer has completed.
-
-UploadHelper helper = new UploadHelper( esu, null );
-ObjectId id = helper.createObjectFromFile( new File( "readme.txt" ) );
-
-The helper classes also allow you to register listener classes that implement
-the ProgressListener interface.  If you register listeners, they will be 
-notified of transfer progress, when the transfer completes, or when an error 
-occurs.  You can also access the same status information through the helper 
-object's methods.
-
-Note that since a transfer's status is directly connected to the helper class,
-the helper class should not be used for more than one transfer.  Doing so can
-produce undesired results.
-
 Source Code
 -----------
 
-The source code is broken into four packages.
-
- * com.emc.esu.api - This package contains the core java objects used in the
-   API (Metadata, Acl, Extent, etc) as well as the generic CosApi interface.
- * com.emc.esu.api.rest - This package contains the REST implementation of
-   the CosApi interface.
-
-To build the emcesu.jar from source, use the 'jar' target in the supplied
+To build the atmos-api-x.x.x.x.jar from source, use the 'jar' target in the supplied
 build.xml using Apache Ant (http://ant.apache.org).
 
 Logging
 -------
 
 The API uses Log4J for logging functionality.  See the file src/log4j.properties
-for a sample logging configuration that appends all debug output to esu.log.
+for a sample logging configuration that appends all debug output to atmos.log.
 
 Socket errors on older versions of Windows
 ------------------------------------------
@@ -100,6 +70,14 @@ you make more than 4000 requests in 3 minutes you will likely see these errors.
 You can fix this problem by editing the registry and changing MaxUserPort and
 TCPTimedWaitDelay settings.  This is discussed in the article:
 http://support.microsoft.com/kb/196271/en-us
+
+New in 2.1: Anonymous access tokens, pre-signed requests, key-pools (requires
+Atmos 2.1+)
+----------------------------
+There is a completely new interface in this release (AtmosApi).  Follow the javadoc
+for more information.  There is also an EsuApiJerseyAdapter that implements the old
+EsuApi for backward compatibility.  In this release, EsuApi is deprecated.  It may
+be removed in the future.
 
 New in 2.0.3: Hardlinks and content-disposition for shareable URLs (requires
 Atmos 2.0.3+)

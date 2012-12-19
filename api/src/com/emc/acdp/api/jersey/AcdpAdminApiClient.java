@@ -40,13 +40,15 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 /**
  * @author cwikj
  * @author arnetc
  */
 public class AcdpAdminApiClient implements AcdpAdminApi {
-    private static final DateFormat DATE_FORMAT = new SimpleDateFormat( "yyyy-MM-dd" );
+    private static final String DATE_FORMAT = "yyyy-MM-dd";
+    private static final ThreadLocal<DateFormat> dateFormat = new ThreadLocal<DateFormat>();
 
     private AcdpAdminConfig config;
     private Client client;
@@ -278,8 +280,8 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
         resourceStr = resourceStr.substring( 0, resourceStr.length() - 1 );
 
         MultivaluedMap<String, String> params = new MultivaluedMapImpl();
-        params.putSingle( "start_date", DATE_FORMAT.format( startDate ) );
-        params.putSingle( "end_date", DATE_FORMAT.format( endDate ) );
+        params.putSingle( "start_date", getFormat().format( startDate ) );
+        params.putSingle( "end_date", getFormat().format( endDate ) );
         params.putSingle( "resources", resourceStr );
         params.putSingle( "cat", category );
         if ( start > -1 )
@@ -342,8 +344,8 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
         resourceStr = resourceStr.substring( 0, resourceStr.length() - 1 );
 
         MultivaluedMap<String, String> params = new MultivaluedMapImpl();
-        params.putSingle( "start_date", DATE_FORMAT.format( startDate ) );
-        params.putSingle( "end_date", DATE_FORMAT.format( endDate ) );
+        params.putSingle( "start_date", getFormat().format( startDate ) );
+        params.putSingle( "end_date", getFormat().format( endDate ) );
         params.putSingle( "resources", resourceStr );
         params.putSingle( "cat", category );
         if ( start > -1 )
@@ -399,5 +401,15 @@ public class AcdpAdminApiClient implements AcdpAdminApi {
             adminResource = client.resource( config.getBaseUri() + "/cdp-rest/v1/admin" );
         }
         return adminResource;
+    }
+
+    private static DateFormat getFormat() {
+        DateFormat format = dateFormat.get();
+        if ( format == null ) {
+            format = new SimpleDateFormat( DATE_FORMAT );
+            format.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
+            dateFormat.set( format );
+        }
+        return format;
     }
 }

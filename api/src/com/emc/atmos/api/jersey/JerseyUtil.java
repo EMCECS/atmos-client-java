@@ -1,16 +1,61 @@
+// Copyright (c) 2012, EMC Corporation.
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//     + Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     + Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in the
+//       documentation and/or other materials provided with the distribution.
+//     + The name of EMC Corporation may not be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
+//
+//      THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+//      "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+//      TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+//      PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+//      BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//      CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//      SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//      INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//      CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.api.jersey;
 
 import com.emc.atmos.AtmosException;
 import com.emc.atmos.api.AtmosConfig;
+import com.emc.atmos.api.jersey.provider.*;
 import com.emc.util.SslUtil;
 import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.client.apache4.ApacheHttpClient4;
+import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
 import com.sun.jersey.client.urlconnection.HTTPSProperties;
+import com.sun.jersey.core.impl.provider.entity.ByteArrayProvider;
+import com.sun.jersey.core.impl.provider.entity.FileProvider;
+import com.sun.jersey.core.impl.provider.entity.StringProvider;
+import com.sun.jersey.core.impl.provider.entity.XMLRootElementProvider;
+import org.apache.http.client.params.AllClientPNames;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.impl.client.AbstractHttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.params.HttpParams;
+import org.apache.http.params.SyncBasicHttpParams;
+
+import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.MessageBodyWriter;
+import java.util.List;
 
 public class JerseyUtil {
-    public static Client createClient( AtmosConfig config, ClientHandler root ) {
+    public static Client createClient( AtmosConfig config,
+                                       List<Class<MessageBodyReader<?>>> readers,
+                                       List<Class<MessageBodyWriter<?>>> writers ) {
         try {
             ClientConfig clientConfig = new DefaultClientConfig();
 
@@ -21,12 +66,12 @@ public class JerseyUtil {
                                                                        SslUtil.createGullibleSslContext() ) );
             }
 
-            clientConfig.getClasses().add( MeasuredInputStreamWriter.class );
-            clientConfig.getClasses().add( BufferSegmentWriter.class );
-            clientConfig.getClasses().add( MultipartReader.class );
+            addHandlers( clientConfig, readers, writers );
 
-            Client client = (root == null) ? Client.create( clientConfig ) : new Client( root, clientConfig );
-            configureClient( client, config );
+            Client client = Client.create( clientConfig );
+
+            addFilters( client, config );
+
             return client;
 
         } catch ( Exception e ) {
@@ -34,11 +79,92 @@ public class JerseyUtil {
         }
     }
 
-    /**
-     * Note that this method cannot disable SSL validation, so that configuration option is ignored here. You are
-     * responsible for configuring the client with any proxy, ssl or other options prior to calling this constructor.
-     */
-    public static void configureClient( Client client, AtmosConfig config ) {
+
+    public static Client createApacheClient( AtmosConfig config,
+                                             boolean useExpect100Continue,
+                                             List<Class<MessageBodyReader<?>>> readers,
+                                             List<Class<MessageBodyWriter<?>>> writers ) {
+        try {
+            ClientConfig clientConfig = new DefaultApacheHttpClient4Config();
+
+            // make sure the apache client is thread-safe
+            PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
+            // Increase max total connection to 200
+            connectionManager.setMaxTotal( 200 );
+            // Increase default max connection per route to 200
+            connectionManager.setDefaultMaxPerRoute( 200 );
+            clientConfig.getProperties().put( DefaultApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER,
+                                              connectionManager );
+
+            // register an open trust manager to allow SSL connections to servers with self-signed certificates
+            if ( config.isDisableSslValidation() ) {
+                connectionManager.getSchemeRegistry().register(
+                        new Scheme( "https", 443,
+                                    new SSLSocketFactory( SslUtil.createGullibleSslContext(),
+                                                          SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER ) ) );
+            }
+
+            // specify whether to use Expect: 100-continue
+            HttpParams httpParams = new SyncBasicHttpParams();
+            DefaultHttpClient.setDefaultHttpParams( httpParams );
+            httpParams.setBooleanParameter( AllClientPNames.USE_EXPECT_CONTINUE, useExpect100Continue );
+            clientConfig.getProperties().put( DefaultApacheHttpClient4Config.PROPERTY_HTTP_PARAMS, httpParams );
+
+            addHandlers( clientConfig, readers, writers );
+
+            // create the client
+            ApacheHttpClient4 client = ApacheHttpClient4.create( clientConfig );
+
+            // do not use Apache's retry handler
+            ((AbstractHttpClient) client.getClientHandler().getHttpClient()).setHttpRequestRetryHandler(
+                    new DefaultHttpRequestRetryHandler( 0, false ) );
+
+            addFilters( client, config );
+
+            return client;
+        } catch ( Exception e ) {
+            throw new AtmosException( "Error configuring REST client", e );
+        }
+    }
+
+    private static void addHandlers( ClientConfig clientConfig,
+                                     List<Class<MessageBodyReader<?>>> readers,
+                                     List<Class<MessageBodyWriter<?>>> writers ) {
+        // add our message body handlers
+        clientConfig.getClasses().clear();
+
+        // custom types and buffered writers to ensure content-length is set
+        clientConfig.getClasses().add( MeasuredStringWriter.class );
+        clientConfig.getClasses().add( MeasuredJaxbWriter.App.class );
+        clientConfig.getClasses().add( MeasuredJaxbWriter.Text.class );
+        clientConfig.getClasses().add( MeasuredJaxbWriter.General.class );
+        clientConfig.getClasses().add( MeasuredInputStreamWriter.class );
+        clientConfig.getClasses().add( BufferSegmentWriter.class );
+        clientConfig.getClasses().add( MultipartReader.class );
+
+        // Jersey providers for types we support
+        clientConfig.getClasses().add( ByteArrayProvider.class );
+        clientConfig.getClasses().add( FileProvider.class );
+        clientConfig.getClasses().add( StringProvider.class );
+        clientConfig.getClasses().add( XMLRootElementProvider.App.class );
+        clientConfig.getClasses().add( XMLRootElementProvider.Text.class );
+        clientConfig.getClasses().add( XMLRootElementProvider.General.class );
+
+        // user-defined types
+        if ( readers != null ) {
+            for ( Class<MessageBodyReader<?>> reader : readers ) {
+                clientConfig.getClasses().add( reader );
+            }
+        }
+        if ( writers != null ) {
+            for ( Class<MessageBodyWriter<?>> writer : writers ) {
+                clientConfig.getClasses().add( writer );
+            }
+        }
+    }
+
+    private static void addFilters( Client client, AtmosConfig config ) {
+        // add filters
         client.addFilter( new ErrorFilter() );
         if ( config.isEnableRetry() ) client.addFilter( new RetryFilter( config ) );
         client.addFilter( new AuthFilter( config ) );

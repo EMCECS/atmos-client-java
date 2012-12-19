@@ -65,7 +65,7 @@
 	<target name="doc" depends="prepare">
 		<javadoc source="1.5" destdir="${doc}" classpathref="classpath">
 			<header>EMC Cloud Optimized Storage API for Java</header>
-			<bottom>Copyright (c) 2008 EMC</bottom>
+			<bottom>Copyright (c) 2012 EMC</bottom>
 		    <fileset dir="${src}">
 		    	<include name="**/*.java"/>
 		    </fileset>
@@ -119,11 +119,13 @@
 			<jvmarg value="-Datmos.secret=${atmos.secret}" />
 			<jvmarg value="-Datmos.host=${atmos.host}" />
 			<jvmarg value="-Datmos.port=${atmos.port}" />
+            <jvmarg value="-Datmos.endpoints=http://${atmos.host}:${atmos.port}" />
 			<jvmarg value="${junit.debug.jvmarg.1}" />
 			<jvmarg value="${junit.debug.jvmarg.2}" />
 			<batchtest haltonfailure="no" fork="yes" todir="${build}/test_report">
 				<fileset dir="${src}">
 					<include name="**/EsuRest*Test.java"/>
+                    <include name="com/emc/atmos/api/test/*Test.java"/>
 					<exclude name="**/CosApiTest.java" />
 				</fileset>
 				<formatter type="xml" />

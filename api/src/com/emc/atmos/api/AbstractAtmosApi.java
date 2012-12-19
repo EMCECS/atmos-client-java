@@ -1,18 +1,43 @@
+// Copyright (c) 2012, EMC Corporation.
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//     + Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     + Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in the
+//       documentation and/or other materials provided with the distribution.
+//     + The name of EMC Corporation may not be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
+//
+//      THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+//      "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+//      TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+//      PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+//      BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//      CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//      SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//      INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//      CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.api;
 
-import com.emc.atmos.api.bean.*;
+import com.emc.atmos.api.bean.GetAccessTokenResponse;
 import com.emc.atmos.api.request.*;
 import com.emc.util.HttpUtil;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
-public abstract class AbstractAtmosApi {
+public abstract class AbstractAtmosApi implements AtmosApi {
     public static final String DEFAULT_CONTENT_TYPE = "application/octet-stream";
 
     protected AtmosConfig config;
@@ -21,85 +46,44 @@ public abstract class AbstractAtmosApi {
         this.config = config;
     }
 
-    public abstract ServiceInformation getServiceInformation();
-
-    public abstract long calculateServerClockSkew();
-
+    @Override
     public ObjectId createObject( Object content, String contentType ) {
         return createObject( new CreateObjectRequest().content( content ).contentType( contentType ) ).getObjectId();
     }
 
+    @Override
     public ObjectId createObject( ObjectIdentifier identifier, Object content, String contentType ) {
         return createObject( new CreateObjectRequest().identifier( identifier )
                                                       .content( content )
                                                       .contentType( contentType ) ).getObjectId();
     }
 
-    public abstract CreateObjectResponse createObject( CreateObjectRequest request );
+    @Override
+    public <T> T readObject( ObjectIdentifier identifier, Class<T> objectType ) throws IOException {
+        return readObject( new ReadObjectRequest().identifier( identifier ), objectType ).getObject();
+    }
 
+    @Override
     public <T> T readObject( ObjectIdentifier identifier, Range range, Class<T> objectType ) throws IOException {
         return readObject( new ReadObjectRequest().identifier( identifier ).ranges( range ), objectType ).getObject();
     }
 
-    public abstract <T> ReadObjectResponse<T> readObject( ReadObjectRequest request, Class<T> objectType )
-            throws IOException;
-
-    public abstract ReadObjectResponse<InputStream> readObjectStream( ObjectIdentifier identifier, Range range );
-
+    @Override
     public void updateObject( ObjectIdentifier identifier, Object content ) {
         updateObject( new UpdateObjectRequest().identifier( identifier ).content( content ) );
     }
 
+    @Override
     public void updateObject( ObjectIdentifier identifier, Object content, Range range ) {
         updateObject( new UpdateObjectRequest().identifier( identifier ).content( content ).range( range ) );
     }
 
-    public abstract BasicResponse updateObject( UpdateObjectRequest request );
-
-    public abstract void delete( ObjectIdentifier identifier );
-
-    public abstract ObjectId createDirectory( ObjectPath path );
-
-    public abstract ObjectId createDirectory( ObjectPath path, Acl acl, Metadata... metadata );
-
-    public abstract ListDirectoryResponse listDirectory( ListDirectoryRequest request );
-
-    public abstract void move( ObjectPath oldPath, ObjectPath newPath, boolean overwrite );
-
-    public abstract Map<String, Boolean> getUserMetadataNames( ObjectIdentifier identifier );
-
-    public abstract Map<String, Metadata> getUserMetadata( ObjectIdentifier identifier, String... metadataNames );
-
-    public abstract Map<String, Metadata> getSystemMetadata( ObjectIdentifier identifier, String... metadataNames );
-
-    public abstract ObjectMetadata getObjectMetadata( ObjectIdentifier identifier );
-
-    public abstract void setUserMetadata( ObjectIdentifier identifier, Metadata... metadata );
-
-    public abstract void deleteUserMetadata( ObjectIdentifier identifier, String... names );
-
-    public abstract Set<String> listMetadata( String metadataName );
-
-    public abstract ListObjectsResponse listObjects( ListObjectsRequest request );
-
-    public abstract Acl getAcl( ObjectIdentifier identifier );
-
-    public abstract void setAcl( ObjectIdentifier identifier, Acl acl );
-
-    public abstract ObjectInfo getObjectInfo( ObjectIdentifier identifier );
-
-    public abstract ObjectId createVersion( ObjectIdentifier identifier );
-
-    public abstract ListVersionsResponse listVersions( ListVersionsRequest request );
-
-    public abstract void restoreVersion( ObjectId objectId, ObjectId versionId );
-
-    public abstract void deleteVersion( ObjectId versionId );
-
+    @Override
     public URL getShareableUrl( ObjectIdentifier identifier, Date expirationDate ) throws MalformedURLException {
         return getShareableUrl( identifier, expirationDate, null );
     }
 
+    @Override
     public URL getShareableUrl( ObjectIdentifier identifier, Date expirationDate, String disposition )
             throws MalformedURLException {
         URI uri = config.resolvePath( identifier.getRelativeResourcePath(), null );
@@ -124,34 +108,17 @@ public abstract class AbstractAtmosApi {
         return new URL( uri + "?" + query );
     }
 
-    public abstract CreateAccessTokenResponse createAccessToken( CreateAccessTokenRequest request )
-            throws MalformedURLException;
-
+    @Override
     public GetAccessTokenResponse getAccessToken( URL url ) {
         return getAccessToken( RestUtil.lastPathElement( url.getPath() ) );
     }
 
-    public abstract GetAccessTokenResponse getAccessToken( String accessTokenId );
-
+    @Override
     public void deleteAccessToken( URL url ) {
         deleteAccessToken( RestUtil.lastPathElement( url.getPath() ) );
     }
 
-    public abstract void deleteAccessToken( String accessTokenId );
-
-    public abstract ListAccessTokensResponse listAccessTokens();
-
-    /**
-     * Pre-signs a request with a specified expiration time. The pre-signed request can be executed at a later time via
-     * the {@link #execute(com.emc.atmos.api.request.PreSignedRequest, Class, Object)} method. This feature is useful
-     * if you intend to serialize the pre-signed request to some other system which does not have access to Atmos
-     * credentials.
-     *
-     * @param request    the request to pre-sign (can be executed at a later time)
-     * @param expiration the date at which the pre-signed request becomes invalid and will no longer be accepted
-     * @return a pre-signed request that can be executed at a later time and expires at <code>expiration</code>
-     * @throws MalformedURLException if the configured Atmos endpoint is invalid
-     */
+    @Override
     public PreSignedRequest preSignRequest( Request request, Date expiration ) throws MalformedURLException {
         URI uri = config.resolvePath( request.getServiceRelativePath(), request.getQuery() );
         Map<String, List<Object>> headers = request.generateHeaders();
@@ -170,9 +137,6 @@ public abstract class AbstractAtmosApi {
                               config.getSecretKey(),
                               config.getServerClockSkew() );
 
-        return new PreSignedRequest( uri.toURL(), request.getMethod(), contentType, headers );
+        return new PreSignedRequest( uri.toURL(), request.getMethod(), contentType, headers, expiration );
     }
-
-    public abstract <T> GenericResponse<T> execute( PreSignedRequest request, Class<T> resultType, Object content )
-            throws URISyntaxException;
 }

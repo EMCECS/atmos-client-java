@@ -1,4 +1,4 @@
-// Copyright (c) 2008, EMC Corporation.
+// Copyright (c) 2012, EMC Corporation.
 // Redistribution and use in source and binary forms, with or without modification, 
 // are permitted provided that the following conditions are met:
 //
@@ -62,6 +62,7 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.impl.cookie.DateParseException;
 import org.apache.http.impl.cookie.DateUtils;
@@ -129,7 +130,7 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
                  new Scheme("http", port, PlainSocketFactory.getSocketFactory()));
         }
 
-        ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(schemeRegistry);
+        PoolingClientConnectionManager cm = new PoolingClientConnectionManager(schemeRegistry);
         // Increase max total connection to 200
         cm.setMaxTotal(200);
         // Increase default max connection per route to 20
