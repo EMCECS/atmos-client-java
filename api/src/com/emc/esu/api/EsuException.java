@@ -47,7 +47,7 @@ public class EsuException extends RuntimeException {
     /**
      * Creates a new ESU exception with the given message and HTTP error code.
      * @param message the error message
-     * @param HTTP code the error code
+     * @param http_code code the error code
      */
     public EsuException( String message, int http_code ) {
         super( message );
@@ -57,8 +57,8 @@ public class EsuException extends RuntimeException {
     /**
      * Creates a new ESU exception with the given message and HTTP error code.
      * @param message the error message
-     * @param HTTP code the error code
-     * @param Atmos detailed code the error code
+     * @param http_code code the error code
+     * @param atmos_code detailed code the error code
      */
     public EsuException( String message, int http_code, int atmos_code ) {
         super( message );
@@ -79,7 +79,7 @@ public class EsuException extends RuntimeException {
      * Creates a new ESU exception with the given message, code, and cause
      * @param message the error message
      * @param cause the exception that caused the failure
-     * @param HTTP code the error code
+     * @param http_code code the error code
      */
     public EsuException( String message, Throwable cause, int http_code ) {
         super( message, cause );
@@ -90,8 +90,8 @@ public class EsuException extends RuntimeException {
      * Creates a new ESU exception with the given message, code, and cause
      * @param message the error message
      * @param cause the exception that caused the failure
-     * @param HTTP code the error code
-     * @param Atmos detailed code the error code
+     * @param http_code code the error code
+     * @param atmos_code detailed code the error code
      */
     public EsuException( String message, Throwable cause, int http_code, int atmos_code ) {
         super( message, cause );
@@ -116,5 +116,13 @@ public class EsuException extends RuntimeException {
      */
     public int getAtmosCode() {
         return atmos_code;
+    }
+
+    @Override
+    public String toString() {
+        return "EsuException{" +
+               "atmosCode=" + atmos_code +
+               ", httpCode=" + http_code +
+               "}: " + getMessage();
     }
 }
