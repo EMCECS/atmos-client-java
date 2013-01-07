@@ -7,14 +7,11 @@
 		</layout>
 	</appender>
  
- 	<logger name="org.apache">
- 		<level value="WARN"></level>
+	<logger name="com.emc.atmos.sync.util.TimingUtil">
+ 		<level value="INFO"></level>
  	</logger>
- 	
+
 	<logger name="com.emc.atmos.sync">
- 		<level value="DEBUG"></level>
- 	</logger>
-	<logger name="com.emc.atmos.plugins">
  		<level value="DEBUG"></level>
  	</logger>
  	<logger name="com.emc.esu.api">
@@ -22,7 +19,7 @@
  	</logger>
 
 	<root>
-		<priority value="INFO" />
+		<priority value="WARN" />
 		<appender-ref ref="ConsoleAppender" />
 	</root>
 </log4j:configuration>

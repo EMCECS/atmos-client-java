@@ -11,10 +11,6 @@
  		<level value="WARN"></level>
  	</logger>
 
-    <logger name="com.emc.atmos.sync.util.TimingUtil">
-        <level value="INFO"></level>
-    </logger>
-
 	<root>
 		<priority value="WARN" />
 		<appender-ref ref="ConsoleAppender" />
