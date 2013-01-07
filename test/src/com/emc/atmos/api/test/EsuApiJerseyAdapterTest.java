@@ -39,10 +39,10 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EsuRestApiJerseyAdapterTest extends EsuApiTest {
+public class EsuApiJerseyAdapterTest extends EsuApiTest {
     private AtmosConfig config;
 
-    public EsuRestApiJerseyAdapterTest() throws Exception {
+    public EsuApiJerseyAdapterTest() throws Exception {
         config = loadAtmosConfig( "atmos.properties" );
         uid = config.getTokenId();
         config.setDisableSslValidation( true );
