@@ -25,6 +25,7 @@
 package com.emc.atmos.api;
 
 import com.emc.atmos.AtmosException;
+import com.emc.atmos.api.bean.DirectoryEntry;
 
 /**
  * Represents the full path to an object within a subtenant namespace. Paths always start with a slash. Directories
@@ -49,6 +50,17 @@ public class ObjectPath implements ObjectIdentifier {
         // remove trailing slash from parent
         String parentPath = parent.getPath();
         this.path = parentPath.substring( 0, parentPath.length() - 1 ) + cleanPath( path );
+    }
+
+    /**
+     * Constructs a new path from a parent directory and (what is assumed to be) one of its directory entries. The
+     * resulting path will be a directory or file consistent with the directoryEntry.
+     *
+     * @param parent         The parent directory under which this new path exists (must end with a slash).
+     * @param directoryEntry A directory entry of an object (presumed to be under the parent path)
+     */
+    public ObjectPath( ObjectPath parent, DirectoryEntry directoryEntry ) {
+        this( parent, directoryEntry.getFilename() + (directoryEntry.isDirectory() ? "/" : "") );
     }
 
     public String getPath() {
