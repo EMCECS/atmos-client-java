@@ -41,6 +41,7 @@ public final class Iso8601Util {
 
     public static Date parse(String string) {
         try {
+            if (string == null) return null;
             return getFormat().parse(string);
         } catch (Exception e) {
             LogMF.warn( l4j, "Could not parse date {0}: {1}", string, e.getMessage() );
@@ -49,6 +50,7 @@ public final class Iso8601Util {
     }
 
     public static String format(Date date) {
+        if (date == null) return null;
         return getFormat().format(date);
     }
 

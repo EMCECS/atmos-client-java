@@ -109,6 +109,15 @@ public class AtmosMetadata {
 			Collections.unmodifiableSet(
 					new HashSet<String>(Arrays.asList(SYSTEM_METADATA_TAGS)));
 
+    // tags that should not be returned as user metadata, but in rare cases have been
+    private static final String[] BAD_USERMETA_TAGS = new String[] {
+        "user.maui.expirationEnd",
+        "user.maui.retentionEnd"
+    };
+    private static final Set<String> BAD_TAGS =
+            Collections.unmodifiableSet(
+                    new HashSet<String>(Arrays.asList(BAD_USERMETA_TAGS)));
+
 	/**
 	 * Creates an instance of AtmosMetadata based on an ObjectMetadata
 	 * retrieved through the Atmos API.  This separates the system metadata
@@ -123,7 +132,9 @@ public class AtmosMetadata {
 		MetadataList umeta = new MetadataList();
 		MetadataList smeta = new MetadataList();
 		for(Metadata m : om.getMetadata()) {
-			if(SYSTEM_TAGS.contains(m.getName())) {
+            if (BAD_TAGS.contains(m.getName())) {
+                continue;
+            } else if (SYSTEM_TAGS.contains(m.getName())) {
 				smeta.addMetadata(m);
 			} else {
 				umeta.addMetadata(m);

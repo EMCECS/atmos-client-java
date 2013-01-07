@@ -272,11 +272,9 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 				}
 				
 				complete(fso);
-			} catch(Exception e) {
-				failed(fso, e);
-				return;
 			} catch(Throwable t) {
-				l4j.fatal("Uncaught throwable: " + t.getMessage(), t);
+				failed(fso, t);
+				return;
 			}
 			try {
 				if(f.isDirectory()) {

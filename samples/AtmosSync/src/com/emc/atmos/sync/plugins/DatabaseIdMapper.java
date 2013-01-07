@@ -24,6 +24,7 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
+import com.emc.atmos.sync.util.JdbcUtil;
 import com.emc.esu.api.ObjectId;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.commons.cli.CommandLine;
@@ -33,18 +34,15 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
 import java.beans.PropertyVetoException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.sql.Connection;
+import java.sql.*;
 import java.text.MessageFormat;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Maps IDs from source and destinations into a database.  Note that while it
@@ -97,7 +95,12 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
     private static final String SOURCE_PARAM = "source_id";
 	private static final String DEST_PARAM = "dest_id";
 	private static final String ERROR_PARAM = "error_msg";
-	
+
+    // timed operations
+    private static final String OPERATION_MAPPING_SELECT = "IdMappingSelect";
+    private static final String OPERATION_MAPPING_INSERT = "IdMappingInsert";
+    private static final String OPERATION_ERROR_INSERT = "ErrorInsert";
+
 	private DataSource dataSource;
 	private String mapQuery;
 	private String errorQuery;
@@ -131,17 +134,28 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 			boolean alreadyMapped = false;
 			if(selectQuery != null) {
 				// Check to see if ID mapping exists.
-				NamedParameterJdbcTemplate tmpl = new NamedParameterJdbcTemplate(dataSource);
-				Map<String,String> params = Collections.singletonMap(SOURCE_PARAM, getSource(obj));
+				final Map<String,String> params = Collections.singletonMap(SOURCE_PARAM, getSource(obj));
 				// Could use as update instead of mapping
 				if(selectQuery.toLowerCase().startsWith("update") || selectQuery.toLowerCase().startsWith("insert")) {
-					tmpl.update(selectQuery, params);
+                    time(new Timeable<Void>() {
+                        @Override
+                        public Void call() {
+                            JdbcUtil.executeUpdate(dataSource, selectQuery, params);
+                            return null;
+                        }
+                    }, OPERATION_MAPPING_SELECT);
 				} else {
 					try {
-						String id = tmpl.queryForObject(selectQuery, params, String.class);
+						String id = time(new Timeable<String>() {
+                            @Override
+                            public String call() {
+                                return JdbcUtil.executeQueryForObject(dataSource, selectQuery, params, String.class);
+                            }
+                        }, OPERATION_MAPPING_SELECT);
 
 						if(id != null) {
 							// Looks like an ID already exists.
+                            id = id.trim();
 							ObjectId oid = null;
 							if(rawIds) {
 								oid = new ObjectId(id);
@@ -173,8 +187,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 			getNext().filter(obj);
 
 			if(!alreadyMapped) {
-				NamedParameterJdbcTemplate tmpl = new NamedParameterJdbcTemplate(dataSource);
-				Map<String,String> params = new HashMap<String, String>();
+				final Map<String,String> params = new HashMap<String, String>();
 				params.put(SOURCE_PARAM, getSource(obj));
 				params.put(DEST_PARAM, getDest(obj));
                 if (metaTags != null) {
@@ -182,21 +195,32 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
                         params.put(tag, getMetaValue(obj, tag));
                     }
                 }
-                tmpl.update(mapQuery, params);
+                time(new Timeable<Void>() {
+                    @Override
+                    public Void call() {
+                        JdbcUtil.executeUpdate(dataSource, mapQuery, params);
+                        return null;
+                    }
+                }, OPERATION_MAPPING_INSERT);
 			}
 			
 		} catch(RuntimeException e) {
 			if(errorQuery != null) {
 				try {
-					NamedParameterJdbcTemplate tmpl = new NamedParameterJdbcTemplate(dataSource);
-					Map<String,String> params = new HashMap<String, String>();
+					final Map<String,String> params = new HashMap<String, String>();
 					params.put(SOURCE_PARAM, getSource(obj));
 					if(e.getClass().equals(RuntimeException.class) && e.getCause() != null) {
 						params.put(ERROR_PARAM, e.getCause().toString());
 					} else {
 						params.put(ERROR_PARAM, e.toString());
 					}
-					tmpl.update(errorQuery, params);
+                    time(new Timeable<Void>() {
+                        @Override
+                        public Void call() {
+                            JdbcUtil.executeUpdate(dataSource, errorQuery, params);
+                            return null;
+                        }
+                    }, OPERATION_ERROR_INSERT);
 				} catch (Exception e1) {
 					l4j.error("Error inserting error message: " + e1.getMessage(), e1);
 				}
@@ -487,7 +511,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
         return metaTags;
     }
 
-    public void setMetaTags( String[] metaTags ) {
+    public void setMetaTags(String[] metaTags) {
         this.metaTags = metaTags;
     }
 }

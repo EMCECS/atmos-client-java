@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.emc.atmos.sync.util.TimingUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -169,7 +170,13 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 				help(plugins);
 				System.exit(1);
 			}
-			
+
+            if (line.hasOption(CommonOptions.TIMINGS_OPTION)) sync.setTimingsEnabled(true);
+
+            if (line.hasOption(CommonOptions.TIMING_WINDOW_OPTION)) {
+                sync.setTimingWindow( Integer.parseInt( line.getOptionValue( CommonOptions.TIMING_WINDOW_OPTION ) ) );
+            }
+
 			// do the sanity check (Spring will do this too)
 			sync.afterPropertiesSet();
 		}
@@ -209,6 +216,7 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 	 * Prints the stats from the source.
 	 */
 	private void printStats() {
+        TimingUtil.logTimings(source);
 		source.printStats();
 	}
 
@@ -262,6 +270,8 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 	private SourcePlugin source;
 	private DestinationPlugin destination;
 	private List<SyncPlugin> pluginChain;
+    private boolean timingsEnabled = false;
+    private int timingWindow = 10000;
 	
 	public AtmosSync2() {
 		this.pluginChain = new ArrayList<SyncPlugin>();
@@ -330,7 +340,30 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 		this.pluginChain = pluginChain;
 	}
 
-	/**
+    public boolean isTimingsEnabled() {
+        return timingsEnabled;
+    }
+
+    /**
+     * When set to true, enables operation timings on all plug-ins that support it. Default is false.
+     */
+    public void setTimingsEnabled(boolean timingsEnabled) {
+        this.timingsEnabled = timingsEnabled;
+    }
+
+    public int getTimingWindow() {
+        return timingWindow;
+    }
+
+    /**
+     * Sets the window for timing statistics. Every {timingWindow} objects that are synced, timing statistics are logged
+     * and reset. Default is 10,000 objects.
+     */
+    public void setTimingWindow( int timingWindow ) {
+        this.timingWindow = timingWindow;
+    }
+
+    /**
 	 * Executes the current plugin chain and prints statistics when complete.
 	 */
 	@Override
@@ -372,13 +405,13 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 			p.validateChain(source);
 			p = p.getNext();
 		}
+
+        // register for timings
+        if (timingsEnabled) TimingUtil.register(this, timingWindow);
 	}
 
 	@Override
 	public void destroy() throws Exception {
 		cleanup();
 	}
-
-
-
 }

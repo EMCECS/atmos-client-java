@@ -145,10 +145,16 @@ public abstract class MultithreadedGraphSource extends SourcePlugin {
 	 * Call this method from your TaskNode on failure.  It will update the 
 	 * internal statistics for printing the summary at the end of execution.
 	 * @param obj the object that has failed
-	 * @param e the Exception that caused the failure.
+	 * @param t the Exception that caused the failure.
 	 */
-	public synchronized void failed(SyncObject obj, Exception e) {
-		LogMF.warn(l4j, "Object {0} failed: {1}", obj, e);
+	public synchronized void failed(SyncObject obj, Throwable t) {
+        Throwable cause = t;
+        while (cause.getCause() != null) cause = cause.getCause();
+        LogMF.warn(l4j, "Object {0} failed: [{1}] {2}", obj, t, cause);
+        StackTraceElement[] elements = cause.getStackTrace();
+        for (int i=0; i < 5 && i < elements.length; i++) {
+            LogMF.debug(l4j, "    at {0}", elements[i]);
+        }
 		failedCount++;
 		if(rememberFailed ) {
 			failedItems.add(obj);

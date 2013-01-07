@@ -43,6 +43,9 @@ public class RetryPlugin extends SyncPlugin {
 			"sets the max number of retries";
 	private static final String RETRY_OPT_DESC = "max-retries";
 
+    // timed operations
+    private static final String OPERATION_RETRY = "RetryAttempt";
+
 	private int maxRetries = 3;
 
 	/*
@@ -54,41 +57,46 @@ public class RetryPlugin extends SyncPlugin {
 	 */
 	@Override
 	public void filter(SyncObject obj) {
-		Exception lastError = null;
+		Throwable lastError = null;
 		int retryCount = 0;
 		while(retryCount < maxRetries) {
 			try {
 				getNext().filter(obj);
 				return;
-			} catch(EsuException e) {
-				LogMF.warn(l4j, "Trapped Atmos Exception code {0}, HTTP {1} ({2})", e.getAtmosCode(), e.getHttpCode(), e);
-				lastError = e;
-				
-				// By default, don't retry 400s (Bad Request)
-				if(e.getHttpCode() >= 400 && e.getHttpCode() <= 499) {
-					LogMF.warn(l4j, "Not retrying error {0}", e.getAtmosCode());
-					throw e;
-				}
-				
-				// For Atmos 1040 (server too busy), wait a few seconds
-				if(e.getAtmosCode() == 1040) {
-					l4j.info("Atmos code 1040 (too busy) for obj, sleeping 5 sec");
-					try {
-						Thread.sleep(5000);
-					} catch (InterruptedException e1) {
-					}
-				}
-				
-				retryCount++;
-				LogMF.info(l4j, "Retry #{0}, Error: {1}", retryCount, e);
-				continue;
-			} catch(Exception e) {
-				lastError = e;
-				retryCount++;
-				LogMF.info(l4j, "Retry #{0}, Error: {1}", retryCount, e);
-				continue;				
+			} catch(Throwable t) {
+                lastError = t;
+                while (t.getCause() != null) t = t.getCause();
+
+                if (t instanceof EsuException) {
+                    EsuException e = (EsuException) t;
+
+                    // By default, don't retry 400s (Bad Request)
+                    if(e.getHttpCode() >= 400 && e.getHttpCode() <= 499) {
+                        LogMF.warn(l4j, "Not retrying error {0}", e.getAtmosCode());
+                        throw e;
+                    }
+
+                    // For Atmos 1040 (server too busy), wait a few seconds
+                    if(e.getAtmosCode() == 1040) {
+                        l4j.info("Atmos code 1040 (too busy) for obj, sleeping 5 sec");
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException e1) {
+                        }
+                    }
+                }
+
+                retryCount++;
+				LogMF.warn( l4j, "Retry #{0}, Error: {1}", retryCount, t );
+
+                // include retry attempts in timing statistics (to explain multiple object writes)
+                time(new Timeable<Void>() {
+                    @Override
+                    public Void call() {
+                        return null;
+                    }
+                }, OPERATION_RETRY);
 			}
-			
 		}
 		
 		throw new RuntimeException("Retry failed: " + lastError, lastError);

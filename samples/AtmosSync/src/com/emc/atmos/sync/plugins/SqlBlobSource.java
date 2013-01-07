@@ -339,8 +339,8 @@ public class SqlBlobSource extends MultithreadedGraphSource {
 			
 			try {
 				getNext().filter(sso);
-			} catch(Exception e) {
-				failed(sso, e);
+			} catch(Throwable t) {
+				failed(sso, t);
 			}
 			
 			if(updateSql != null) {

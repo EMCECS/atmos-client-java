@@ -24,7 +24,6 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
-import com.emc.atmos.AtmosException;
 import com.emc.atmos.sync.util.Iso8601Util;
 import com.emc.esu.api.*;
 import com.emc.esu.api.Checksum.Algorithm;
@@ -72,7 +71,22 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	public static final String DEST_CHECKSUM_OPT = "atmos-dest-checksum";
 	public static final String DEST_CHECKSUM_DESC = "If specified, the atmos wschecksum feature will be applied to uploads.  Valid algorithms are SHA0 for Atmos < 2.1 and SHA0, SHA1, or MD5 for 2.1+";
 	public static final String DEST_CHECKSUM_ARG_NAME = "checksum-alg";
-	
+
+    // timed operations
+    public static final String OPERATION_SET_USER_META = "AtmosSetUserMeta";
+    public static final String OPERATION_SET_ACL = "AtmosSetAcl";
+    public static final String OPERATION_CREATE_OBJECT = "AtmosCreateObject";
+    public static final String OPERATION_CREATE_OBJECT_ON_PATH = "AtmosCreateObjectOnPath";
+    public static final String OPERATION_CREATE_OBJECT_FROM_SEGMENT = "AtmosCreateObjectFromSegment";
+    public static final String OPERATION_CREATE_OBJECT_FROM_SEGMENT_ON_PATH = "AtmosCreateObjectFromSegmentOnPath";
+    public static final String OPERATION_UPDATE_OBJECT_FROM_SEGMENT = "AtmosUpdateObjectFromSegment";
+    public static final String OPERATION_CREATE_OBJECT_FROM_STREAM = "AtmosCreateObjectFromStream";
+    public static final String OPERATION_CREATE_OBJECT_FROM_STREAM_ON_PATH = "AtmosCreateObjectFromStreamOnPath";
+    public static final String OPERATION_DELETE_OBJECT = "AtmosDeleteObject";
+    public static final String OPERATION_SET_RETENTION_EXPIRATION = "AtmosSetRetentionExpiration";
+    public static final String OPERATION_GET_ALL_META = "AtmosGetAllMeta";
+    public static final String OPERATION_GET_SYSTEM_META = "AtmosGetSystemMeta";
+
 	private static final Logger l4j = Logger.getLogger(AtmosDestination.class);
 
 	private String destNamespace;
@@ -92,8 +106,12 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	 * @see com.emc.atmos.sync.plugins.SyncPlugin#filter(com.emc.atmos.sync.plugins.SyncObject)
 	 */
 	@Override
-	public void filter(SyncObject obj) {
+	public void filter(final SyncObject obj) {
 		try {
+            // some sync objects lazy-load their metadata (i.e. AtmosSyncObject)
+            // since this may be a timed operation, ensure it loads outside of other timed operations
+            obj.getMetadata();
+
 			if(destNamespace != null) {
 				// Determine a name for the object.
 				ObjectPath destPath = null;
@@ -103,7 +121,8 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 				} else {
 					destPath = new ObjectPath(destNamespace + obj.getRelativePath());
 				}
-				
+                final ObjectPath fDestPath = destPath;
+
 				obj.setDestURI(new URI(protocol, uid + ":" + secret, 
 						hosts.get(0), port, destPath.toString(), null, null));
 				
@@ -119,11 +138,23 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 						if((srcCtime != null && dstCtime != null && srcCtime.after(dstCtime)) || force) {
 							if(obj.getMetadata().getMetadata() != null && obj.getMetadata().getMetadata().count()>0) {
 								LogMF.debug(l4j, "Updating metadata on {0}", destPath);
-								atmos.setUserMetadata(destPath, obj.getMetadata().getMetadata());
+								time(new Timeable<Void>() {
+                                    @Override
+                                    public Void call() {
+                                        atmos.setUserMetadata(fDestPath, obj.getMetadata().getMetadata());
+                                        return null;
+                                    }
+                                }, OPERATION_SET_USER_META);
 							}
 							if(obj.getMetadata().getAcl() != null) {
-								LogMF.debug(l4j, "Updating ACL on {0}", destPath);
-								atmos.setAcl(destPath, obj.getMetadata().getAcl());
+								LogMF.debug( l4j, "Updating ACL on {0}", destPath );
+                                time(new Timeable<Void>() {
+                                    @Override
+                                    public Void call() {
+                                        atmos.setAcl( fDestPath, obj.getMetadata().getAcl() );
+                                        return null;
+                                    }
+                                }, OPERATION_SET_ACL);
 							}
 						} else {
 							LogMF.debug(l4j, "No changes from source {0} to dest {1}", 
@@ -133,7 +164,12 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 						}
 					} else {
 						// Directory does not exist on destination
-						ObjectId id = atmos.createObjectOnPath(destPath, obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), null, null);
+						ObjectId id = time(new Timeable<ObjectId>() {
+                            @Override
+                            public ObjectId call() {
+                                return atmos.createObjectOnPath(fDestPath, obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), null, null);
+                            }
+                        }, OPERATION_CREATE_OBJECT_ON_PATH);
 						DestinationAtmosId destId = new DestinationAtmosId();
 						destId.setId(id);
 						destId.setPath(destPath);
@@ -151,42 +187,59 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 							ObjectId id = null;
 							if(in == null) {
 								// Create an empty object
-								id = atmos.createObjectOnPath(destPath, 
-										obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), 
-										null, obj.getMetadata().getContentType());
+								id = time(new Timeable<ObjectId>() {
+                                    @Override
+                                    public ObjectId call() {
+                                        return atmos.createObjectOnPath(fDestPath,
+                                                obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(),
+                                                null, obj.getMetadata().getContentType());
+                                    }
+                                }, OPERATION_CREATE_OBJECT_ON_PATH);
 							} else {
 								if(checksum != null) {
-									Checksum ck = new Checksum(Algorithm.valueOf(checksum));
+									final Checksum ck = new Checksum(Algorithm.valueOf(checksum));
 									byte[] buffer = new byte[1024*1024];
 									long read = 0;
 									int c = 0;
 									while((c = in.read(buffer)) != -1) {
-										BufferSegment bs = new BufferSegment(buffer, 0, c);
+										final BufferSegment bs = new BufferSegment(buffer, 0, c);
 										if(read == 0) {
 											// Create
-											id = atmos.createObjectFromSegmentOnPath(
-													destPath,
-													obj.getMetadata().getAcl(), 
-													obj.getMetadata().getMetadata(), 
-													bs, 
-													obj.getMetadata().getContentType(), 
-													ck);
+											id = time(new Timeable<ObjectId>() {
+                                                @Override
+                                                public ObjectId call() {
+                                                    return atmos.createObjectFromSegmentOnPath(fDestPath,
+                                                            obj.getMetadata().getAcl(),
+                                                            obj.getMetadata().getMetadata(), bs,
+                                                            obj.getMetadata().getContentType(), ck);
+                                                }
+                                            }, OPERATION_CREATE_OBJECT_FROM_SEGMENT_ON_PATH);
 										} else {
 											// Append
-											Extent e = new Extent(read, c);
-											atmos.updateObjectFromSegment(id, 
-													obj.getMetadata().getAcl(), 
-													obj.getMetadata().getMetadata(), 
-													e, bs, 
-													obj.getMetadata().getContentType(), 
-													ck);
+											final Extent e = new Extent(read, c);
+                                            final ObjectId fId = id;
+											time(new Timeable<Object>() {
+                                                @Override
+                                                public Object call() {
+                                                    atmos.updateObjectFromSegment( fId, obj.getMetadata().getAcl(),
+                                                            obj.getMetadata().getMetadata(), e, bs,
+                                                            obj.getMetadata().getContentType(), ck );
+                                                    return null;
+                                                }
+                                            }, OPERATION_UPDATE_OBJECT_FROM_SEGMENT);
 										}
 										read += c;
 									}
 								} else {
-									id = atmos.createObjectFromStreamOnPath(destPath, 
-										obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), in, 
-										obj.getSize(), obj.getMetadata().getContentType());
+                                    final InputStream fIn = in;
+									id = time(new Timeable<ObjectId>() {
+                                        @Override
+                                        public ObjectId call() {
+                                            return atmos.createObjectFromStreamOnPath(fDestPath,
+                                                    obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), fIn,
+                                                    obj.getSize(), obj.getMetadata().getContentType());
+                                        }
+                                    }, OPERATION_CREATE_OBJECT_FROM_STREAM_ON_PATH);
 								}
 							}
 
@@ -208,6 +261,15 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 				}
 			} else {
 				// Object Space
+
+                // don't create directories when in objectspace (likely a filesystem source)
+                // TODO: is this a valid use-case?
+                if (obj.isDirectory()) {
+                    LogMF.debug(l4j, "Source {0} is a directory, but destination is in objectspace, ignoring",
+                                obj.getSourceURI());
+                    return;
+                }
+
 				InputStream in = null;
 				try {
 					ObjectId id = null;
@@ -230,41 +292,57 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 						in = obj.getInputStream();
 						if(in == null) {
 							// Usually some sort of directory
-							id = atmos.createObject(obj.getMetadata().getAcl(), 
-									obj.getMetadata().getMetadata(), null, 
-									obj.getMetadata().getContentType());
+							id = time(new Timeable<ObjectId>() {
+                                @Override
+                                public ObjectId call() {
+                                    return atmos.createObject(obj.getMetadata().getAcl(),
+                                            obj.getMetadata().getMetadata(), null, obj.getMetadata().getContentType());
+                                }
+                            }, OPERATION_CREATE_OBJECT);
 						} else {
 							if(checksum != null) {
-								Checksum ck = new Checksum(Algorithm.valueOf(checksum));
+								final Checksum ck = new Checksum(Algorithm.valueOf(checksum));
 								byte[] buffer = new byte[1024*1024];
 								long read = 0;
 								int c = 0;
 								while((c = in.read(buffer)) != -1) {
-									BufferSegment bs = new BufferSegment(buffer, 0, c);
+									final BufferSegment bs = new BufferSegment(buffer, 0, c);
 									if(read == 0) {
 										// Create
-										id = atmos.createObjectFromSegment(
-												obj.getMetadata().getAcl(), 
-												obj.getMetadata().getMetadata(), 
-												bs, 
-												obj.getMetadata().getContentType(), 
-												ck);
+										id = time(new Timeable<ObjectId>() {
+                                            @Override
+                                            public ObjectId call() {
+                                                return atmos.createObjectFromSegment(obj.getMetadata().getAcl(),
+                                                        obj.getMetadata().getMetadata(), bs,
+                                                        obj.getMetadata().getContentType(), ck);
+                                            }
+                                        }, OPERATION_CREATE_OBJECT_FROM_SEGMENT);
 									} else {
 										// Append
-										Extent e = new Extent(read, c);
-										atmos.updateObjectFromSegment(id, 
-												obj.getMetadata().getAcl(), 
-												obj.getMetadata().getMetadata(), 
-												e, bs, 
-												obj.getMetadata().getContentType(), 
-												ck);
+										final Extent e = new Extent(read, c);
+                                        final ObjectId fId = id;
+										time(new Timeable<Void>() {
+                                            @Override
+                                            public Void call() {
+                                                atmos.updateObjectFromSegment( fId, obj.getMetadata().getAcl(),
+                                                        obj.getMetadata().getMetadata(), e, bs,
+                                                        obj.getMetadata().getContentType(), ck );
+                                                return null;
+                                            }
+                                        }, OPERATION_UPDATE_OBJECT_FROM_SEGMENT);
 									}
 									read += c;
 								}
 							} else {
-								id = atmos.createObjectFromStream(obj.getMetadata().getAcl(), 
-										obj.getMetadata().getMetadata(), 
-										in, obj.getSize(), obj.getMetadata().getContentType());
+                                final InputStream fIn = in;
+								id = time(new Timeable<ObjectId>() {
+                                    @Override
+                                    public ObjectId call() {
+                                        return atmos.createObjectFromStream(obj.getMetadata().getAcl(),
+                                                obj.getMetadata().getMetadata(), fIn,
+                                                obj.getSize(), obj.getMetadata().getContentType());
+                                    }
+                                }, OPERATION_CREATE_OBJECT_FROM_STREAM);
 							}
 						}
 
@@ -305,7 +383,7 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	 * @param destMeta
 	 * @throws IOException
 	 */
-	private void checkUpdate(SyncObject obj, Identifier destId, ObjectMetadata destMeta) throws IOException {
+	private void checkUpdate(final SyncObject obj, final Identifier destId, ObjectMetadata destMeta) throws IOException {
 		// Exists.  Check timestamps
 		Date srcMtime = obj.getMetadata().getMtime();
 		Date dstMtime = parseDate(destMeta.getMetadata().getMetadata("mtime"));
@@ -326,22 +404,34 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 					// Metadata only
 					if(obj.getMetadata().getMetadata() != null && obj.getMetadata().getMetadata().count()>0) {
 						LogMF.debug(l4j, "Updating metadata on {0}", destId);
-						atmos.setUserMetadata(destId, obj.getMetadata().getMetadata());
+						time(new Timeable<Void>() {
+                            @Override
+                            public Void call() {
+                                atmos.setUserMetadata(destId, obj.getMetadata().getMetadata());
+                                return null;
+                            }
+                        }, OPERATION_SET_USER_META);
 					}
 					if(obj.getMetadata().getAcl() != null) {
 						LogMF.debug(l4j, "Updating ACL on {0}", destId);
-						atmos.setAcl(destId, obj.getMetadata().getAcl());
-					}
+                        time(new Timeable<Void>() {
+                            @Override
+                            public Void call() {
+						        atmos.setAcl(destId, obj.getMetadata().getAcl());
+                                return null;
+                            }
+                        }, OPERATION_SET_ACL);
+                    }
 				} else {
 					LogMF.debug(l4j, "Updating {0}", destId);
 					if(checksum != null) {
 						try {
-							Checksum ck = new Checksum(Algorithm.valueOf(checksum));
+							final Checksum ck = new Checksum(Algorithm.valueOf(checksum));
 							byte[] buffer = new byte[1024*1024];
 							long read = 0;
 							int c = 0;
 							while((c = in.read(buffer)) != -1) {
-								BufferSegment bs = new BufferSegment(buffer, 0, c);
+								final BufferSegment bs = new BufferSegment(buffer, 0, c);
 								if(read == 0) {
 									// You cannot update a checksummed object.
 									// Delete and replace.
@@ -352,23 +442,34 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 												"namespace objects are " +
 												"supported");
 									}
-									atmos.deleteObject(destId);
-									atmos.createObjectFromSegmentOnPath(
-											(ObjectPath)destId, 
-											obj.getMetadata().getAcl(), 
-											obj.getMetadata().getMetadata(), 
-											bs,
-											obj.getMetadata().getContentType(), 
-											ck);
+                                    time(new Timeable<Void>() {
+                                        @Override
+                                        public Void call() {
+									        atmos.deleteObject(destId);
+                                            return null;
+                                        }
+                                    }, OPERATION_DELETE_OBJECT);
+                                    time(new Timeable<Void>() {
+                                        @Override
+                                        public Void call() {
+									        atmos.createObjectFromSegmentOnPath((ObjectPath)destId,
+											        obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), bs,
+											        obj.getMetadata().getContentType(), ck);
+                                            return null;
+                                        }
+                                    }, OPERATION_CREATE_OBJECT_FROM_SEGMENT_ON_PATH);
 								} else {
 									// Append
-									Extent e = new Extent(read, c);
-									atmos.updateObjectFromSegment(destId, 
-											obj.getMetadata().getAcl(), 
-											obj.getMetadata().getMetadata(), 
-											e, bs, 
-											obj.getMetadata().getContentType(), 
-											ck);
+									final Extent e = new Extent(read, c);
+                                    time(new Timeable<Void>() {
+                                        @Override
+                                        public Void call() {
+    								        atmos.updateObjectFromSegment(destId, obj.getMetadata().getAcl(),
+											        obj.getMetadata().getMetadata(), e, bs,
+											        obj.getMetadata().getContentType(), ck);
+                                            return null;
+                                        }
+                                    }, OPERATION_UPDATE_OBJECT_FROM_SEGMENT);
 								}
 								read += c;
 							}
@@ -378,10 +479,16 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 									e);
 						}
 					} else {
-						atmos.updateObjectFromStream(destId, 
-								obj.getMetadata().getAcl(), obj.getMetadata().getMetadata(), 
-								null, in, obj.getSize(), 
-								obj.getMetadata().getContentType());
+                        final InputStream fIn = in;
+                        time(new Timeable<Void>() {
+                            @Override
+                            public Void call() {
+						        atmos.updateObjectFromStream(destId, obj.getMetadata().getAcl(),
+                                        obj.getMetadata().getMetadata(), null, fIn, obj.getSize(),
+								        obj.getMetadata().getContentType());
+                                return null;
+                            }
+                        }, OPERATION_UPDATE_OBJECT_FROM_SEGMENT);
 					}
 				}
 			} finally {
@@ -400,11 +507,23 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 			// Metadata update required.
 			if(obj.getMetadata().getMetadata() != null && obj.getMetadata().getMetadata().count()>0) {
 				LogMF.debug(l4j, "Updating metadata on {0}", destId);
-				atmos.setUserMetadata(destId, obj.getMetadata().getMetadata());
+                time(new Timeable<Void>() {
+                    @Override
+                    public Void call() {
+				        atmos.setUserMetadata(destId, obj.getMetadata().getMetadata());
+                        return null;
+                    }
+                }, OPERATION_SET_USER_META);
 			}
 			if(obj.getMetadata().getAcl() != null) {
 				LogMF.debug(l4j, "Updating ACL on {0}", destId);
-				atmos.setAcl(destId, obj.getMetadata().getAcl());
+                time(new Timeable<Void>() {
+                    @Override
+                    public Void call() {
+				        atmos.setAcl(destId, obj.getMetadata().getAcl());
+                        return null;
+                    }
+                }, OPERATION_SET_ACL);
 			}
 		} else {
 			// No updates
@@ -415,17 +534,17 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 		}
 	}
 
-    private void updateRetentionExpiration(SyncObject obj, Identifier destId) {
+    private void updateRetentionExpiration(SyncObject obj, final Identifier destId) {
         if (includeRetentionExpiration) {
-            MetadataList metaList = new MetadataList();
+            final MetadataList metaList = new MetadataList();
 
             Date retentionEnd = obj.getMetadata().getRetentionEndDate();
             Date expiration = obj.getMetadata().getExpirationDate();
 
             if (retentionEnd != null) {
                 try {
-                    // wait for retention to kick in (it must be enabled before we can update the end-date)
-                    Thread.sleep((retentionDelayWindow * 1000) + 300);
+                    // wait for retention delay window to pass (it must be enabled before we can update the end-date)
+                    Thread.sleep((retentionDelayWindow * 1000) + 200);
                 } catch (InterruptedException e) {
                     LogMF.warn(l4j, "Interrupted while waiting for retention delay window (destId {0})", destId);
                 }
@@ -440,13 +559,19 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 
             if (metaList.count() > 0) {
                 try {
-                    atmos.setUserMetadata(destId, metaList); // manually set retention/expiration end-dates
-                } catch (AtmosException e) {
+                    time(new Timeable<Void>() {
+                        @Override
+                        public Void call() {
+                            atmos.setUserMetadata(destId, metaList); // manually set retention/expiration end-dates
+                            return null;
+                        }
+                    }, OPERATION_SET_RETENTION_EXPIRATION);
+                } catch (EsuException e) {
                     LogMF.error( l4j, "Failed to manually set retention/expiration\n" +
                                       "(destId: {0}, retentionEnd: {1}, expiration: {2})\n" +
                                       "[http: {3}, atmos: {4}, msg: {5}]", new Object[]{
                             destId, Iso8601Util.format( retentionEnd ), Iso8601Util.format( expiration ),
-                            e.getHttpCode(), e.getErrorCode(), e.getMessage()} );
+                            e.getHttpCode(), e.getAtmosCode(), e.getMessage()} );
                 } catch (Exception e) {
                     LogMF.error( l4j, "Failed to manually set retention/expiration\n" +
                                       "(destId: {0}, retentionEnd: {1}, expiration: {2})\n[error: {3}]", new Object[]{
@@ -464,9 +589,14 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	 * @param destId The object to get metadata for.
 	 * @return the object's metadata or null.
 	 */
-	private ObjectMetadata getMetadata(Identifier destId) {
+	private ObjectMetadata getMetadata(final Identifier destId) {
 		try {
-			return atmos.getAllMetadata(destId);
+			return time(new Timeable<ObjectMetadata>() {
+                @Override
+                public ObjectMetadata call() {
+                    return atmos.getAllMetadata(destId);
+                }
+            }, OPERATION_GET_ALL_META);
 		} catch(EsuException e) {
 			if(e.getHttpCode() == 404) {
 				// Object not found
@@ -497,9 +627,14 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	 * @param destPath
 	 * @return
 	 */
-	private MetadataList getSystemMetadata(ObjectPath destPath) {
+	private MetadataList getSystemMetadata(final ObjectPath destPath) {
 		try {
-			return atmos.getSystemMetadata(destPath, null);
+			return time(new Timeable<MetadataList>() {
+                @Override
+                public MetadataList call() {
+                    return atmos.getSystemMetadata(destPath, null);
+                }
+            }, OPERATION_GET_SYSTEM_META);
 		} catch(EsuException e) {
 			if(e.getAtmosCode() == 1003) {
 				// Object not found --OK
@@ -669,7 +804,15 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 		this.destNamespace = destNamespace;
 	}
 
-	public List<String> getHosts() {
+    public boolean isIncludeRetentionExpiration() {
+        return includeRetentionExpiration;
+    }
+
+    public void setIncludeRetentionExpiration(boolean includeRetentionExpiration) {
+        this.includeRetentionExpiration = includeRetentionExpiration;
+    }
+
+    public List<String> getHosts() {
 		return hosts;
 	}
 
@@ -693,7 +836,15 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 		this.port = port;
 	}
 
-	public String getUid() {
+    public long getRetentionDelayWindow() {
+        return retentionDelayWindow;
+    }
+
+    public void setRetentionDelayWindow(long retentionDelayWindow) {
+        this.retentionDelayWindow = retentionDelayWindow;
+    }
+
+    public String getUid() {
 		return uid;
 	}
 

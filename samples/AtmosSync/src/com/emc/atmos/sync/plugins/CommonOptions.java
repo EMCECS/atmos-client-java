@@ -71,7 +71,14 @@ public class CommonOptions extends SyncPlugin {
 	public static final String RECURSIVE_OPTION = "recursive";
 	public static final String RECURSIVE_DESC = "Makes source plugins recursive, specifically the Atmos source when using namespaces and the filesystem source.";
 
-	@Override
+    public static final String TIMINGS_OPTION = "timing";
+    public static final String TIMINGS_DESC = "Enabled timings for all plug-ins that support it.  When specified, plug-ins will collect and periodically log average timing for various operations (i.e. read-metadata, stream-object, write-metadata, etc.)";
+
+    public static final String TIMING_WINDOW_OPTION = "timing-window";
+    public static final String TIMING_WINDOW_DESC = "Sets the timing window to use for timings.  Every {window-size} objects, timing statistics will be averaged and logged";
+    public static final String TIMING_WINDOW_ARG_NAME = "window-size";
+
+    @Override
 	public void filter(SyncObject obj) {
 		throw new UnsupportedOperationException("This plugin should never actually be used.");
 	}
@@ -104,6 +111,11 @@ public class CommonOptions extends SyncPlugin {
 		opts.addOption(OptionBuilder.withLongOpt(SPRING_CONFIG_OPTION)
 				.withDescription(SPRING_CONFIG_DESC).hasArg()
 				.withArgName(SPRING_CONFIG_ARG_NAME).create());
+        opts.addOption(OptionBuilder.withDescription(TIMINGS_DESC)
+                .withLongOpt(TIMINGS_OPTION).create());
+        opts.addOption(OptionBuilder.withLongOpt(TIMING_WINDOW_OPTION)
+                .withDescription(TIMING_WINDOW_DESC).hasArg()
+                .withArgName(TIMING_WINDOW_ARG_NAME).create());
 		return opts;
 	}
 

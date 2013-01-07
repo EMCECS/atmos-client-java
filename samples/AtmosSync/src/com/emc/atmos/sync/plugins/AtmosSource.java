@@ -109,6 +109,13 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
     public static final String JDBC_PASSWORD_DESC = "The database password (used in conjunction with source-sql-query)";
     public static final String JDBC_PASSWORD_ARG_NAME = "password";
 
+    // timed operations
+    private static final String OPERATION_LIST_DIRECTORY = "AtmosListDirectory";
+    private static final String OPERATION_GET_USER_META = "AtmosGetUserMeta";
+    private static final String OPERATION_GET_SYSTEM_META = "AtmosGetSystemMeta";
+    private static final String OPERATION_GET_ALL_META = "AtmosGetAllMeta";
+    private static final String OPERATION_GET_OBJECT_INFO = "AtmosGetObjectInfo";
+
     private List<String> hosts;
 	private String protocol;
 	private int port;
@@ -645,14 +652,19 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 		 * Lists the namespace directory and enqueues task nodes for each
 		 * child.
 		 */
-		private void listDirectory(ObjectPath op) {
+		private void listDirectory(final ObjectPath op) {
 
-			ListOptions options = new ListOptions();
+			final ListOptions options = new ListOptions();
 			List<DirectoryEntry> ents = null;
 			
 			l4j.debug(">>Start listing " + op);
 			do {
-				ents = atmos.listDirectory(op, options);
+			    ents = time(new Timeable<List<DirectoryEntry>>() {
+                        @Override
+                        public List<DirectoryEntry> call() {
+                            return atmos.listDirectory(op, options);
+                        }
+                    }, OPERATION_LIST_DIRECTORY);
 				for(DirectoryEntry ent : ents) {
 					// Create a child task for each child entry in the directory
 					// and enqueue it in the graph.
@@ -785,18 +797,38 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 				AtmosMetadata am = new AtmosMetadata();
 				setSize(0);
 				am.setContentType(null);
-				am.setMetadata(atmos.getUserMetadata(sourceId, null));
-				am.setSystemMetadata(atmos.getSystemMetadata(sourceId, null));
+				am.setMetadata(time(new Timeable<MetadataList>() {
+                    @Override
+                    public MetadataList call() {
+                        return atmos.getUserMetadata(sourceId, null);
+                    }
+                }, OPERATION_GET_USER_META));
+				am.setSystemMetadata(time(new Timeable<MetadataList>() {
+                    @Override
+                    public MetadataList call() {
+                        return atmos.getSystemMetadata(sourceId, null);
+                    }
+                }, OPERATION_GET_SYSTEM_META));
 				setMetadata(am);
 			} else {
-				ObjectMetadata meta = atmos.getAllMetadata(sourceId);
+				ObjectMetadata meta = time(new Timeable<ObjectMetadata>() {
+                    @Override
+                    public ObjectMetadata call() {
+                        return atmos.getAllMetadata(sourceId);
+                    }
+                }, OPERATION_GET_ALL_META);
 				AtmosMetadata am = AtmosMetadata.fromObjectMetadata(meta);
 				setMetadata(am);
 				if(am.getSystemMetadata().getMetadata("size") != null) {
 					setSize(Long.parseLong(am.getSystemMetadata().getMetadata("size").getValue()));
 				}
                 if (includeRetentionExpiration) {
-                    ObjectInfo info = atmos.getObjectInfo(sourceId);
+                    ObjectInfo info = time(new Timeable<ObjectInfo>() {
+                        @Override
+                        public ObjectInfo call() {
+                            return atmos.getObjectInfo(sourceId);
+                        }
+                    }, OPERATION_GET_OBJECT_INFO);
                     if (info.getRetention() != null) am.setRetentionEndDate(info.getRetention().getEndAt());
                     if (info.getExpiration() != null) am.setExpirationDate(info.getExpiration().getEndAt());
                 }
@@ -866,5 +898,11 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 		this.dataSource = dataSource;
 	}
 
+    public boolean isIncludeRetentionExpiration() {
+        return includeRetentionExpiration;
+    }
 
+    public void setIncludeRetentionExpiration(boolean includeRetentionExpiration) {
+        this.includeRetentionExpiration = includeRetentionExpiration;
+    }
 }

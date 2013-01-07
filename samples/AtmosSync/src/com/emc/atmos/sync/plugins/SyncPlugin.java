@@ -24,9 +24,12 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
+import com.emc.atmos.sync.util.TimingUtil;
 import com.emc.esu.api.Metadata;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
+
+import java.util.concurrent.Callable;
 
 /**
  * Basic SyncPlugin parent class.  All plugins should inherit from this class.
@@ -43,7 +46,7 @@ import org.apache.commons.cli.Options;
  */
 public abstract class SyncPlugin {
 	private SyncPlugin next;
-	
+
 	/**
 	 * This is the main method of the plugin that processes the SyncObject
 	 * being transferred.  In this method, you should implement your main
@@ -142,5 +145,34 @@ public abstract class SyncPlugin {
             }
         }
         return null;
+    }
+
+    protected <T> T time(Timeable<T> timeable, String name) {
+        timeOperationStart(name);
+        try {
+            T t = timeable.call();
+            timeOperationComplete(name);
+            return t;
+        } catch (RuntimeException e) {
+            timeOperationFailed(name);
+            throw e;
+        }
+    }
+
+    protected void timeOperationStart(String name) {
+        TimingUtil.startOperation(this, name);
+    }
+
+    protected void timeOperationComplete(String name) {
+        TimingUtil.completeOperation(this, name);
+    }
+
+    protected void timeOperationFailed(String name) {
+        TimingUtil.failOperation(this, name);
+    }
+
+    // removes exception from call() signature
+    protected interface Timeable<V> extends Callable<V> {
+        public V call();
     }
 }

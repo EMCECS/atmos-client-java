@@ -126,7 +126,7 @@ public abstract class MultithreadedCrawlSource extends SourcePlugin {
 								transferPool.getActiveCount(),
 								crawlerQueue.size(),
 								crawlerPool.getActiveCount() });
-				LogMF.debug(l4j, "Completed Tasks: {0}, Failed Tasks: {1}",
+				LogMF.info(l4j, "Completed Tasks: {0}, Failed Tasks: {1}",
 						completedCount, failedCount);
 				start = System.currentTimeMillis();
 			}
@@ -189,7 +189,13 @@ public abstract class MultithreadedCrawlSource extends SourcePlugin {
 	 *            the Exception that caused the failure.
 	 */
 	public synchronized void failed(SyncObject obj, Throwable t) {
-		LogMF.warn(l4j, "Object {0} failed: {1}", obj, t);
+        Throwable cause = t;
+        while (cause.getCause() != null) cause = cause.getCause();
+		LogMF.warn(l4j, "Object {0} failed: [{1}] {2}", obj, t, cause);
+        StackTraceElement[] elements = cause.getStackTrace();
+        for (int i=0; i < 5 && i < elements.length; i++) {
+            LogMF.debug(l4j, "    at {0}", elements[i]);
+        }
 		failedCount++;
 		if (rememberFailed) {
 			failedItems.add(obj);

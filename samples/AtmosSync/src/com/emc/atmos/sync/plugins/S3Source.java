@@ -336,8 +336,8 @@ public class S3Source extends MultithreadedCrawlSource {
 			try {
 				getNext().filter(obj);
 				complete(obj);
-			} catch(Exception e) {
-				failed(obj, e);
+			} catch(Throwable t) {
+				failed(obj, t);
 				return;
 			} finally {
 				// Need to ensure we close any S3 streams.

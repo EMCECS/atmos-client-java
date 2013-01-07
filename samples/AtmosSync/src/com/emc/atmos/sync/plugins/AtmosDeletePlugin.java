@@ -59,6 +59,11 @@ public class AtmosDeletePlugin extends SyncPlugin {
 	public static final String DELETE_TAGS_OPT = "delete-listable-tags";
 	public static final String DELETE_TAGS_DESC = "if set, any listable tags will be deleted first before deleting the object";
 
+    // timed operations
+    private static final String OPERATION_DELETE_OBJECT = "AtmosDeleteObject";
+    private static final String OPERATION_GET_USER_META = "AtmosGetUserMeta";
+    private static final String OPERATION_DELETE_META = "AtmosDeleteMeta";
+
 	private boolean deleteTags = false;
 
 	private AtmosSource source;
@@ -72,11 +77,18 @@ public class AtmosDeletePlugin extends SyncPlugin {
 		} else {
 			id = idAnn.getPath();
 		}
+        final Identifier fId = id;
 		
 		if(!deleteTags) {
 			try {
 				l4j.debug("Deleting " + id);
-				source.getAtmos().deleteObject(id);
+				time(new Timeable<Void>() {
+                    @Override
+                    public Void call() {
+                        source.getAtmos().deleteObject(fId);
+                        return null;
+                    }
+                }, OPERATION_DELETE_OBJECT);
 			} catch(EsuException e) {
 				if(e.getHttpCode() == 404) {
 					// Good (already deleted)
@@ -89,14 +101,25 @@ public class AtmosDeletePlugin extends SyncPlugin {
 			}
 		} else {
 			try {
-				MetadataList mlist = source.getAtmos().getUserMetadata(id, null);
+				MetadataList mlist = time(new Timeable<MetadataList>() {
+                    @Override
+                    public MetadataList call() {
+                        return source.getAtmos().getUserMetadata(fId, null);
+                    }
+                }, OPERATION_GET_USER_META);
 				for(Metadata m : mlist) {
 					if(m.isListable()) {
-						MetadataTags mt = new MetadataTags();
+						final MetadataTags mt = new MetadataTags();
 						mt.addTag(new MetadataTag(m.getName(), true));
 						l4j.debug("Deleting tag " + m.getName() + " from " + id);
 						try {
-							source.getAtmos().deleteUserMetadata(id, mt);
+                            time(new Timeable<Void>() {
+                                @Override
+                                public Void call() {
+							        source.getAtmos().deleteUserMetadata(fId, mt);
+                                    return null;
+                                }
+                            }, OPERATION_DELETE_META);
 						} catch(EsuException e) {
 							if(e.getAtmosCode() == 1005) {
 								// Already deleted
@@ -108,7 +131,13 @@ public class AtmosDeletePlugin extends SyncPlugin {
 					}
 				}
 				l4j.debug("Deleting " + id);
-				source.getAtmos().deleteObject(id);
+                time(new Timeable<Void>() {
+                    @Override
+                    public Void call() {
+				        source.getAtmos().deleteObject(fId);
+                        return null;
+                    }
+                }, OPERATION_DELETE_OBJECT);
 			} catch(EsuException e) {
 				if(e.getHttpCode() == 404) {
 					// Good (already deleted)
