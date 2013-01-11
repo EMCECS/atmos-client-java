@@ -115,6 +115,7 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
     private static final String OPERATION_GET_SYSTEM_META = "AtmosGetSystemMeta";
     private static final String OPERATION_GET_ALL_META = "AtmosGetAllMeta";
     private static final String OPERATION_GET_OBJECT_INFO = "AtmosGetObjectInfo";
+    private static final String OPERATION_READ_OBJECT_STREAM = "AtmosReadObjectStream";
 
     private List<String> hosts;
 	private String protocol;
@@ -748,8 +749,12 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 					setSize(0);
 				} else {
 					try {
-						in = new CountingInputStream(
-								atmos.readObjectStream(sourceId, null));
+						in = time(new Timeable<CountingInputStream>() {
+                            @Override
+                            public CountingInputStream call() {
+                                return new CountingInputStream(atmos.readObjectStream(sourceId, null));
+                            }
+                        }, OPERATION_READ_OBJECT_STREAM);
 					} catch(Exception e) {
 						throw new RuntimeException("Failed to get input " +
 								"stream for " + sourceId + ": " + 

@@ -62,8 +62,18 @@ public class RetryPlugin extends SyncPlugin {
 		while(retryCount < maxRetries) {
 			try {
 				getNext().filter(obj);
+
+                if (retryCount > 0) { // we retried
+                    timeOperationStart(OPERATION_RETRY + "::" + lastError);
+                    timeOperationComplete(OPERATION_RETRY + "::" + lastError);
+                }
+
 				return;
 			} catch(Throwable t) {
+                if (retryCount > 0) { // the last retry failed
+                    timeOperationStart(OPERATION_RETRY + "::" + lastError);
+                    timeOperationFailed(OPERATION_RETRY + "::" + lastError);
+                }
                 lastError = t;
                 while (t.getCause() != null) t = t.getCause();
 
@@ -78,7 +88,7 @@ public class RetryPlugin extends SyncPlugin {
 
                     // For Atmos 1040 (server too busy), wait a few seconds
                     if(e.getAtmosCode() == 1040) {
-                        l4j.info("Atmos code 1040 (too busy) for obj, sleeping 5 sec");
+                        l4j.info("Atmos code 1040 (too busy) for obj, sleeping 2 sec");
                         try {
                             Thread.sleep(2000);
                         } catch (InterruptedException e1) {
@@ -88,14 +98,6 @@ public class RetryPlugin extends SyncPlugin {
 
                 retryCount++;
 				LogMF.warn( l4j, "Retry #{0}, Error: {1}", retryCount, t );
-
-                // include retry attempts in timing statistics (to explain multiple object writes)
-                time(new Timeable<Void>() {
-                    @Override
-                    public Void call() {
-                        return null;
-                    }
-                }, OPERATION_RETRY);
 			}
 		}
 		

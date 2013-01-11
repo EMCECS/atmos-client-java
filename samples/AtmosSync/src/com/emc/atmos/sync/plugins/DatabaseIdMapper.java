@@ -24,7 +24,7 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
-import com.emc.atmos.sync.util.JdbcUtil;
+import com.emc.atmos.sync.util.JdbcWrapper;
 import com.emc.esu.api.ObjectId;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.commons.cli.CommandLine;
@@ -50,41 +50,41 @@ import java.util.*;
  * recommended approach is to initialize the application using Spring and
  * provide a DataSource directly.  When using the command line, the c3p0 engine
  * will be used to create a suitable DataSource.
- * 
+ *
  * @author cwikj
  */
 public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 		DisposableBean {
 	private static final Logger l4j = Logger.getLogger(DatabaseIdMapper.class);
-	
+
 	public static final String JDBC_URL_OPT = "id-map-jdbc-url";
 	public static final String JDBC_URL_DESC = "The URL to the database";
 	public static final String JDBC_URL_ARG_NAME = "jdbc-url";
-	
+
 	public static final String JDBC_DRIVER_OPT = "id-map-jdbc-driver-class";
 	public static final String JDBC_DRIVER_DESC = "The JDBC database driver class";
 	public static final String JDBC_DRIVER_ARG_NAME = "java-class-name";
-	
+
 	public static final String JDBC_USER_OPT = "id-map-user";
 	public static final String JDBC_USER_DESC = "The database userid";
 	public static final String JDBC_USER_ARG_NAME = "userid";
-	
+
 	public static final String JDBC_PASSWORD_OPT = "id-map-password";
 	public static final String JDBC_PASSWORD_DESC = "The database password";
 	public static final String JDBC_PASSWORD_ARG_NAME = "password";
-	
+
 	public static final String JDBC_SELECT_OPT = "id-map-select-sql";
 	public static final String JDBC_SELECT_DESC = "The SQL statement to lookup a destination ID, e.g. \"SELECT dest FROM id_map WHERE src=:source_id\".  It is assumed that the query will have one argument: the source (:source_id).  If the query does not return a row, a new object will be created in the destination.  Optional.  If omitted, all objects will be created new in the destination.";
 	public static final String JDBC_SELECT_ARG_NAME = "sql-statement";
-	
+
 	public static final String JDBC_MAP_OPT = "id-map-insert-sql";
 	public static final String JDBC_MAP_DESC = "The SQL statement to insert mapped IDs, e.g. \"INSERT INTO id_map(src,dest) VALUES(:source_id,:dest_id)\".  It is assumed that the query will have two arguments: source (:source_id) and destination (:dest_id) unless id-map-add-metadata is specified, in which case it must also contain a parameter for each tag in the tag-list.";
 	public static final String JDBC_MAP_ARG_NAME = "sql-statement";
-	
+
 	public static final String JDBC_ERROR_OPT = "id-map-error-sql";
 	public static final String JDBC_ERROR_DESC = "The SQL statement to insert error messages, e.g. \"INSERT INTO id_error(src,msg) VALUES(:source_id,:error_msg)\".  This is optional.  If not specified, errors will not be logged to the database.";
 	public static final String JDBC_ERROR_ARG_NAME = "sql-statement";
-	
+
 	public static final String JDBC_RAW_IDS_OPT = "id-map-raw-ids";
 	public static final String JDBC_RAW_IDS_DESC = "If specified, the 'raw' Atmos identifiers (ObjectID or Namespace Path) will be inserted into the database instead of the full URIs.";
 
@@ -100,20 +100,24 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
     private static final String OPERATION_MAPPING_SELECT = "IdMappingSelect";
     private static final String OPERATION_MAPPING_INSERT = "IdMappingInsert";
     private static final String OPERATION_ERROR_INSERT = "ErrorInsert";
+    private static final String OPERATION_TOTAL = "TotalTime";
 
 	private DataSource dataSource;
+    private JdbcWrapper jdbcWrapper;
+    private boolean hardThreadedConnections = false;
 	private String mapQuery;
 	private String errorQuery;
 	private String selectQuery;
 	private boolean rawIds;
     private String[] metaTags;
-	
+
 
 	/**
 	 * @see org.springframework.beans.factory.DisposableBean#destroy()
 	 */
 	@Override
 	public void destroy() throws Exception {
+        jdbcWrapper.closeHardThreadedConnections();
 	}
 
 	/**
@@ -123,6 +127,8 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull(dataSource, "A data source must be specified");
 		Assert.hasText(mapQuery, "The query to map IDs is required");
+        jdbcWrapper = new JdbcWrapper(dataSource);
+        jdbcWrapper.setHardThreaded(hardThreadedConnections);
 	}
 
 	/**
@@ -130,6 +136,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 	 */
 	@Override
 	public void filter(SyncObject obj) {
+        timeOperationStart(OPERATION_TOTAL);
 		try {
 			boolean alreadyMapped = false;
 			if(selectQuery != null) {
@@ -140,7 +147,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
                     time(new Timeable<Void>() {
                         @Override
                         public Void call() {
-                            JdbcUtil.executeUpdate(dataSource, selectQuery, params);
+                            jdbcWrapper.executeUpdate(selectQuery, params);
                             return null;
                         }
                     }, OPERATION_MAPPING_SELECT);
@@ -149,7 +156,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 						String id = time(new Timeable<String>() {
                             @Override
                             public String call() {
-                                return JdbcUtil.executeQueryForObject(dataSource, selectQuery, params, String.class);
+                                return jdbcWrapper.executeQueryForObject(selectQuery, params, String.class);
                             }
                         }, OPERATION_MAPPING_SELECT);
 
@@ -171,7 +178,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 								} catch (URISyntaxException e) {
 									throw new RuntimeException("Could not parse Atmos ID from URI: " + id, e);
 								}
-								
+
 							}
 							DestinationAtmosId dai = new DestinationAtmosId(oid);
 							obj.addAnnotation(dai);
@@ -184,7 +191,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 				}
 			}
 
-			getNext().filter(obj);
+			getNext().filter( obj );
 
 			if(!alreadyMapped) {
 				final Map<String,String> params = new HashMap<String, String>();
@@ -198,12 +205,14 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
                 time(new Timeable<Void>() {
                     @Override
                     public Void call() {
-                        JdbcUtil.executeUpdate(dataSource, mapQuery, params);
+                        jdbcWrapper.executeUpdate(mapQuery, params);
                         return null;
                     }
                 }, OPERATION_MAPPING_INSERT);
 			}
-			
+
+            timeOperationComplete(OPERATION_TOTAL);
+
 		} catch(RuntimeException e) {
 			if(errorQuery != null) {
 				try {
@@ -217,23 +226,23 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
                     time(new Timeable<Void>() {
                         @Override
                         public Void call() {
-                            JdbcUtil.executeUpdate(dataSource, errorQuery, params);
+                            jdbcWrapper.executeUpdate(errorQuery, params);
                             return null;
                         }
                     }, OPERATION_ERROR_INSERT);
 				} catch (Exception e1) {
 					l4j.error("Error inserting error message: " + e1.getMessage(), e1);
 				}
-			
+
 			}
-			
-			// re-throw
+
+            timeOperationFailed(OPERATION_TOTAL);
+
+            // re-throw
 			throw e;
 		}
-		
-
 	}
-	
+
 	private String getDest(SyncObject obj) {
 		if(!rawIds) {
 			return obj.getDestURI().toASCIIString();
@@ -250,7 +259,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 					}
 				}
 			}
-			
+
 			// Guess based off the path
 			String path = obj.getDestURI().getPath();
 			if(path.startsWith("/rest/namespace")) {
@@ -261,8 +270,8 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 			return path;
 		}
 	}
-	
-	
+
+
 	private String getSource(SyncObject obj) {
 		if(!rawIds) {
 			return obj.getSourceURI().toASCIIString();
@@ -279,7 +288,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 					}
 				}
 			}
-			
+
 			// Guess based off the path
 			String path = obj.getSourceURI().getPath();
 			if(path.startsWith("/rest/namespace")) {
@@ -301,38 +310,38 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 		opts.addOption(OptionBuilder.withDescription(JDBC_URL_DESC)
 				.withLongOpt(JDBC_URL_OPT).hasArg()
 				.withArgName(JDBC_URL_ARG_NAME).create());
-		
+
 		opts.addOption(OptionBuilder.withDescription(JDBC_DRIVER_DESC)
 				.withLongOpt(JDBC_DRIVER_OPT).hasArg()
 				.withArgName(JDBC_DRIVER_ARG_NAME).create());
-		
+
 		opts.addOption(OptionBuilder.withDescription(JDBC_USER_DESC)
 				.withLongOpt(JDBC_USER_OPT).hasArg()
 				.withArgName(JDBC_USER_ARG_NAME).create());
-		
+
 		opts.addOption(OptionBuilder.withDescription(JDBC_PASSWORD_DESC)
 				.withLongOpt(JDBC_PASSWORD_OPT).hasArg()
 				.withArgName(JDBC_PASSWORD_ARG_NAME).create());
-		
+
 		opts.addOption(OptionBuilder.withDescription(JDBC_MAP_DESC)
 				.withLongOpt(JDBC_MAP_OPT).hasArg()
 				.withArgName(JDBC_MAP_ARG_NAME).create());
-		
+
 		opts.addOption(OptionBuilder.withDescription(JDBC_SELECT_DESC)
 				.withLongOpt(JDBC_SELECT_OPT).hasArg()
 				.withArgName(JDBC_SELECT_ARG_NAME).create());
-		
+
 		opts.addOption(OptionBuilder.withDescription(JDBC_ERROR_DESC)
 				.withLongOpt(JDBC_ERROR_OPT).hasArg()
 				.withArgName(JDBC_ERROR_ARG_NAME).create());
-		
+
 		opts.addOption(OptionBuilder.withDescription(JDBC_RAW_IDS_DESC)
 				.withLongOpt(JDBC_RAW_IDS_OPT).create());
 
         opts.addOption(OptionBuilder.withDescription(JDBC_ADD_META_DESC)
                 .withLongOpt(JDBC_ADD_META_OPT).hasArg()
                 .withArgName( JDBC_ADD_META_ARG_NAME ).create());
-		
+
 		return opts;
 	}
 
@@ -356,7 +365,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 			if(!line.hasOption(JDBC_MAP_OPT)) {
 				throw new RuntimeException(MessageFormat.format("The option {0} is required with using {1}", JDBC_MAP_OPT, JDBC_URL_OPT));
 			}
-			
+
 			mapQuery = line.getOptionValue(JDBC_MAP_OPT);
 			if(line.hasOption(JDBC_ERROR_OPT)) {
 				errorQuery = line.getOptionValue(JDBC_ERROR_OPT);
@@ -364,7 +373,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 			if(line.hasOption(JDBC_SELECT_OPT)) {
 				selectQuery = line.getOptionValue(JDBC_SELECT_OPT);
 			}
-			
+
 			if(line.hasOption(JDBC_RAW_IDS_OPT)) {
 				rawIds = true;
 			}
@@ -376,20 +385,20 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
                         throw new RuntimeException(MessageFormat.format("Only metadata with valid JDBC parameter names can be recorded ({0} is invalid)", tag));
                 }
             }
-			
+
 			// Initialize a c3p0 pool
 			ComboPooledDataSource cpds = new ComboPooledDataSource();
 			try {
 				cpds.setDriverClass( line.getOptionValue(JDBC_DRIVER_OPT) );
 				cpds.setJdbcUrl( line.getOptionValue(JDBC_URL_OPT) );
-				cpds.setUser( line.getOptionValue(JDBC_USER_OPT) );                                  
-				cpds.setPassword( line.getOptionValue(JDBC_PASSWORD_OPT) );     
+				cpds.setUser( line.getOptionValue(JDBC_USER_OPT) );
+				cpds.setPassword( line.getOptionValue(JDBC_PASSWORD_OPT) );
 			} catch (PropertyVetoException e) {
 				throw new RuntimeException("Unable to initialize JDBC driver: " + e.getMessage(), e);
 			}
 			cpds.setMaxStatements(180);
 			setDataSource(cpds);
-			
+
 			// Try getting a connection
 			try {
 				Connection con = cpds.getConnection();
@@ -397,11 +406,11 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 			} catch(Exception e) {
 				throw new RuntimeException("Unable to connect to JDBC database: " + e.getMessage(), e);
 			}
-			
+
 			return true;
 		}
-		
-		
+
+
 		return false;
 	}
 
@@ -444,7 +453,19 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 		this.dataSource = dataSource;
 	}
 
-	/**
+    public boolean isHardThreadedConnections() {
+        return hardThreadedConnections;
+    }
+
+    /**
+     * Sets whether to use hard-threaded connections. That means each thread will get a dedicated connection that is
+     * never closed until {@link #destroy()} is called. Default is false.
+     */
+    public void setHardThreadedConnections( boolean hardThreadedConnections ) {
+        this.hardThreadedConnections = hardThreadedConnections;
+    }
+
+    /**
 	 * Gets the query to map IDs inside the database
 	 * @return the mapQuery
 	 */

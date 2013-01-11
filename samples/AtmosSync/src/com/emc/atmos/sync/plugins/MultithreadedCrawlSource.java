@@ -355,6 +355,7 @@ public abstract class MultithreadedCrawlSource extends SourcePlugin {
 		@Override
 		protected void afterExecute(Runnable r, Throwable t) {
 			remainingTasks.decrementAndGet();
+            super.afterExecute(r, t);
 		}
 		
 	}

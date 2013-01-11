@@ -61,15 +61,19 @@ public final class TimingUtil {
 
     private static class WindowedTimings implements Timings {
         private ThreadLocal<Map<String, Long>> operationStartTimes = new ThreadLocal<Map<String, Long>>();
+        private final Map<String, Long> operationMinTimes = new Hashtable<String, Long>();
+        private final Map<String, Long> operationMaxTimes = new Hashtable<String, Long>();
         private final Map<String, Long> operationGrossTimes = new Hashtable<String, Long>();
         private final Map<String, Long> operationCompleteCounts = new Hashtable<String, Long>();
         private final Map<String, Long> operationFailedCounts = new Hashtable<String, Long>();
 
         private int statsWindow;
         private boolean dumpPending;
+        private long collectionStartTime;
 
         public WindowedTimings( int statsWindow ) {
             this.statsWindow = statsWindow;
+            collectionStartTime = System.currentTimeMillis();
         }
 
         public void startOperation( String name ) {
@@ -80,9 +84,10 @@ public final class TimingUtil {
             long time = endAndTimeOperation( name ), complete, count;
             boolean dump = false;
             synchronized ( this ) {
-                complete = getOperationCompleteCount( name );
-                count = complete + getOperationFailedCount( name );
-                operationGrossTimes.put( name, getOperationGrossTime( name ) + time );
+                complete = getValue( operationCompleteCounts, name );
+                count = complete + getValue( operationFailedCounts, name );
+                checkMinMaxTime( name, time );
+                operationGrossTimes.put( name, getValue( operationGrossTimes, name ) + time );
                 operationCompleteCounts.put( name, complete + 1 );
                 if ( count >= statsWindow && !dumpPending ) {
                     dumpPending = true;
@@ -96,9 +101,10 @@ public final class TimingUtil {
             long time = endAndTimeOperation( name ), failed, count;
             boolean dump = false;
             synchronized ( this ) {
-                failed = getOperationFailedCount( name );
-                count = failed + getOperationCompleteCount( name );
-                operationGrossTimes.put( name, getOperationGrossTime( name ) + time );
+                failed = getValue( operationFailedCounts, name );
+                count = failed + getValue( operationCompleteCounts, name );
+                checkMinMaxTime( name, time );
+                operationGrossTimes.put( name, getValue( operationGrossTimes, name ) + time );
                 operationFailedCounts.put( name, failed + 1 );
                 if ( count >= statsWindow && !dumpPending ) {
                     dumpPending = true;
@@ -110,32 +116,31 @@ public final class TimingUtil {
 
         public void dump() {
             List<TimingStats> stats = new ArrayList<TimingStats>();
-            long totalMillis = 0, grossTime;
             synchronized ( this ) {
                 for ( String name : operationGrossTimes.keySet() ) {
-                    grossTime = getOperationGrossTime( name );
                     stats.add( new TimingStats( name,
-                                                getOperationCompleteCount( name ),
-                                                getOperationFailedCount( name ),
-                                                grossTime ) );
-                    totalMillis += grossTime;
+                                                getValue( operationCompleteCounts, name ),
+                                                getValue( operationFailedCounts, name ),
+                                                getValue( operationMinTimes, name ),
+                                                getValue( operationMaxTimes, name ),
+                                                getValue( operationGrossTimes, name ) ) );
                 }
+                operationMinTimes.clear();
+                operationMaxTimes.clear();
                 operationGrossTimes.clear();
                 operationCompleteCounts.clear();
                 operationFailedCounts.clear();
                 dumpPending = false;
             }
-            log.info( "Start timings dump\n######################################################################" );
+            long now = System.currentTimeMillis();
+            log.info( "Start timings dump (" + (now - collectionStartTime)
+                      + "ms since last dump)\n######################################################################" );
             Collections.sort( stats );
             for ( TimingStats stat : stats ) {
                 log.info( stat );
             }
-            long ms = totalMillis % 1000;
-            long seconds = (totalMillis / 1000) % 60;
-            long minutes = (totalMillis / (1000 * 60)) % 60;
-            long hours = (totalMillis / (1000 * 60 * 60));
-            log.info( String.format( "Total time collected: %dms  (%d:%02d:%02d.%03d)",
-                                     totalMillis, hours, minutes, seconds, ms ) );
+            log.info( "End timings dump\n######################################################################" );
+            collectionStartTime = now;
         }
 
         private Map<String, Long> getOperationStartTimes() {
@@ -147,22 +152,10 @@ public final class TimingUtil {
             return map;
         }
 
-        private long getOperationGrossTime( String name ) {
-            Long time = operationGrossTimes.get( name );
-            if ( time == null ) time = 0L;
-            return time;
-        }
-
-        private long getOperationCompleteCount( String name ) {
-            Long count = operationCompleteCounts.get( name );
-            if ( count == null ) count = 0L;
-            return count;
-        }
-
-        private long getOperationFailedCount( String name ) {
-            Long count = operationFailedCounts.get( name );
-            if ( count == null ) count = 0L;
-            return count;
+        private long getValue( Map<String, Long> map, String key ) {
+            Long value = map.get( key );
+            if ( value == null ) value = 0L;
+            return value;
         }
 
         private long endAndTimeOperation( String name ) {
@@ -171,18 +164,30 @@ public final class TimingUtil {
                 throw new IllegalStateException( "no start time exists for operation " + name );
             return System.currentTimeMillis() - startTime;
         }
+
+        private void checkMinMaxTime( String name, long time ) {
+            Long min = operationMinTimes.get( name );
+            if ( min == null || min > time ) operationMinTimes.put( name, time );
+            Long max = operationMaxTimes.get( name );
+            if ( max == null || max < time ) operationMaxTimes.put( name, time );
+        }
     }
 
     private static class TimingStats implements Comparable<TimingStats> {
         private String name;
         private long completeCount;
         private long failedCount;
+        private long minTime;
+        private long maxTime;
         private long grossTime;
 
-        public TimingStats( String name, long completeCount, long failedCount, long grossTime ) {
+        public TimingStats( String name, long completeCount, long failedCount,
+                            long minTime, long maxTime, long grossTime ) {
             this.name = name;
             this.completeCount = completeCount;
             this.failedCount = failedCount;
+            this.minTime = minTime;
+            this.maxTime = maxTime;
             this.grossTime = grossTime;
         }
 
@@ -198,6 +203,14 @@ public final class TimingUtil {
             return failedCount;
         }
 
+        public long getMinTime() {
+            return minTime;
+        }
+
+        public long getMaxTime() {
+            return maxTime;
+        }
+
         public long getGrossTime() {
             return grossTime;
         }
@@ -210,10 +223,13 @@ public final class TimingUtil {
         @Override
         public String toString() {
             long totalCount = completeCount + failedCount;
+            long avg = grossTime / (totalCount == 0 ? 1 : totalCount);
             return name + '\n'
                    + "    Completed:" + rAlign( Long.toString( completeCount ), 6 )
                    + "    Failed:" + rAlign( Long.toString( failedCount ), 6 )
-                   + "    Avg. Time:" + rAlign( Long.toString( grossTime / (totalCount == 0 ? 1 : totalCount) ), 10 )
+                   + "    Min/Max/Avg Time:" + rAlign( Long.toString( minTime ), 4 )
+                   + "/" + rAlign( Long.toString( maxTime ), 4 )
+                   + "/" + rAlign( Long.toString( avg ), 4 )
                    + "ms";
         }
 

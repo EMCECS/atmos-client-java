@@ -18,14 +18,14 @@ import java.util.concurrent.TimeUnit;
 public class TimingUtilTest {
     @Test
     public void testTimings() {
-        int threadCount = 80;
-        int window = threadCount * 5; // should dump stats every 5 "objects"
-        int total = window * 5; // ~25 "objects" per thread
+        int threadCount = Runtime.getRuntime().availableProcessors() * 16; // 16 threads per core for stress
+        int window = threadCount * 100; // should dump stats every 100 "objects" per thread
+        int total = window * 5; // ~500 "objects" per thread total
 
-        WaitPlugin plugin = new WaitPlugin();
+        DummyPlugin plugin = new DummyPlugin();
 
         AtmosSync2 sync = new AtmosSync2();
-        sync.setSource( new WaitSource( threadCount, total ) );
+        sync.setSource( new DummySource( threadCount, total ) );
         sync.setPluginChain( Arrays.asList( (SyncPlugin) plugin ) );
         sync.setDestination( new DummyDestination() );
         sync.setTimingsEnabled( true );
@@ -35,11 +35,10 @@ public class TimingUtilTest {
         sync.run();
 
         System.out.println( "---Timing enabled---" );
-        System.out.println( "Total overhead is " + plugin.getOverhead() + "ms" );
-        System.out.println( "Per-thread overhead is " + (plugin.getOverhead() / threadCount) + "ms" );
+        System.out.println( "Per-thread overhead is " + (plugin.getOverhead() / threadCount) + "ms over 500 calls" );
         System.out.println( "Per-call overhead is " + ((plugin.getOverhead() * 1000) / (total)) + "µs" );
 
-        plugin = new WaitPlugin(); // this one won't be registered
+        plugin = new DummyPlugin(); // this one won't be registered
 
         sync.setPluginChain( Arrays.asList( (SyncPlugin) plugin ) );
         sync.setTimingsEnabled( false );
@@ -48,15 +47,14 @@ public class TimingUtilTest {
         sync.run();
 
         System.out.println( "---Timing disabled---" );
-        System.out.println( "Total overhead is " + plugin.getOverhead() + "ms" );
-        System.out.println( "Per-thread overhead is " + (plugin.getOverhead() / threadCount) + "ms" );
+        System.out.println( "Per-thread overhead is " + (plugin.getOverhead() / threadCount) + "ms over 500 calls" );
         System.out.println( "Per-call overhead is " + ((plugin.getOverhead() * 1000) / (total)) + "µs" );
     }
 
-    private class WaitSource extends SourcePlugin {
+    private class DummySource extends SourcePlugin {
         private int threadCount, totalCount;
 
-        public WaitSource( int threadCount, int totalCount ) {
+        public DummySource( int threadCount, int totalCount ) {
             this.threadCount = threadCount;
             this.totalCount = totalCount;
         }
@@ -111,7 +109,7 @@ public class TimingUtilTest {
 
         @Override
         public String getName() {
-            return "Wait Source";
+            return "Dummy Source";
         }
 
         @Override
@@ -120,7 +118,7 @@ public class TimingUtilTest {
         }
     }
 
-    private class WaitPlugin extends SyncPlugin {
+    private class DummyPlugin extends SyncPlugin {
         private long overhead = 0;
 
         @Override
@@ -131,7 +129,7 @@ public class TimingUtilTest {
                 public Void call() {
                     return null;
                 }
-            }, "Waiting" );
+            }, "No-op" );
             long overhead = System.currentTimeMillis() - start;
             addOverhead( overhead );
         }
@@ -152,7 +150,7 @@ public class TimingUtilTest {
 
         @Override
         public String getName() {
-            return "Wait Plugin";
+            return "Dummy Plugin";
         }
 
         @Override
@@ -166,10 +164,6 @@ public class TimingUtilTest {
 
         private synchronized void addOverhead( long ms ) {
             overhead += ms;
-        }
-
-        public void resetOverhead() {
-            this.overhead = 0;
         }
     }
 

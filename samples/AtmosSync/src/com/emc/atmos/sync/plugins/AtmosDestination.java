@@ -73,19 +73,20 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	public static final String DEST_CHECKSUM_ARG_NAME = "checksum-alg";
 
     // timed operations
-    public static final String OPERATION_SET_USER_META = "AtmosSetUserMeta";
-    public static final String OPERATION_SET_ACL = "AtmosSetAcl";
-    public static final String OPERATION_CREATE_OBJECT = "AtmosCreateObject";
-    public static final String OPERATION_CREATE_OBJECT_ON_PATH = "AtmosCreateObjectOnPath";
-    public static final String OPERATION_CREATE_OBJECT_FROM_SEGMENT = "AtmosCreateObjectFromSegment";
-    public static final String OPERATION_CREATE_OBJECT_FROM_SEGMENT_ON_PATH = "AtmosCreateObjectFromSegmentOnPath";
-    public static final String OPERATION_UPDATE_OBJECT_FROM_SEGMENT = "AtmosUpdateObjectFromSegment";
-    public static final String OPERATION_CREATE_OBJECT_FROM_STREAM = "AtmosCreateObjectFromStream";
-    public static final String OPERATION_CREATE_OBJECT_FROM_STREAM_ON_PATH = "AtmosCreateObjectFromStreamOnPath";
-    public static final String OPERATION_DELETE_OBJECT = "AtmosDeleteObject";
-    public static final String OPERATION_SET_RETENTION_EXPIRATION = "AtmosSetRetentionExpiration";
-    public static final String OPERATION_GET_ALL_META = "AtmosGetAllMeta";
-    public static final String OPERATION_GET_SYSTEM_META = "AtmosGetSystemMeta";
+    private static final String OPERATION_SET_USER_META = "AtmosSetUserMeta";
+    private static final String OPERATION_SET_ACL = "AtmosSetAcl";
+    private static final String OPERATION_CREATE_OBJECT = "AtmosCreateObject";
+    private static final String OPERATION_CREATE_OBJECT_ON_PATH = "AtmosCreateObjectOnPath";
+    private static final String OPERATION_CREATE_OBJECT_FROM_SEGMENT = "AtmosCreateObjectFromSegment";
+    private static final String OPERATION_CREATE_OBJECT_FROM_SEGMENT_ON_PATH = "AtmosCreateObjectFromSegmentOnPath";
+    private static final String OPERATION_UPDATE_OBJECT_FROM_SEGMENT = "AtmosUpdateObjectFromSegment";
+    private static final String OPERATION_CREATE_OBJECT_FROM_STREAM = "AtmosCreateObjectFromStream";
+    private static final String OPERATION_CREATE_OBJECT_FROM_STREAM_ON_PATH = "AtmosCreateObjectFromStreamOnPath";
+    private static final String OPERATION_DELETE_OBJECT = "AtmosDeleteObject";
+    private static final String OPERATION_SET_RETENTION_EXPIRATION = "AtmosSetRetentionExpiration";
+    private static final String OPERATION_GET_ALL_META = "AtmosGetAllMeta";
+    private static final String OPERATION_GET_SYSTEM_META = "AtmosGetSystemMeta";
+    private static final String OPERATION_TOTAL = "TotalTime";
 
 	private static final Logger l4j = Logger.getLogger(AtmosDestination.class);
 
@@ -107,6 +108,7 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	 */
 	@Override
 	public void filter(final SyncObject obj) {
+        timeOperationStart(OPERATION_TOTAL);
 		try {
             // some sync objects lazy-load their metadata (i.e. AtmosSyncObject)
             // since this may be a timed operation, ensure it loads outside of other timed operations
@@ -263,7 +265,7 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 				// Object Space
 
                 // don't create directories when in objectspace (likely a filesystem source)
-                // TODO: is this a valid use-case?
+                // TODO: is this a valid use-case (should we create these objects)?
                 if (obj.isDirectory()) {
                     LogMF.debug(l4j, "Source {0} is a directory, but destination is in objectspace, ignoring",
                                 obj.getSourceURI());
@@ -368,7 +370,10 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 			LogMF.debug(l4j, "Wrote source {0} to dest {1}", 
 					obj.getSourceURI(), 
 					obj.getDestURI());
+
+            timeOperationComplete(OPERATION_TOTAL);
 		} catch(Exception e) {
+            timeOperationFailed(OPERATION_TOTAL);
 			throw new RuntimeException(
 					"Failed to store object: " + e.getMessage(), e);
 		}
@@ -491,6 +496,9 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
                         }, OPERATION_UPDATE_OBJECT_FROM_SEGMENT);
 					}
 				}
+
+                // update retention/expiration in case policy changed
+                updateRetentionExpiration(obj, destId);
 			} finally {
 				if(in != null) {
 					in.close();
@@ -525,6 +533,9 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
                     }
                 }, OPERATION_SET_ACL);
 			}
+
+            // update retention/expiration in case policy changed
+            updateRetentionExpiration(obj, destId);
 		} else {
 			// No updates
 			LogMF.debug(l4j, "No changes from source {0} to dest {1}", 

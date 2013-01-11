@@ -20,6 +20,13 @@
 				<ref bean="databaseIdMapper"/>
 			</list>
 		</property>
+        <!-- This will enable operation timings (log category com.emc.atmos.sync.util.TimingUtil should be INFO)
+             This is useful to determine where threads are spending most of their time in a migration when load isn't
+             a good indicator. Timing overhead is about 5ms per object -->
+        <property name="timingsEnabled" value="true"/>
+        <!-- This specifies a rough window for timing dumps. This many operations must complete (or fail) between each
+             dump of timings. Default is 10k -->
+        <property name="timingWindow" value="100000"/>
 	</bean>
 
 	<!-- The source plugin -->
@@ -59,6 +66,9 @@
 		<property name="errorQuery" value="insert into error_map(old_id, error_msg) values(:source_id,:error_msg)"/>
 		<property name="selectQuery" value="select new_id from id_map where old_id=:source_id"/>
 		<property name="rawIds" value="true"/>
+        <!-- Enable this property to attach a connection to each thread and bypass the connection pool,
+             which is a synchronized resource -->
+        <!--property name="hardThreadedConnections" value="true"/-->
 	</bean>
 	
 	<!-- Here we show using a custom DataSource through Spring -->
@@ -67,6 +77,7 @@
 		<property name="jdbcUrl" value="jdbc:mysql://localhost:7306/id_map"/>
 		<property name="user" value="root"/>
 		<property name="password" value="zimbra"/>
+        <property name="maxPoolSize" value="50"/>
 		<property name="maxStatements" value="100"/>
 	</bean>
 	
