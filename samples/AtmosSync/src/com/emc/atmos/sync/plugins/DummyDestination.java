@@ -63,7 +63,7 @@ public class DummyDestination extends DestinationPlugin {
 			InputStream in = null;
 			try {
 				in = obj.getInputStream();
-				while(in.read(buffer) != -1) {
+				while(in != null && in.read(buffer) != -1) {
 					// Do nothing!
 				}
 			} catch (IOException e) {

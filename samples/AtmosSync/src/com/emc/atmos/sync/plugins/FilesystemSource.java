@@ -34,6 +34,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 
@@ -65,6 +66,10 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 	public static final String DELETE_OLDER_OPT = "delete-older-than";
 	public static final String DELETE_OLDER_DESC = "when --delete is used, add this option to only delete files that have been modified more than <delete-age> milliseconds ago";
 	public static final String DELETE_OLDER_ARG_NAME = "delete-age";
+	
+	public static final String DELETE_CHECK_OPT = "delete-check-script";
+	public static final String DELETE_CHECK_DESC = "when --delete is used, add this option to execute an external script to check whether a file should be deleted.  If the process exits with return code zero, the file is safe to delete.";
+	public static final String DELETE_CHECK_ARG_NAME = "path-to-check-script";
 
 	private File source;
 	private boolean recursive;
@@ -72,6 +77,7 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 	private boolean ignoreMeta = false;
 	private boolean delete = false;
 	private long deleteOlderThan = 0;
+	private File deleteCheckScript;
 	
 	private MimetypesFileTypeMap mimeMap;
 
@@ -117,6 +123,9 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 		opts.addOption(OptionBuilder.withLongOpt(DELETE_OLDER_OPT)
 				.withDescription(DELETE_OLDER_DESC)
 				.hasArg().withArgName(DELETE_OLDER_ARG_NAME).create());
+		opts.addOption(OptionBuilder.withLongOpt(DELETE_CHECK_OPT)
+				.withDescription(DELETE_CHECK_DESC)
+				.hasArg().withArgName(DELETE_CHECK_ARG_NAME).create());
 		addOptions(opts);
 		
 		return opts;
@@ -154,6 +163,13 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 			}
 			if(line.hasOption(DELETE_OLDER_OPT)) {
 				deleteOlderThan = Long.parseLong(line.getOptionValue(DELETE_OLDER_OPT));
+			}
+			if(line.hasOption(DELETE_CHECK_OPT)) {
+				deleteCheckScript = new File(line.getOptionValue(DELETE_CHECK_OPT));
+				if(!deleteCheckScript.exists()) {
+					throw new RuntimeException("Delete check script " + 
+							deleteCheckScript + " does not exist");
+				}
 			}
 			
 			// Parse threading options
@@ -242,6 +258,40 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 								LogMF.debug(l4j, 
 										"Not deleting {0}; it is not at least {1} ms old", 
 										f, deleteOlderThan);
+								tryDelete = false;
+							}
+						}
+						if(deleteCheckScript != null) {
+							String[] args = new String[] { 
+									deleteCheckScript.getAbsolutePath(), 
+									f.getAbsolutePath()
+							};
+							try {
+								l4j.debug("Delete check: " + Arrays.asList(args));
+								Process p = Runtime.getRuntime().exec(args);
+								while(true) {
+									try {
+										int exitCode = p.exitValue();
+										
+										if(exitCode == 0) {
+											LogMF.debug(l4j, 
+													"Delete check OK, exit code {0}", 
+													exitCode);
+										} else {
+											LogMF.info(l4j, 
+													"Delete check failed, exit code {0}.  Not deleting file.", 
+													exitCode);
+											tryDelete = false;
+										}
+										break;
+									} catch(IllegalThreadStateException e) {
+										// Ignore.
+									}
+								}
+							} catch(IOException e) {
+								LogMF.info(l4j, 
+										"Error executing delete check script: {0}.  Not deleting file.", 
+										e.toString());
 								tryDelete = false;
 							}
 						}
