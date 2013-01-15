@@ -26,18 +26,18 @@ package com.emc.atmos.api.bean;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
+import java.util.Date;
 
-@XmlType( propOrder = {"enabled", "endAt"} )
+@XmlType(propOrder = {"enabled", "endAt"})
 public class PolicyEvent {
     private boolean enabled;
-    private String endAt;
+    private Date endAt;
 
     public PolicyEvent() {
         enabled = false;
-        endAt = "";
     }
 
-    @XmlElement( name = "enabled" )
+    @XmlElement(name = "enabled")
     public boolean isEnabled() {
         return enabled;
     }
@@ -46,12 +46,12 @@ public class PolicyEvent {
         this.enabled = enabled;
     }
 
-    @XmlElement( name = "endAt" )
-    public String getEndAt() {
+    @XmlElement(name = "endAt")
+    public Date getEndAt() {
         return endAt;
     }
 
-    public void setEndAt( String endAt ) {
+    public void setEndAt( Date endAt ) {
         this.endAt = endAt;
     }
 }

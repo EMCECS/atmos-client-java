@@ -26,30 +26,25 @@ package com.emc.atmos.api.bean;
 
 import com.emc.atmos.api.ObjectId;
 import com.emc.atmos.api.bean.adapter.ObjectIdAdapter;
-import com.emc.atmos.api.bean.adapter.PolicyEventAdapter;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.*;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.util.Date;
 import java.util.List;
 
-@XmlRootElement( name = "GetObjectInfoResponse" )
-@XmlType( propOrder = {"objectId", "selection", "numReplicas", "replicas", "retainedUntil", "expiresAt"} )
+@XmlRootElement(name = "GetObjectInfoResponse")
+@XmlType(propOrder = {"objectId", "selection", "numReplicas", "replicas", "retention", "expiration"})
 public class ObjectInfo {
     private ObjectId objectId;
     private String selection;
     private int numReplicas;
     private List<Replica> replicas;
-    private Date retainedUntil;
-    private Date expiresAt;
+    private PolicyEvent retention;
+    private PolicyEvent expiration;
 
     @XmlElement( name = "expiration" )
-    @XmlJavaTypeAdapter( PolicyEventAdapter.class )
-    public Date getExpiresAt() {
-        return expiresAt;
+    public PolicyEvent getExpiration() {
+        return expiration;
     }
 
     @XmlElement( name = "numReplicas" )
@@ -70,9 +65,8 @@ public class ObjectInfo {
     }
 
     @XmlElement( name = "retention" )
-    @XmlJavaTypeAdapter( PolicyEventAdapter.class )
-    public Date getRetainedUntil() {
-        return retainedUntil;
+    public PolicyEvent getRetention() {
+        return retention;
     }
 
     @XmlElement( name = "selection" )
@@ -80,8 +74,20 @@ public class ObjectInfo {
         return selection;
     }
 
-    public void setExpiresAt( Date expiresAt ) {
-        this.expiresAt = expiresAt;
+    @XmlTransient
+    public Date getRetainedUntil() {
+        if ( retention == null ) return null;
+        return retention.getEndAt();
+    }
+
+    @XmlTransient
+    public Date getExpiresAt() {
+        if ( expiration == null ) return null;
+        return expiration.getEndAt();
+    }
+
+    public void setExpiration( PolicyEvent expiration ) {
+        this.expiration = expiration;
     }
 
     public void setNumReplicas( int numReplicas ) {
@@ -96,8 +102,8 @@ public class ObjectInfo {
         this.replicas = replicas;
     }
 
-    public void setRetainedUntil( Date retainedUntil ) {
-        this.retainedUntil = retainedUntil;
+    public void setRetention( PolicyEvent retention ) {
+        this.retention = retention;
     }
 
     public void setSelection( String selection ) {

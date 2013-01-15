@@ -725,15 +725,19 @@ public class EsuApiJerseyAdapter extends AbstractEsuRestApi {
         newObjectInfo.setObjectId( (ObjectId) adaptIdentifier( objectInfo.getObjectId() ) );
         newObjectInfo.setSelection( objectInfo.getSelection() );
 
-        ObjectExpiration objectExpiration = new ObjectExpiration();
-        objectExpiration.setEnabled( objectInfo.getExpiresAt() != null );
-        objectExpiration.setEndAt( objectInfo.getExpiresAt() );
-        newObjectInfo.setExpiration( objectExpiration );
+        if ( objectInfo.getExpiration() != null ) {
+            ObjectExpiration objectExpiration = new ObjectExpiration();
+            objectExpiration.setEnabled( objectInfo.getExpiration().isEnabled() );
+            objectExpiration.setEndAt( objectInfo.getExpiration().getEndAt() );
+            newObjectInfo.setExpiration( objectExpiration );
+        }
 
-        ObjectRetention objectRetention = new ObjectRetention();
-        objectRetention.setEnabled( objectInfo.getRetainedUntil() != null );
-        objectRetention.setEndAt( objectInfo.getRetainedUntil() );
-        newObjectInfo.setRetention( objectRetention );
+        if ( objectInfo.getRetention() != null ) {
+            ObjectRetention objectRetention = new ObjectRetention();
+            objectRetention.setEnabled( objectInfo.getRetention().isEnabled() );
+            objectRetention.setEndAt( objectInfo.getRetention().getEndAt() );
+            newObjectInfo.setRetention( objectRetention );
+        }
 
         if ( objectInfo.getReplicas() != null ) {
             List<ObjectReplica> replicas = new ArrayList<ObjectReplica>();
