@@ -24,27 +24,23 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import javax.sql.DataSource;
-
+import com.emc.atmos.AtmosException;
+import com.emc.atmos.api.ObjectIdentifier;
+import com.emc.atmos.api.bean.Metadata;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.log4j.Logger;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
-import com.emc.esu.api.EsuException;
-import com.emc.esu.api.Identifier;
-import com.emc.esu.api.Metadata;
-import com.emc.esu.api.MetadataList;
-import com.emc.esu.api.MetadataTag;
-import com.emc.esu.api.MetadataTags;
+import javax.sql.DataSource;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Map;
 
 /**
  * @author cwikj
@@ -70,14 +66,14 @@ public class AtmosDeletePlugin extends SyncPlugin {
 
 	@Override
 	public void filter(SyncObject obj) {
-		Identifier id;
+		ObjectIdentifier id;
 		SourceAtmosId idAnn = (SourceAtmosId) obj.getAnnotation(SourceAtmosId.class);
 		if(idAnn.getId() != null) {
 			id = idAnn.getId();
 		} else {
 			id = idAnn.getPath();
 		}
-        final Identifier fId = id;
+        final ObjectIdentifier fId = id;
 		
 		if(!deleteTags) {
 			try {
@@ -85,11 +81,11 @@ public class AtmosDeletePlugin extends SyncPlugin {
 				time(new Timeable<Void>() {
                     @Override
                     public Void call() {
-                        source.getAtmos().deleteObject(fId);
+                        source.getAtmos().delete( fId );
                         return null;
                     }
                 }, OPERATION_DELETE_OBJECT);
-			} catch(EsuException e) {
+			} catch(AtmosException e) {
 				if(e.getHttpCode() == 404) {
 					// Good (already deleted)
 					l4j.debug("Object already deleted");
@@ -101,27 +97,25 @@ public class AtmosDeletePlugin extends SyncPlugin {
 			}
 		} else {
 			try {
-				MetadataList mlist = time(new Timeable<MetadataList>() {
+				Map<String, Metadata> metaMap = time(new Timeable<Map<String, Metadata>>() {
                     @Override
-                    public MetadataList call() {
-                        return source.getAtmos().getUserMetadata(fId, null);
+                    public Map<String, Metadata> call() {
+                        return source.getAtmos().getUserMetadata(fId);
                     }
                 }, OPERATION_GET_USER_META);
-				for(Metadata m : mlist) {
+				for(final Metadata m : metaMap.values()) {
 					if(m.isListable()) {
-						final MetadataTags mt = new MetadataTags();
-						mt.addTag(new MetadataTag(m.getName(), true));
 						l4j.debug("Deleting tag " + m.getName() + " from " + id);
 						try {
                             time(new Timeable<Void>() {
                                 @Override
                                 public Void call() {
-							        source.getAtmos().deleteUserMetadata(fId, mt);
+							        source.getAtmos().deleteUserMetadata(fId, m.getName());
                                     return null;
                                 }
                             }, OPERATION_DELETE_META);
-						} catch(EsuException e) {
-							if(e.getAtmosCode() == 1005) {
+						} catch(AtmosException e) {
+							if(e.getErrorCode() == 1005) {
 								// Already deleted
 								l4j.warn("Tag " + m.getName() + " already deleted (Atmos code 1005)");
 							} else {
@@ -134,11 +128,11 @@ public class AtmosDeletePlugin extends SyncPlugin {
                 time(new Timeable<Void>() {
                     @Override
                     public Void call() {
-				        source.getAtmos().deleteObject(fId);
+				        source.getAtmos().delete( fId );
                         return null;
                     }
                 }, OPERATION_DELETE_OBJECT);
-			} catch(EsuException e) {
+			} catch(AtmosException e) {
 				if(e.getHttpCode() == 404) {
 					// Good (already deleted)
 					l4j.debug("Object already deleted");

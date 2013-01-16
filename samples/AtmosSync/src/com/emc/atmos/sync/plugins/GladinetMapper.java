@@ -24,25 +24,18 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
-import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.WeakHashMap;
-
+import com.emc.atmos.api.ObjectId;
+import com.emc.atmos.api.bean.Metadata;
+import com.emc.atmos.api.bean.ObjectEntry;
+import com.emc.atmos.api.request.ListObjectsRequest;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;
 
-import com.emc.esu.api.ListOptions;
-import com.emc.esu.api.Metadata;
-import com.emc.esu.api.MetadataList;
-import com.emc.esu.api.ObjectId;
-import com.emc.esu.api.ObjectResult;
+import java.text.MessageFormat;
+import java.util.*;
 
 /**
  * Creates the necessary metadata mappings to upload data to Gladinet.  Note
@@ -123,23 +116,23 @@ public class GladinetMapper extends SyncPlugin {
 				obj.addAnnotation(new DestinationAtmosId(dirId));
 			}
 			
-			MetadataList meta = obj.getMetadata().getMetadata();
+			Map<String, Metadata> meta = obj.getMetadata().getMetadata();
 			
 			LogMF.debug(l4j, "Directory tag: {0}", dirTag);
 			
 			// Add the Gladinet tags
-			meta.addMetadata(new Metadata(TYPE_TAG, DIRECTORY_FLAG, false));
-			meta.addMetadata(new Metadata(NAME_TAG, dirName, false));
-			meta.addMetadata(new Metadata(VERSION_TAG, VERSION_VALUE, false));
+			meta.put( TYPE_TAG, new Metadata( TYPE_TAG, DIRECTORY_FLAG, false ) );
+			meta.put( NAME_TAG, new Metadata( NAME_TAG, dirName, false ) );
+			meta.put( VERSION_TAG, new Metadata( VERSION_TAG, VERSION_VALUE, false ) );
 			if("".equals(parentDir)) {
-				meta.addMetadata(new Metadata(HOST_TAG, dirTag, true));
+				meta.put( HOST_TAG, new Metadata( HOST_TAG, dirTag, true ) );
 			} else {
-				meta.addMetadata(new Metadata(HOST_TAG, dirTag, false));
+				meta.put( HOST_TAG, new Metadata( HOST_TAG, dirTag, false ) );
 				// Sometimes, the name of the dir doesn't match up with the
 				// last component of the host (usually 'New20Folder' from
 				// windows for some reason).
 				String tagName = getName(dirTag);
-				meta.addMetadata(new Metadata(parentTag, tagName, true));
+				meta.put( parentTag, new Metadata( parentTag, tagName, true ) );
 			}
 			
 		} else {
@@ -157,9 +150,9 @@ public class GladinetMapper extends SyncPlugin {
 			obj.addAnnotation(new DestinationAtmosId(objId));
 			
 			// Add the Gladinet tags
-			MetadataList meta = obj.getMetadata().getMetadata();
-			meta.addMetadata(new Metadata(NAME_TAG, name, false));
-			meta.addMetadata(new Metadata(dirTag, FILE_FLAG, true));
+            Map<String, Metadata> meta = obj.getMetadata().getMetadata();
+			meta.put( NAME_TAG, new Metadata( NAME_TAG, name, false ) );
+			meta.put( dirTag, new Metadata( dirTag, FILE_FLAG, true ) );
 		}
 		getNext().filter(obj);
 	}
@@ -170,21 +163,20 @@ public class GladinetMapper extends SyncPlugin {
 		if(id != null) {
 			return id;
 		}
-		ListOptions opts = new ListOptions();
-		opts.setIncludeMetadata(true);
-		opts.setUserMetadata(GLADINET_TAGS);
+		ListObjectsRequest request = new ListObjectsRequest();
+        request.metadataName(dirTag).includeMetadata(true).setUserMetadataNames(GLADINET_TAGS);
 		do {
-			List<ObjectResult> results = 
-					destination.getAtmos().listObjects(dirTag, opts);
-			for(ObjectResult result : results) {
-				Metadata nameMeta = result.getMetadata().getMetadata(NAME_TAG);
+			List<ObjectEntry> results =
+					destination.getAtmos().listObjects(request).getEntries();
+			for(ObjectEntry result : results) {
+				Metadata nameMeta = result.getUserMetadataMap().get(NAME_TAG);
 				if(nameMeta != null && name.equals(nameMeta.getValue())) {
 					// Found
-					idCache.put(relativePath, result.getId());
-					return result.getId();
+					idCache.put(relativePath, result.getObjectId());
+					return result.getObjectId();
 				}
 			}
-		} while(opts.getToken() != null);
+		} while(request.getToken() != null);
 		
 		// Not found
 		return null;
@@ -195,24 +187,23 @@ public class GladinetMapper extends SyncPlugin {
 		if(id != null) {
 			return id;
 		}
-		ListOptions opts = new ListOptions();
-		opts.setIncludeMetadata(true);
-		opts.setUserMetadata(GLADINET_TAGS);
+        ListObjectsRequest request = new ListObjectsRequest();
+        request.metadataName(parentTag).includeMetadata(true).setUserMetadataNames(GLADINET_TAGS);
 		do {
-			List<ObjectResult> results = 
-					destination.getAtmos().listObjects(parentTag, opts);
-			for(ObjectResult result : results) {
-				Metadata nameMeta = result.getMetadata().getMetadata(NAME_TAG);
-				Metadata typeMeta = result.getMetadata().getMetadata(TYPE_TAG);
+			List<ObjectEntry> results =
+					destination.getAtmos().listObjects(request).getEntries();
+			for(ObjectEntry result : results) {
+				Metadata nameMeta = result.getUserMetadataMap().get(NAME_TAG);
+				Metadata typeMeta = result.getUserMetadataMap().get(TYPE_TAG);
 				if(nameMeta != null && typeMeta != null &&
 						DIRECTORY_FLAG.equals(typeMeta.getValue()) &&
 						dirName.equals(nameMeta.getValue())) {
 					// Found
-					idCache.put(parentTag + "/" + dirName, result.getId());
-					return result.getId();
+					idCache.put(parentTag + "/" + dirName, result.getObjectId());
+					return result.getObjectId();
 				}
 			}
-		} while(opts.getToken() != null);
+		} while(request.getToken() != null);
 		
 		// Not found
 		return null;
@@ -259,30 +250,29 @@ public class GladinetMapper extends SyncPlugin {
 			throw new RuntimeException("The Gladinet directory " + parent 
 					+ " does not exist");
 		}
-		
-		ListOptions opts = new ListOptions();
-		opts.setIncludeMetadata(true);
-		opts.setUserMetadata(GLADINET_TAGS);
+
+        ListObjectsRequest request = new ListObjectsRequest();
+        request.metadataName(parentTag).includeMetadata(true).setUserMetadataNames(GLADINET_TAGS);
 		do {
-			List<ObjectResult> results = destination.getAtmos().listObjects(parentTag, opts);
-			for(ObjectResult r : results) {
-				if(r.getMetadata().getMetadata(NAME_TAG) != null) {
-					if(name.equals(r.getMetadata().getMetadata(NAME_TAG).getValue())) {
+			List<ObjectEntry> results = destination.getAtmos().listObjects(request).getEntries();
+			for(ObjectEntry r : results) {
+				if(r.getUserMetadataMap().get(NAME_TAG) != null) {
+					if(name.equals(r.getUserMetadataMap().get(NAME_TAG).getValue())) {
 						// Found.
-						String childTag = null;
-						String host = r.getMetadata().getMetadata(HOST_TAG).getValue();
+						String childTag;
+						String host = r.getUserMetadataMap().get(HOST_TAG).getValue();
 						if(GLADINET_ROOT.equals(parentTag)) {
 							childTag = GLADINET_ROOT + "/" + host;
 						} else {
 							childTag = host;
 						}
 						dirCache.put(path, childTag);
-						idCache.put(path, r.getId());
+						idCache.put(path, r.getObjectId());
 						return childTag;
 					}
 				}
 			}
-		} while(opts.getToken() != null);
+		} while(request.getToken() != null);
 		
 		// Not found.
 		return null;

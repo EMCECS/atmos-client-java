@@ -24,30 +24,12 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
-import java.beans.PropertyVetoException;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.sql.DataSource;
-
-import com.emc.esu.api.*;
+import com.emc.atmos.api.*;
+import com.emc.atmos.api.bean.*;
+import com.emc.atmos.api.jersey.AtmosApiClient;
+import com.emc.atmos.api.request.ListDirectoryRequest;
+import com.emc.atmos.sync.util.AtmosMetadata;
+import com.emc.atmos.sync.util.CountingInputStream;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
@@ -57,9 +39,22 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
-import com.emc.atmos.sync.util.AtmosMetadata;
-import com.emc.atmos.sync.util.CountingInputStream;
-import com.emc.esu.api.rest.LBEsuRestApi;
+import javax.sql.DataSource;
+import java.beans.PropertyVetoException;
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Reads objects from an Atmos system.
@@ -85,10 +80,6 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 	public static final String SOURCE_NAMELIST_DESC = "The file containing the list of namespace paths to copy (newline separated).  Use - to read the list from standard input.  Not compatible with source-namespace";
 	public static final String SOURCE_NAMELIST_ARG_NAME = "filename";
 	
-	public static final String SOURCE_XQUERY_OPTION = "source-xquery";
-	public static final String SOURCE_XQUERY_DESC = "The xquery string to use to select the OIDs to copy.  Note that the XQuery service must be enabled on your Atmos system for this to work.  Not compatible with source-namespace or source-oidlist";
-	public static final String SOURCE_XQUERY_ARG_NAME = "xquery-string";
-
     public static final String SOURCE_SQLQUERY_OPTION = "source-sql-query";
     public static final String SOURCE_SQLQUERY_DESC = "The SQL query to use to select the OIDs to copy from a database.  This query is assumed to return a raw OID (not a URL) as the first column in each result.  Not compatible with any other source options.  If specified, all of the query-* options must also be specified.";
     public static final String SOURCE_SQLQUERY_ARG_NAME = "sql-query";
@@ -122,7 +113,7 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 	private int port;
 	private String uid;
 	private String secret;
-	private EsuApi atmos;
+	private AtmosApi atmos;
 	private DataSource dataSource;
 	
 	private String namespaceRoot;
@@ -150,10 +141,6 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 		opts.addOption(OptionBuilder.withDescription(SOURCE_OIDLIST_DESC)
 				.withLongOpt(SOURCE_OIDLIST_OPTION)
 				.hasArg().withArgName(SOURCE_OIDLIST_ARG_NAME).create());
-		
-		opts.addOption(OptionBuilder.withDescription(SOURCE_XQUERY_DESC)
-				.withLongOpt(SOURCE_XQUERY_OPTION)
-				.hasArg().withArgName(SOURCE_XQUERY_ARG_NAME).create());
 		
 		opts.addOption(OptionBuilder.withDescription(SOURCE_NAMELIST_DESC)
 				.withLongOpt(SOURCE_NAMELIST_OPTION)
@@ -218,28 +205,26 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 			
 			boolean namespace = line.hasOption(SOURCE_NAMESPACE_OPTION);
 			boolean objectlist = line.hasOption(SOURCE_OIDLIST_OPTION);
-			boolean xquerylist = line.hasOption(SOURCE_XQUERY_OPTION);
 			boolean namelist = line.hasOption(SOURCE_NAMELIST_OPTION);
             boolean sqllist = line.hasOption(SOURCE_SQLQUERY_OPTION);
 
             int optCount = 0;
             if (namespace) optCount++;
             if (objectlist) optCount++;
-            if (xquerylist) optCount++;
             if (namelist) optCount++;
             if (sqllist) optCount++;
 			
 			if(optCount > 1) {
 				throw new IllegalArgumentException(MessageFormat.format(
-						"Only one of (--{0}, --{1}, --{2}, --{3}, --{4}) is allowed",
+						"Only one of (--{0}, --{1}, --{2}, --{3}) is allowed",
 						SOURCE_NAMESPACE_OPTION, SOURCE_OIDLIST_OPTION,
-						SOURCE_XQUERY_OPTION, SOURCE_NAMELIST_OPTION, SOURCE_SQLQUERY_OPTION));
+						SOURCE_NAMELIST_OPTION, SOURCE_SQLQUERY_OPTION));
 			}
 			if(optCount < 1) {
 				throw new IllegalArgumentException(MessageFormat.format(
-						"One of (--{0}, --{1}, --{2}, --{3}, --{4}) must be specified",
+						"One of (--{0}, --{1}, --{2}, --{3}) must be specified",
 						SOURCE_NAMESPACE_OPTION, SOURCE_OIDLIST_OPTION,
-						SOURCE_XQUERY_OPTION, SOURCE_NAMELIST_OPTION, SOURCE_SQLQUERY_OPTION));
+						SOURCE_NAMELIST_OPTION, SOURCE_SQLQUERY_OPTION));
 			}
 			
 			if(namespace) {
@@ -259,9 +244,6 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 										oidFile));
 					}
 				}
-			}
-			if(xquerylist) {
-				query = line.getOptionValue(SOURCE_XQUERY_OPTION);
 			}
 			if(namelist) {
 				nameFile = line.getOptionValue(SOURCE_NAMELIST_OPTION);
@@ -341,8 +323,7 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 		running = true;
 		
 		if(atmos == null) {
-			atmos = new LBEsuRestApi(hosts, port, uid, secret);
-			((LBEsuRestApi)atmos).setProtocol(protocol);
+			atmos = new AtmosApiClient(new AtmosConfig(uid, secret, getEndpoints()));
 		}
 		
 		// Check authentication
@@ -351,9 +332,8 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 				hosts);
 		
 		// Check to see if UTF-8 is supported.
-		if(info.isUnicodeMetadataSupported()) {
-			((LBEsuRestApi)atmos).setUnicodeEnabled(true);
-			l4j.info("Unicode metadata enabled");
+		if(!info.hasFeature(ServiceInformation.Feature.Utf8)) {
+			l4j.warn( "Unicode not supported" );
 		}
 		
 		if(namespaceRoot != null) {
@@ -362,8 +342,6 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 			readOIDs();
 		} else if(query != null && dataSource != null) {
 			readSqlQuery();
-		} else if(query != null) {
-			readQuery();
 		} else if(nameFile != null) {
 			readNames();
 		} else {
@@ -371,35 +349,6 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 		}
 	}
 
-	private void readQuery() {
-		initQueue();
-		
-		ObjectId lastItem = null;
-		while(running) {
-			String token = "0";
-			if(lastItem != null) {
-				LogMF.info(l4j, "Getting more results starting with {0}", lastItem);
-				token = lastItem.toString();
-			}
-			List<ObjectId> ids = queryItems(query, token);
-			if(ids.size()==0) {
-				l4j.info("No more results");
-				break;
-			}
-			LogMF.info(l4j, "Found {0} results", ids.size());
-			for(ObjectId id : ids) {
-				ReadAtmosTask task = new ReadAtmosTask(id);
-				submitTransferTask(task);
-				lastItem = id;
-			}
-			
-		}
-		
-		// We've read all of our data; go into the normal loop now and
-		// run until we're out of tasks.
-		runQueue();
-	}
-	
 	private void readSqlQuery() {
 		initQueue();
 		
@@ -443,22 +392,6 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 		runQueue();
 	}
 	
-	private List<ObjectId> queryItems(String query, String token) {
-		query += "|||token:" + token;
-		LogMF.info(l4j, "Executing query: {0}", query);
-		List<ObjectId> ids = null;
-		try {
-			ids = atmos.queryObjects(query);
-		} catch(EsuException e) {
-			if(e.getAtmosCode() == 1009) {
-				throw new RuntimeException("Your Atmos is not configured to accept queries.  Please call support.");
-			} else {
-				throw e;
-			}
-		}
-		return ids;
-	}
-
 	private void readOIDs() {
 		initQueue();
 		
@@ -546,7 +479,17 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 		runQueue();
 	}
 	
-	
+	private URI[] getEndpoints() {
+        try {
+            List<URI> uris = new ArrayList<URI>();
+            for (String host : hosts) {
+                uris.add(new URI(protocol, null, host, port, null, null, null));
+            }
+            return uris.toArray(new URI[hosts.size()]);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Unable to create endpoints", e);
+        }
+    }
 	
 
 	@Override
@@ -594,11 +537,11 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 		this.secret = secret;
 	}
 
-	public EsuApi getAtmos() {
+	public AtmosApi getAtmos() {
 		return atmos;
 	}
 
-	public void setAtmos(EsuApi atmos) {
+	public void setAtmos(AtmosApi atmos) {
 		this.atmos = atmos;
 	}
 
@@ -607,9 +550,9 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 	 * handles the dependencies when enumerating directories.
 	 */
 	class ReadAtmosTask implements Runnable {
-		private Identifier id;
+		private ObjectIdentifier id;
 
-		public ReadAtmosTask(Identifier id) {
+		public ReadAtmosTask(ObjectIdentifier id) {
 			this.id = id;
 		}
 
@@ -642,11 +585,9 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 					} catch(Exception e) {
 						l4j.error("Failed to list directory " + op + ": " + e, e);
 						failed(obj, e);
-						return;
 					}
 				}
 			}
-			
 		}
 
 		/**
@@ -655,30 +596,31 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 		 */
 		private void listDirectory(final ObjectPath op) {
 
-			final ListOptions options = new ListOptions();
-			List<DirectoryEntry> ents = null;
+			final ListDirectoryRequest request = new ListDirectoryRequest().path(op);
+			List<DirectoryEntry> ents;
 			
 			l4j.debug(">>Start listing " + op);
 			do {
 			    ents = time(new Timeable<List<DirectoryEntry>>() {
                         @Override
                         public List<DirectoryEntry> call() {
-                            return atmos.listDirectory(op, options);
+                            return atmos.listDirectory(request).getEntries();
                         }
                     }, OPERATION_LIST_DIRECTORY);
 				for(DirectoryEntry ent : ents) {
 					// Create a child task for each child entry in the directory
 					// and enqueue it in the graph.
-					ReadAtmosTask child = new ReadAtmosTask(ent.getPath());
-					if("directory".equals(ent.getType())) {
-						LogMF.debug(l4j, "+crawl: {0}", ent.getPath());
+                    ObjectPath entryPath = new ObjectPath(op, ent);
+					ReadAtmosTask child = new ReadAtmosTask(entryPath);
+					if(ent.getFileType() == DirectoryEntry.FileType.directory) {
+						LogMF.debug(l4j, "+crawl: {0}", entryPath);
 						submitCrawlTask(child);
 					} else {
-						LogMF.debug(l4j, "+transfer: {0}", ent.getPath());
+						LogMF.debug(l4j, "+transfer: {0}", entryPath);
 						submitTransferTask(child);
 					}
 				}
-			} while(options.getToken() != null);
+			} while(request.getToken() != null);
 			l4j.debug("<<Done listing " + op);
 		}
 
@@ -699,12 +641,12 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 	 * some lazy loading of data.
 	 */
 	class AtmosSyncObject extends SyncObject {
-		private Identifier sourceId;
+		private ObjectIdentifier sourceId;
 		private CountingInputStream in;
 		private String relativePath;
 		private boolean metadataLoaded;
 
-		public AtmosSyncObject(Identifier sourceId) throws URISyntaxException {
+		public AtmosSyncObject(ObjectIdentifier sourceId) throws URISyntaxException {
 			this.sourceId = sourceId;
 			SourceAtmosId ann = new SourceAtmosId();
 			if(sourceId instanceof ObjectPath) {
@@ -752,7 +694,7 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 						in = time(new Timeable<CountingInputStream>() {
                             @Override
                             public CountingInputStream call() {
-                                return new CountingInputStream(atmos.readObjectStream(sourceId, null));
+                                return new CountingInputStream(atmos.readObjectStream(sourceId, null).getObject());
                             }
                         }, OPERATION_READ_OBJECT_STREAM);
 					} catch(Exception e) {
@@ -802,16 +744,16 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 				AtmosMetadata am = new AtmosMetadata();
 				setSize(0);
 				am.setContentType(null);
-				am.setMetadata(time(new Timeable<MetadataList>() {
+				am.setMetadata(time(new Timeable<Map<String, Metadata>>() {
                     @Override
-                    public MetadataList call() {
-                        return atmos.getUserMetadata(sourceId, null);
+                    public Map<String, Metadata> call() {
+                        return atmos.getUserMetadata(sourceId);
                     }
                 }, OPERATION_GET_USER_META));
-				am.setSystemMetadata(time(new Timeable<MetadataList>() {
+				am.setSystemMetadata(time(new Timeable<Map<String, Metadata>>() {
                     @Override
-                    public MetadataList call() {
-                        return atmos.getSystemMetadata(sourceId, null);
+                    public Map<String, Metadata> call() {
+                        return atmos.getSystemMetadata(sourceId);
                     }
                 }, OPERATION_GET_SYSTEM_META));
 				setMetadata(am);
@@ -819,13 +761,13 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
 				ObjectMetadata meta = time(new Timeable<ObjectMetadata>() {
                     @Override
                     public ObjectMetadata call() {
-                        return atmos.getAllMetadata(sourceId);
+                        return atmos.getObjectMetadata(sourceId);
                     }
                 }, OPERATION_GET_ALL_META);
 				AtmosMetadata am = AtmosMetadata.fromObjectMetadata(meta);
 				setMetadata(am);
-				if(am.getSystemMetadata().getMetadata("size") != null) {
-					setSize(Long.parseLong(am.getSystemMetadata().getMetadata("size").getValue()));
+				if(am.getSystemMetadata().get("size") != null) {
+					setSize(Long.parseLong(am.getSystemMetadata().get("size").getValue()));
 				}
                 if (includeRetentionExpiration) {
                     ObjectInfo info = time(new Timeable<ObjectInfo>() {
@@ -834,8 +776,14 @@ public class AtmosSource extends MultithreadedCrawlSource implements Initializin
                             return atmos.getObjectInfo(sourceId);
                         }
                     }, OPERATION_GET_OBJECT_INFO);
-                    if (info.getRetention() != null) am.setRetentionEndDate(info.getRetention().getEndAt());
-                    if (info.getExpiration() != null) am.setExpirationDate(info.getExpiration().getEndAt());
+                    if (info.getRetention() != null) {
+                        am.setRetentionEnabled(info.getRetention().isEnabled());
+                        am.setRetentionEndDate(info.getRetention().getEndAt());
+                    }
+                    if (info.getExpiration() != null) {
+                        am.setExpirationEnabled(info.getExpiration().isEnabled());
+                        am.setExpirationDate(info.getExpiration().getEndAt());
+                    }
                 }
 			}
 			metadataLoaded = true;

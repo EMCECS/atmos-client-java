@@ -24,29 +24,24 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Map;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.Options;
-import org.apache.log4j.Logger;
-
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.*;
+import com.emc.atmos.api.bean.Metadata;
 import com.emc.atmos.sync.util.AtmosMetadata;
 import com.emc.atmos.sync.util.CountingInputStream;
-import com.emc.esu.api.Metadata;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.log4j.Logger;
+
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
 
 /**
  * This class implements an Amazon Simple Storage Service (S3) source for data.
@@ -285,11 +280,11 @@ public class S3Source extends MultithreadedCrawlSource {
 			
 			Map<String,String> umeta = obj.getUserMetadata();
 			for(String mkey : umeta.keySet()) {
-				meta.getMetadata().addMetadata(
+				meta.getMetadata().put(mkey,
 						new Metadata(mkey, umeta.get(mkey), false));
 			}
 			
-			meta.getSystemMetadata().addMetadata(
+			meta.getSystemMetadata().put("size",
 					new Metadata("size", ""+obj.getContentLength(), false));
 		}
 
@@ -347,8 +342,8 @@ public class S3Source extends MultithreadedCrawlSource {
 			if(obj.isDirectory()) {
 				// Enumerate the keys
 				ListObjectsRequest req = new ListObjectsRequest(bucketName, 
-						obj.key, null, "/", new Integer(1000));
-				ObjectListing listing = null;
+						obj.key, null, "/", 1000);
+				ObjectListing listing;
 				do {
 					listing = amz.listObjects(req);
 					

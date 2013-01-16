@@ -24,27 +24,20 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.sql.Blob;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Map;
-
-import javax.sql.DataSource;
-
-import org.apache.commons.cli.Options;
-import org.apache.log4j.Logger;
-
+import com.emc.atmos.api.ObjectId;
+import com.emc.atmos.api.bean.Metadata;
 import com.emc.atmos.sync.TaskNode;
 import com.emc.atmos.sync.TaskResult;
 import com.emc.atmos.sync.util.CountingInputStream;
-import com.emc.esu.api.Metadata;
-import com.emc.esu.api.MetadataList;
-import com.emc.esu.api.ObjectId;
+import org.apache.commons.cli.Options;
+import org.apache.log4j.Logger;
+
+import javax.sql.DataSource;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.sql.*;
+import java.util.Map;
 
 /**
  * Implements a source plugin that reads BLOB objects from a SQL table, migrates
@@ -245,7 +238,7 @@ public class SqlBlobSource extends MultithreadedGraphSource {
 	
 					// Metadata
 					if (metadataMapping != null) {
-						MetadataList mlist = sso.getMetadata().getMetadata();
+						Map<String, Metadata> metaMap = sso.getMetadata().getMetadata();
 						for (String dbName : metadataMapping.keySet()) {
 							String atmosName = metadataMapping.get(dbName);
 							String value = rs.getString(dbName);
@@ -255,8 +248,8 @@ public class SqlBlobSource extends MultithreadedGraphSource {
 							if (metadataTrim) {
 								value = value.trim();
 							}
-	
-							mlist.addMetadata(new Metadata(atmosName, value, false));
+
+                            metaMap.put(atmosName, new Metadata(atmosName, value, false));
 						}
 					}
 	

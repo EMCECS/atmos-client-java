@@ -24,8 +24,8 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
+import com.emc.atmos.api.ObjectId;
 import com.emc.atmos.sync.util.JdbcWrapper;
-import com.emc.esu.api.ObjectId;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
@@ -40,9 +40,11 @@ import javax.sql.DataSource;
 import java.beans.PropertyVetoException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.sql.*;
+import java.sql.Connection;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Maps IDs from source and destinations into a database.  Note that while it
@@ -163,7 +165,7 @@ public class DatabaseIdMapper extends SyncPlugin implements InitializingBean,
 						if(id != null) {
 							// Looks like an ID already exists.
                             id = id.trim();
-							ObjectId oid = null;
+							ObjectId oid;
 							if(rawIds) {
 								oid = new ObjectId(id);
 							} else {

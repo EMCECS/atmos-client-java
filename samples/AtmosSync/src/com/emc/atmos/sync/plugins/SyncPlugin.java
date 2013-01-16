@@ -24,8 +24,8 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
+import com.emc.atmos.api.bean.Metadata;
 import com.emc.atmos.sync.util.TimingUtil;
-import com.emc.esu.api.Metadata;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 
@@ -136,11 +136,11 @@ public abstract class SyncPlugin {
     protected String getMetaValue(SyncObject obj, String tagName) {
         if (obj.getMetadata() != null) {
             if (obj.getMetadata().getSystemMetadata() != null) {
-                Metadata meta = obj.getMetadata().getSystemMetadata().getMetadata(tagName);
+                Metadata meta = obj.getMetadata().getSystemMetadata().get(tagName);
                 if (meta != null) return meta.getValue();
             }
             if (obj.getMetadata().getMetadata() != null) {
-                Metadata meta = obj.getMetadata().getMetadata().getMetadata(tagName);
+                Metadata meta = obj.getMetadata().getMetadata().get(tagName);
                 if (meta != null) return meta.getValue();
             }
         }

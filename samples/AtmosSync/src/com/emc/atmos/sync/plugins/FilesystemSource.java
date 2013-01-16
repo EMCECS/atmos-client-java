@@ -24,12 +24,17 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
+import com.emc.atmos.api.bean.Metadata;
+import com.emc.atmos.sync.util.AtmosMetadata;
+import com.emc.atmos.sync.util.CountingInputStream;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.log4j.LogMF;
+import org.apache.log4j.Logger;
+
+import javax.activation.MimetypesFileTypeMap;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.FileChannel;
@@ -37,18 +42,6 @@ import java.nio.channels.FileLock;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
-
-import javax.activation.MimetypesFileTypeMap;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.Options;
-import org.apache.log4j.LogMF;
-import org.apache.log4j.Logger;
-
-import com.emc.atmos.sync.util.AtmosMetadata;
-import com.emc.atmos.sync.util.CountingInputStream;
-import com.emc.esu.api.Metadata;
 
 /**
  * The filesystem source reads data from a file or directory.
@@ -223,13 +216,13 @@ public class FilesystemSource extends MultithreadedCrawlSource {
 
 		@Override
 		public void run() {
-			FileSyncObject fso = null;
+			FileSyncObject fso;
 			try {
 				fso = new FileSyncObject(f);
 				if(extraMetadata != null) {
 					for(String key : extraMetadata.keySet()) {
 						String value = extraMetadata.get(key);
-						fso.getMetadata().getMetadata().addMetadata(
+						fso.getMetadata().getMetadata().put(key,
 								new Metadata(key, value, false));
 					}
 				}

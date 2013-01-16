@@ -1969,11 +1969,12 @@ public class AtmosApiClientTest {
     @Test
     public void testGetObjectInfo() throws Exception {
         CreateObjectRequest request = new CreateObjectRequest();
-        Metadata policy = new Metadata( "policy", "retaindelete", false );
-        request.userMetadata( policy ).content( "hello".getBytes( "UTF-8" ) ).contentType( "text/plain" );
+        request.content( "hello".getBytes( "UTF-8" ) ).contentType( "text/plain" );
         ObjectId id = this.api.createObject( request ).getObjectId();
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
+
+        api.setUserMetadata( id, new Metadata( "policy", "retain", false ) );
 
         // Read back the content
         String content = new String( this.api.readObject( id, null, byte[].class ), "UTF-8" );
@@ -1982,13 +1983,15 @@ public class AtmosApiClientTest {
         // Get the object info
         ObjectInfo oi = this.api.getObjectInfo( id );
         Assert.assertNotNull( "ObjectInfo null", oi );
-        Assert.assertNotNull( "ObjectInfo expiration null", oi.getExpiresAt() );
+        Assert.assertNotNull( "ObjectInfo expiration null", oi.getExpiration().getEndAt() );
         Assert.assertNotNull( "ObjectInfo objectid null", oi.getObjectId() );
         Assert.assertTrue( "ObjectInfo numReplicas is 0", oi.getNumReplicas() > 0 );
         Assert.assertNotNull( "ObjectInfo replicas null", oi.getReplicas() );
-        Assert.assertNotNull( "ObjectInfo retention null", oi.getRetainedUntil() );
+        Assert.assertNotNull( "ObjectInfo retention null", oi.getRetention().getEndAt() );
         Assert.assertNotNull( "ObjectInfo selection null", oi.getSelection() );
         Assert.assertTrue( "ObjectInfo should have at least one replica", oi.getReplicas().size() > 0 );
+
+        api.setUserMetadata( id, new Metadata( "user.maui.retentionEnable", "false", false ) );
     }
 
     @Test

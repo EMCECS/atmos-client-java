@@ -24,8 +24,8 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.atmos.sync.plugins;
 
-import com.emc.esu.api.ObjectId;
-import com.emc.esu.api.ObjectPath;
+import com.emc.atmos.api.ObjectId;
+import com.emc.atmos.api.ObjectPath;
 
 /**
  * Annotates an object with its destination Atmos ID if it was written to

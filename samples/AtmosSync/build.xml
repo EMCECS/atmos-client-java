@@ -86,11 +86,14 @@
             <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.jdbc-3.1.0.RELEASE.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.transaction-3.1.0.RELEASE.jar"/>
             <fileset dir="${esu_java_path}/classes"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jdom.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/log4j-1.2.16.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/commons-codec-1.4.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/commons-logging-1.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jdom.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-apache-client4-1.16.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-client-1.16.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-core-1.16.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/log4j-1.2.16.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/security-1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/commons-logging-1.1.1.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpclient-4.2.2.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpclient-cache-4.2.2.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpcore-4.2.2.jar"/>

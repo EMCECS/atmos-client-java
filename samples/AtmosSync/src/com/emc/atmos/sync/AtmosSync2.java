@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.emc.atmos.sync.plugins.*;
 import com.emc.atmos.sync.util.TimingUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
@@ -46,25 +47,6 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 import org.springframework.util.Assert;
-
-import com.emc.atmos.sync.plugins.AtmosDestination;
-import com.emc.atmos.sync.plugins.AtmosSource;
-import com.emc.atmos.sync.plugins.CommonOptions;
-import com.emc.atmos.sync.plugins.DatabaseIdMapper;
-import com.emc.atmos.sync.plugins.DestinationPlugin;
-import com.emc.atmos.sync.plugins.DummyDestination;
-import com.emc.atmos.sync.plugins.FilesystemDestination;
-import com.emc.atmos.sync.plugins.FilesystemSource;
-import com.emc.atmos.sync.plugins.GladinetMapper;
-import com.emc.atmos.sync.plugins.IdLoggerPlugin;
-import com.emc.atmos.sync.plugins.MetadataPlugin;
-import com.emc.atmos.sync.plugins.OverrideMimetypePlugin;
-import com.emc.atmos.sync.plugins.RetryPlugin;
-import com.emc.atmos.sync.plugins.S3Source;
-import com.emc.atmos.sync.plugins.ShellCommandPlugin;
-import com.emc.atmos.sync.plugins.SourcePlugin;
-import com.emc.atmos.sync.plugins.StripAclPlugin;
-import com.emc.atmos.sync.plugins.SyncPlugin;
 
 /**
  * New plugin-based sync program.  Can be configured in two ways:
@@ -98,6 +80,7 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 		plugins.add(new RetryPlugin());
 		plugins.add(new OverrideMimetypePlugin());
 		plugins.add(new ShellCommandPlugin());
+        plugins.add(new PolicyTransitionPlugin());
 		
 		Map<String,SyncPlugin> optionMap = new HashMap<String, SyncPlugin>();
 		

@@ -71,6 +71,10 @@ public class CommonOptions extends SyncPlugin {
 	public static final String RECURSIVE_OPTION = "recursive";
 	public static final String RECURSIVE_DESC = "Makes source plugins recursive, specifically the Atmos source when using namespaces and the filesystem source.";
 
+    public static final String RETENTION_DELAY_WINDOW_OPTION = "retention-delay-window";
+    public static final String RETENTION_DELAY_WINDOW_DESC = "If include-retention-expiration is set, use this option to specify the Start Delay Window in the retention policy.  Default is 1 second (the minimum).";
+    public static final String RETENTION_DELAY_WINDOW_ARG_NAME = "seconds";
+
     public static final String TIMINGS_OPTION = "timing";
     public static final String TIMINGS_DESC = "Enabled timings for all plug-ins that support it.  When specified, plug-ins will collect and periodically log average timing for various operations (i.e. read-metadata, stream-object, write-metadata, etc.)";
 
@@ -111,6 +115,9 @@ public class CommonOptions extends SyncPlugin {
 		opts.addOption(OptionBuilder.withLongOpt(SPRING_CONFIG_OPTION)
 				.withDescription(SPRING_CONFIG_DESC).hasArg()
 				.withArgName(SPRING_CONFIG_ARG_NAME).create());
+        opts.addOption(OptionBuilder.withDescription(RETENTION_DELAY_WINDOW_DESC)
+                .withLongOpt(RETENTION_DELAY_WINDOW_OPTION).hasArg()
+                .withArgName(RETENTION_DELAY_WINDOW_ARG_NAME).create());
         opts.addOption(OptionBuilder.withDescription(TIMINGS_DESC)
                 .withLongOpt(TIMINGS_OPTION).create());
         opts.addOption(OptionBuilder.withLongOpt(TIMING_WINDOW_OPTION)
