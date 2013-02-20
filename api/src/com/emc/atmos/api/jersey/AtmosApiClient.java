@@ -220,7 +220,13 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public void delete( ObjectIdentifier identifier ) {
-        client.resource( config.resolvePath( identifier.getRelativeResourcePath(), null ) ).delete();
+        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), null );
+        WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
+
+        if ( identifier instanceof ObjectKey )
+            builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
+
+        builder.delete();
     }
 
     @Override
@@ -270,14 +276,20 @@ public class AtmosApiClient extends AbstractAtmosApi {
         builder.header( RestUtil.XHEADER_UTF8, "true" )
                .header( RestUtil.XHEADER_PATH, HttpUtil.encodeUtf8( newPath.getPath() ) );
         if ( overwrite ) builder.header( RestUtil.XHEADER_FORCE, "true" );
+
+        // workaround for clients that set a default content-type for POSTs
+        builder.type( RestUtil.TYPE_DEFAULT );
         builder.post();
     }
 
     @Override
     public Map<String, Boolean> getUserMetadataNames( ObjectIdentifier identifier ) {
-        WebResource resource = client.resource( config.resolvePath( identifier.getRelativeResourcePath(),
-                                                                    "metadata/tags" ) );
-        WebResource.Builder builder = resource.getRequestBuilder();
+        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "metadata/tags" );
+        WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
+
+        if ( identifier instanceof ObjectKey )
+            builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
+
         ClientResponse response = builder.header( RestUtil.XHEADER_UTF8, "true" ).get( ClientResponse.class );
 
         Map<String, Boolean> metaNames = new TreeMap<String, Boolean>();
@@ -304,6 +316,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
         URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "metadata/user" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
+        if ( identifier instanceof ObjectKey )
+            builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
+
         if ( metadataNames != null ) {
             for ( String name : metadataNames ) {
                 builder.header( RestUtil.XHEADER_TAGS, HttpUtil.encodeUtf8( name ) );
@@ -328,6 +343,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
         URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "metadata/system" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
+        if ( identifier instanceof ObjectKey )
+            builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
+
         if ( metadataNames != null ) {
             for ( String name : metadataNames ) {
                 builder.header( RestUtil.XHEADER_TAGS, HttpUtil.encodeUtf8( name ) );
@@ -345,6 +363,10 @@ public class AtmosApiClient extends AbstractAtmosApi {
     public ObjectMetadata getObjectMetadata( ObjectIdentifier identifier ) {
         URI uri = config.resolvePath( identifier.getRelativeResourcePath(), null );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
+
+        if ( identifier instanceof ObjectKey )
+            builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
+
         ClientResponse response = builder.header( RestUtil.XHEADER_UTF8, "true" ).head();
 
         Acl acl = new Acl( RestUtil.parseAclHeader( response.getHeaders().getFirst( RestUtil.XHEADER_USER_ACL ) ),
@@ -368,12 +390,17 @@ public class AtmosApiClient extends AbstractAtmosApi {
         URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "metadata/user" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
+        if ( identifier instanceof ObjectKey )
+            builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
+
         for ( Metadata oneMetadata : metadata ) {
             if ( oneMetadata.isListable() )
                 builder.header( RestUtil.XHEADER_LISTABLE_META, oneMetadata.toASCIIString() );
             else builder.header( RestUtil.XHEADER_META, oneMetadata.toASCIIString() );
         }
 
+        // workaround for clients that set a default content-type for POSTs
+        builder.type( RestUtil.TYPE_DEFAULT );
         builder.header( RestUtil.XHEADER_UTF8, "true" ).post();
     }
 
@@ -381,6 +408,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
     public void deleteUserMetadata( ObjectIdentifier identifier, String... names ) {
         URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "metadata/user" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
+
+        if ( identifier instanceof ObjectKey )
+            builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
 
         for ( String name : names ) {
             builder.header( RestUtil.XHEADER_TAGS, HttpUtil.encodeUtf8( name ) );
@@ -441,7 +471,12 @@ public class AtmosApiClient extends AbstractAtmosApi {
     @Override
     public Acl getAcl( ObjectIdentifier identifier ) {
         URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "acl" );
-        ClientResponse response = client.resource( uri ).get( ClientResponse.class );
+        WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
+
+        if ( identifier instanceof ObjectKey )
+            builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
+
+        ClientResponse response = builder.get( ClientResponse.class );
 
         Acl acl = new Acl();
         acl.setUserAcl( RestUtil.parseAclHeader( response.getHeaders().getFirst( RestUtil.XHEADER_USER_ACL ) ) );
@@ -457,25 +492,41 @@ public class AtmosApiClient extends AbstractAtmosApi {
         URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "acl" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
+        if ( identifier instanceof ObjectKey )
+            builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
+
         if ( acl != null ) {
             for ( Object value : acl.getUserAclHeader() ) builder.header( RestUtil.XHEADER_USER_ACL, value );
             for ( Object value : acl.getGroupAclHeader() ) builder.header( RestUtil.XHEADER_GROUP_ACL, value );
         }
 
+        // workaround for clients that set a default content-type for POSTs
+        builder.type( RestUtil.TYPE_DEFAULT );
         builder.post();
     }
 
     @Override
     public ObjectInfo getObjectInfo( ObjectIdentifier identifier ) {
-        return client.resource( config.resolvePath( identifier.getRelativeResourcePath(), "info" ) )
-                     .get( ObjectInfo.class );
+        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "info" );
+        WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
+
+        if ( identifier instanceof ObjectKey )
+            builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
+
+        return builder.get( ObjectInfo.class );
     }
 
     @Override
     public ObjectId createVersion( ObjectIdentifier identifier ) {
-        ClientResponse response = client.resource(
-                config.resolvePath( identifier.getRelativeResourcePath(), "versions" ) )
-                                        .post( ClientResponse.class );
+        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "versions" );
+        WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
+
+        if ( identifier instanceof ObjectKey )
+            builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
+
+        // workaround for clients that set a default content-type for POSTs
+        builder.type( RestUtil.TYPE_DEFAULT );
+        ClientResponse response = builder.post( ClientResponse.class );
 
         response.close();
 
@@ -553,7 +604,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
         return fillResponse( ret, response );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Override
     public <T> GenericResponse<T> execute( PreSignedRequest request, Class<T> resultType, Object content )
             throws URISyntaxException {
@@ -588,6 +639,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
             ContentRequest contentRequest = (ContentRequest) request;
             if ( contentRequest.getContentType() == null ) builder.type( AbstractAtmosApi.DEFAULT_CONTENT_TYPE );
             else builder.type( contentRequest.getContentType() );
+        } else if ( "POST".equals( request.getMethod() ) ) {
+            // workaround for clients that set a default content-type for POSTs
+            builder.type( RestUtil.TYPE_DEFAULT );
         }
 
         return addHeaders( builder, request.generateHeaders() );

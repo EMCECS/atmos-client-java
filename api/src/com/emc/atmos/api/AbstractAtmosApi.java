@@ -86,6 +86,9 @@ public abstract class AbstractAtmosApi implements AtmosApi {
     @Override
     public URL getShareableUrl( ObjectIdentifier identifier, Date expirationDate, String disposition )
             throws MalformedURLException {
+        if ( identifier instanceof ObjectKey )
+            throw new IllegalArgumentException( "You cannot create shareable URLs using a key; try using the object ID" );
+
         URI uri = config.resolvePath( identifier.getRelativeResourcePath(), null );
         String path = uri.getPath().toLowerCase();
         long expiresTime = expirationDate.getTime() / 1000;
@@ -125,6 +128,8 @@ public abstract class AbstractAtmosApi implements AtmosApi {
 
         String contentType = null;
         if ( request instanceof ContentRequest ) contentType = ((ContentRequest) request).getContentType();
+        // workaround for clients that set a default content-type for POSTs
+        if ( "POST".equals( request.getMethod() ) ) contentType = RestUtil.TYPE_DEFAULT;
 
         // add expiration header
         headers.put( RestUtil.XHEADER_EXPIRES, Arrays.asList( (Object) expiration.getTime() ) );

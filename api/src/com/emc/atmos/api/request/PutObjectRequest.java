@@ -52,7 +52,7 @@ public abstract class PutObjectRequest<T extends PutObjectRequest<T>> extends Ob
 
     @Override
     public Map<String, List<Object>> generateHeaders() {
-        Map<String, List<Object>> headers = new TreeMap<String, List<Object>>();
+        Map<String, List<Object>> headers = super.generateHeaders();
 
         // enable UTF-8
         if ( !getUserMetadata().isEmpty() ) RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );

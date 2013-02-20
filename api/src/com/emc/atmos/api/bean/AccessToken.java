@@ -30,13 +30,33 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement( namespace = "", name = "access-token" )
 public class AccessToken extends AccessTokenPolicy {
     private String id;
+    private String path;
+    private String objectId;
 
     @XmlElement( namespace = "", name = "access-token-id" )
     public String getId() {
         return id;
     }
 
+    @XmlElement( namespace = "", name = "path" )
+    public String getPath() {
+        return this.path;
+    }
+
+    @XmlElement( namespace = "", name = "object-id" )
+    public String getObjectId() {
+        return this.objectId;
+    }
+
     public void setId( String id ) {
         this.id = id;
+    }
+
+    public void setPath( String path ) {
+        this.path = path;
+    }
+
+    public void setObjectId( String objectId ) {
+        this.objectId = objectId;
     }
 }

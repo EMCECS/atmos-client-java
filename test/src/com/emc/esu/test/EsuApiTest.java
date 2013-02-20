@@ -2301,7 +2301,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testCrudKeys() throws Exception {
-        String keyPool = "test-key-pool"; // keypools can only have lower-case letters and dashes (where is this documented?)
+        String keyPool = "Test_key-pool#@!$%^..";
         String key = "KEY_TEST";
         String content = "Hello World!";
         byte[] data = content.getBytes("UTF-8");

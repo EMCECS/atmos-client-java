@@ -53,7 +53,7 @@ public class CreateAccessTokenRequest extends ObjectRequest<CreateAccessTokenReq
 
     @Override
     public Map<String, List<Object>> generateHeaders() {
-        Map<String, List<Object>> headers = new TreeMap<String, List<Object>>();
+        Map<String, List<Object>> headers = super.generateHeaders();
 
         // target object
         if ( identifier != null ) {

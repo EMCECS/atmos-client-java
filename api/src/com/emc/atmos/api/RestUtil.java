@@ -59,6 +59,7 @@ public final class RestUtil {
     public static final String XHEADER_META = "x-emc-meta";
     public static final String XHEADER_OBJECTID = "x-emc-objectid";
     public static final String XHEADER_PATH = "x-emc-path";
+    public static final String XHEADER_POOL = "x-emc-pool";
     public static final String XHEADER_SIGNATURE = "x-emc-signature";
     public static final String XHEADER_SUPPORT_UTF8 = "x-emc-support-utf8";
     public static final String XHEADER_SYSTEM_TAGS = "x-emc-system-tags";
@@ -73,6 +74,9 @@ public final class RestUtil {
 
     public static final String TYPE_MULTIPART = "multipart";
     public static final String TYPE_MULTIPART_BYTE_RANGES = "multipart/byteranges";
+    public static final String TYPE_APPLICATION_OCTET_STREAM = "application/octet-stream";
+
+    public static final String TYPE_DEFAULT = TYPE_APPLICATION_OCTET_STREAM;
 
     public static final String TYPE_PARAM_BOUNDARY = "boundary";
 

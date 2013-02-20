@@ -25,6 +25,12 @@
 package com.emc.atmos.api.request;
 
 import com.emc.atmos.api.ObjectIdentifier;
+import com.emc.atmos.api.ObjectKey;
+import com.emc.atmos.api.RestUtil;
+
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Represents an Atmos REST request dealing with a specific object.
@@ -43,6 +49,17 @@ public abstract class ObjectRequest<T extends ObjectRequest<T>> extends Request 
      * @return this
      */
     protected abstract T me();
+
+    @Override
+    public Map<String, List<Object>> generateHeaders() {
+        Map<String, List<Object>> headers = new TreeMap<String, List<Object>>();
+
+        if ( identifier != null && identifier instanceof ObjectKey ) {
+            RestUtil.addValue( headers, RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
+        }
+
+        return headers;
+    }
 
     /**
      * Builder method for {@link #setIdentifier(com.emc.atmos.api.ObjectIdentifier)}

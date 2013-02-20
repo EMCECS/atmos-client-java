@@ -476,10 +476,11 @@ public class AtmosApiClientTest {
                                                                   String.class );
         Assert.assertEquals( "object content wrong", "hello", readResponse.getObject() );
         Assert.assertEquals( "HTTP status wrong", 200, readResponse.getHttpStatus() );
-        Assert.assertEquals( "HTTP status wrong", "OK", readResponse.getHttpMessage() );
-        Assert.assertFalse( "HTTP status wrong", readResponse.getHeaders().isEmpty() );
-        Assert.assertEquals( "HTTP status wrong", "text/plain", readResponse.getContentType() );
-        Assert.assertEquals( "HTTP status wrong", 5, readResponse.getContentLength() );
+        Assert.assertEquals( "HTTP message wrong", "OK", readResponse.getHttpMessage() );
+        Assert.assertFalse( "HTTP headers empty", readResponse.getHeaders().isEmpty() );
+        Assert.assertTrue( "HTTP content-type wrong",
+                           readResponse.getContentType().matches( "text/plain(; charset=UTF-8)?" ) );
+        Assert.assertEquals( "HTTP content-length wrong", 5, readResponse.getContentLength() );
         Assert.assertTrue( "HTTP response date wrong", readResponse.getDate().after( now ) );
         // apparently last-modified isn't included in GET requests
         // Assert.assertTrue( "HTTP last modified date wrong", readResponse.getLastModified().after( now ) );
@@ -2190,8 +2191,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testCrudKeys() throws Exception {
-        // keypools can only have lower-case letters and dashes (where is this documented?)
-        ObjectKey key = new ObjectKey( "test-key-pool", "KEY_TEST" );
+        ObjectKey key = new ObjectKey( "Test_key-pool#@!$%^..", "KEY_TEST" );
         String content = "Hello World!";
 
         CreateObjectRequest request = new CreateObjectRequest().identifier( key );
@@ -2404,7 +2404,7 @@ public class AtmosApiClientTest {
     @Test
     public void testWriteAccessToken() throws Exception {
         api.createDirectory( new ObjectPath( TESTDIR ) );
-        ObjectPath path = new ObjectPath( TESTDIR + "read_token_test" );
+        ObjectPath path = new ObjectPath( TESTDIR + "write_token_test" );
 
         Calendar expiration = Calendar.getInstance();
         expiration.add( Calendar.MINUTE, 10 ); // 10 minutes from now

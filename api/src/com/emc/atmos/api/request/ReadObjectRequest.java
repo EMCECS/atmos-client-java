@@ -50,7 +50,7 @@ public class ReadObjectRequest extends ObjectRequest<ReadObjectRequest> {
 
     @Override
     public Map<String, List<Object>> generateHeaders() {
-        Map<String, List<Object>> headers = new TreeMap<String, List<Object>>();
+        Map<String, List<Object>> headers = super.generateHeaders();
 
         RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
 
