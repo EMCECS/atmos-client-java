@@ -263,7 +263,7 @@ public class OrphanedUserTool {
     }
 
     private synchronized void log( String message, Priority priority, Throwable throwable ) {
-        if ( throwable == null ) log.log( priority, message, throwable );
+        if ( throwable != null ) log.log( priority, message, throwable );
         else log.log( priority, message );
     }
 
