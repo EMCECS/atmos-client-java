@@ -1,4 +1,4 @@
-// Copyright (c) 2012, EMC Corporation.
+// Copyright (c) 2012-2013, EMC Corporation.
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
 //
@@ -44,6 +44,9 @@ public class AtmosConfig extends AbstractConfig {
     private int maxRetries = 2;
     private int retryBufferSize = 1048576; // 1MB default
     private boolean enableExpect100Continue = true;
+    private URI proxyUri;
+    private String proxyUser;
+    private String proxyPassword;
 
     /**
      * Creates a new instance with default parameters. tokenId, secretKey and at least one endpoint must be provided
@@ -199,5 +202,47 @@ public class AtmosConfig extends AbstractConfig {
      */
     public void setTokenId( String tokenId ) {
         this.tokenId = tokenId;
+    }
+
+    /**
+     * Returns the HTTP proxy used for communication to Atmos
+     */
+    public URI getProxyUri() {
+        return proxyUri;
+    }
+
+    /**
+     * Sets the HTTP proxy used for communication to Atmos
+     */
+    public void setProxyUri( URI proxyUri ) {
+        this.proxyUri = proxyUri;
+    }
+
+    /**
+     * Gets the username to use for the HTTP proxy
+     */
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    /**
+     * Sets the username to use for the HTTP proxy
+     */
+    public void setProxyUser( String proxyUser ) {
+        this.proxyUser = proxyUser;
+    }
+
+    /**
+     * Gets the password to use for the HTTP proxy
+     */
+    public String getProxyPassword() {
+        return proxyPassword;
+    }
+
+    /**
+     * Sets the password to use for the HTTP proxy
+     */
+    public void setProxyPassword( String proxyPassword ) {
+        this.proxyPassword = proxyPassword;
     }
 }

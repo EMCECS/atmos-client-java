@@ -7,7 +7,7 @@
     <property name="doc" value="doc/javadoc"/>
     <property name="lib" value="lib"/>
     <property name="samples" value="samples"/>
-    <property name="version" value="2.1.1"/>
+    <property name="version" value="2.1.2"/>
 
     <!-- Name of the JAR file -->
     <property name="jarfile" value="atmos-api-${version}.jar"/>
@@ -54,7 +54,7 @@
     </target>
 
     <!-- Compiles the java files -->
-    <target name="compile" depends="prepare">
+    <target name="compile" depends="prepare,build-jersey-contrib">
         <javac source="1.6" destdir="${classes}" srcdir="${src}" target="1.6"
                debug="true" classpathref="classpath">
         </javac>
@@ -64,7 +64,7 @@
     <target name="doc" depends="prepare">
         <javadoc source="1.6" destdir="${doc}" classpathref="classpath">
             <header>EMC Atmos API for Java</header>
-            <bottom>Copyright (c) 2012 EMC</bottom>
+            <bottom>Copyright (c) 2008-2013 EMC</bottom>
             <fileset dir="${src}">
                 <include name="**/*.java"/>
             </fileset>
@@ -85,6 +85,17 @@
         <mkdir dir="${classes}"/>
         <mkdir dir="${build}"/>
         <mkdir dir="${doc}"/>
+    </target>
+
+    <target name="build-jersey-contrib">
+        <mkdir dir="ext-build"/>
+        <javac source="1.6" destdir="ext-build" srcdir="ext-src" target="1.6" classpathref="classpath" debug="true">
+        </javac>
+        <jar destfile="lib/jersey-apache-client4-1.16-modified.jar">
+            <fileset dir="ext-build">
+            </fileset>
+        </jar>
+        <delete dir="ext-build"/>
     </target>
 
 </project>

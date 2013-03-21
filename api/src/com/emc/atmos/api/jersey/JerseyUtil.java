@@ -1,4 +1,4 @@
-// Copyright (c) 2012, EMC Corporation.
+// Copyright (c) 2012-2013, EMC Corporation.
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
 //
@@ -32,8 +32,11 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
+import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
 import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
 import com.sun.jersey.client.urlconnection.HTTPSProperties;
+import com.sun.jersey.client.urlconnection.HttpURLConnectionFactory;
+import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import com.sun.jersey.core.impl.provider.entity.ByteArrayProvider;
 import com.sun.jersey.core.impl.provider.entity.FileProvider;
 import com.sun.jersey.core.impl.provider.entity.StringProvider;
@@ -50,6 +53,7 @@ import org.apache.http.params.SyncBasicHttpParams;
 
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+import java.net.URI;
 import java.util.List;
 
 public class JerseyUtil {
@@ -68,7 +72,27 @@ public class JerseyUtil {
 
             addHandlers( clientConfig, readers, writers );
 
-            Client client = Client.create( clientConfig );
+            Client client;
+            if ( config.getProxyUri() != null ) {
+
+                // set proxy configuration
+                HttpURLConnectionFactory factory = new ProxyURLConnectionFactory( config.getProxyUri(),
+                                                                                  config.getProxyUser(),
+                                                                                  config.getProxyPassword() );
+                client = new Client( new URLConnectionClientHandler( factory ), clientConfig );
+            } else {
+
+                // this should pick up proxy config from system properties
+                client = Client.create( clientConfig );
+            }
+
+            // add preemptive proxy authorization (this will only work for unencrypted requests)
+            String proxyUser = config.getProxyUser(), proxyPassword = config.getProxyPassword();
+            if ( proxyUser == null ) {
+                proxyUser = System.getProperty( "http.proxyUser" );
+                proxyPassword = System.getProperty( "http.proxyPassword" );
+            }
+            client.addFilter( new ProxyAuthFilter( proxyUser, proxyPassword ) );
 
             addFilters( client, config );
 
@@ -102,6 +126,33 @@ public class JerseyUtil {
                         new Scheme( "https", 443,
                                     new SSLSocketFactory( SslUtil.createGullibleSslContext(),
                                                           SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER ) ) );
+            }
+
+            // set proxy configuration
+            // first look in config
+            URI proxyUri = config.getProxyUri();
+            // then check system props
+            if ( proxyUri == null ) {
+                String host = System.getProperty( "http.proxyHost" );
+                String portStr = System.getProperty( "http.proxyPort" );
+                int port = (portStr != null) ? Integer.parseInt( portStr ) : -1;
+                if ( host != null && host.length() > 0 )
+                    proxyUri = new URI( "http", null, host, port, null, null, null );
+            }
+            if ( proxyUri != null )
+                clientConfig.getProperties().put( ApacheHttpClient4Config.PROPERTY_PROXY_URI, proxyUri );
+
+            // set proxy auth
+            // first config
+            String proxyUser = config.getProxyUser(), proxyPassword = config.getProxyPassword();
+            // then system props
+            if ( proxyUser == null ) {
+                proxyUser = System.getProperty( "http.proxyUser" );
+                proxyPassword = System.getProperty( "http.proxyPassword" );
+            }
+            if ( proxyUser != null && proxyUser.length() > 0 ) {
+                clientConfig.getProperties().put( ApacheHttpClient4Config.PROPERTY_PROXY_USERNAME, proxyUser );
+                clientConfig.getProperties().put( ApacheHttpClient4Config.PROPERTY_PROXY_PASSWORD, proxyPassword );
             }
 
             // specify whether to use Expect: 100-continue
