@@ -139,7 +139,7 @@ public class AtmosCleanup {
 			System.err.println("Parsing failed.  Reason: " + exp.getMessage());
 			// automatically generate the help statement
 			HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp("AtmosThreadedDownload", options);
+			formatter.printHelp("java -jar AtmosCleanup.jar <options ...>", options);
 		} 
 		
 		System.exit(0);

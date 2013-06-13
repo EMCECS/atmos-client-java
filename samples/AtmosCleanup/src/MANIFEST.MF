@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Main-Class: com.emc.atmos.cleanup.AtmosCleanup
+Class-Path: .
+
+Name: com.emc.atmos.cleanup
+Specification-Title: "AtmosCleanup Tool"
+Specification-Version: "1.0"
+Specification-Vendor: "EMC".
+Implementation-Title: "AtmosCleanup"
+Implementation-Vendor: "EMC"
