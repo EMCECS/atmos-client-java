@@ -12,7 +12,7 @@
 
     <scm>
     	<!-- TBD -->
-        <url>http://github.com/vipr/tbd</url>
+        <url>https://github.com/emcvipr/dataservices-s3-java</url>
     </scm>
 
 	<!-- TBD, assuming BSD for now -->
