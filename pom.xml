@@ -6,7 +6,7 @@
     <artifactId>vipr-data-services-sdk</artifactId>
     <packaging>jar</packaging>
     <name>ViPR Data Services SDK for Java</name>
-    <version>1.0.0</version>
+    <version>0.0.5</version>
     <description>The ViPR Data Services SDK for Java provides Java APIs that include the enhanced functionality of ViPR data services.</description>
     <url>http://www.emc.com/vipr</url>
 
