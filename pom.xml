@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.emc.vipr</groupId>
   <artifactId>vipr-data-services-sdk</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.7.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>The ViPR Data Services SDK for Java provides Java APIs that include the enhanced functionality of ViPR data services.</name>
 
