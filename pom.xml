@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.emc.vipr</groupId>
   <artifactId>vipr-data-services-sdk</artifactId>
-  <version>0.1.0</version>
+  <version>1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>The ViPR Data Services SDK for Java provides Java APIs that include the enhanced functionality of ViPR data services.</name>
 
@@ -16,6 +16,7 @@
 
   <scm>
     <url>https://github.com/emcvipr/dataservices-sdk-java</url>
+    <developerConnection>scm:git:ssh://git@lcige250.lss.emc.com/vipr-data-services-sdk-java.git</developerConnection>
   </scm>
 
   <licenses>
@@ -49,9 +50,20 @@
             <encoding>UTF-8</encoding>
           </configuration>
         </plugin>
-
+        <plugin>
+        	<groupId>org.apache.maven.plugins</groupId>
+        	<artifactId>maven-release-plugin</artifactId>
+        	<version>2.4.1</version>
+        </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+    	<plugin>
+    		<groupId>org.apache.maven.plugins</groupId>
+    		<artifactId>maven-release-plugin</artifactId>
+    		<version>2.4.1</version>
+    	</plugin>
+    </plugins>
   </build>
 
   <dependencies>
