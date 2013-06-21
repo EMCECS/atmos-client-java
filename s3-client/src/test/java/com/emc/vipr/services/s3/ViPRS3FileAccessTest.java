@@ -28,7 +28,7 @@ public class ViPRS3FileAccessTest {
         s3 = S3ClientFactory.getS3Client();
     }
 
-    @Test
+//    @Test
     public void testBasicReadOnly() throws Exception {
         String bucketName = "test.vipr-fileaccess-basic-read-only";
         String key = "basic-read-only.txt";
