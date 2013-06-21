@@ -114,4 +114,7 @@
             </build>
         </profile>
     </profiles>
+    <groupId>com.emc.vipr</groupId>
+    <name>ViPR S3 Client Samples</name>
+    <description>Sample applications that use the ViPR S3 extensions library.</description>
 </project>

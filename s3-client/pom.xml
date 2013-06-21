@@ -60,4 +60,8 @@
       </plugin>
     </plugins>
   </build>
+  <groupId>com.emc.vipr</groupId>
+  <name>ViPR S3 Client for Java</name>
+  <description>This project extends the Amazon S3 client to add ViPR extended functionality.
+</description>
 </project>
