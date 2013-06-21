@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.emc.vipr</groupId>
     <artifactId>vipr-data-services-sdk</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.1</version>
   </parent>
   <artifactId>vipr-data-services-s3-sample</artifactId>
   <packaging>jar</packaging>
