@@ -43,58 +43,60 @@ public class ViPRS3FileAccessTest {
 
             SetBucketFileAccessModeRequest request = new SetBucketFileAccessModeRequest();
             request.setBucketName(bucketName);
-            request.setAccessMode(ViPRConstants.FileAccessMode.ReadOnly);
-            request.setAccessProtocol(ViPRConstants.FileAccessProtocol.NFS);
-            request.setFileAccessDuration(300); // seconds
-            request.setHostList(Arrays.asList("10.6.143.99"));
-            request.setUser("501"); // restrictions??
+            request.setAccessMode(ViPRConstants.FileAccessMode.readOnly);
+            request.setDuration(300); // seconds
+            request.setHostList(Arrays.asList("10.6.143.99", "10.6.143.100"));
+            request.setUid("501"); // restrictions??
 
             // change mode to read-only
-            SetBucketFileAccessModeResult result = s3.setBucketFileAccessMode(request);
+            BucketFileAccessModeResult result = s3.setBucketFileAccessMode(request);
 
             assertNotNull("set access-mode result is null", result);
-            assertEquals("wrong access mode", request.getAccessMode(), result.getAccessMode());
-            assertEquals("wrong duration", request.getFileAccessDuration(), result.getFileAccessDuration());
+            assertTrue("wrong access mode", request.getAccessMode() == result.getAccessMode()
+                    || result.getAccessMode().transitionsToTarget(request.getAccessMode()));
+            //assertEquals("wrong duration", request.getDuration(), result.getDuration());
             assertArrayEquals("wrong host list", request.getHostList().toArray(), result.getHostList().toArray());
-            assertEquals("wrong user", request.getUser(), result.getUser());
+            assertEquals("wrong user", request.getUid(), result.getUid());
 
             // wait until complete (change is asynchronous)
-            waitForTransition(bucketName, ViPRConstants.FileAccessMode.ReadOnly, 5000); // wait for up to 5 seconds
+            waitForTransition(bucketName, ViPRConstants.FileAccessMode.readOnly, 20000);
 
             // verify mode change
+            BucketFileAccessModeResult result2 = s3.getBucketFileAccessMode(bucketName);
+
+            assertEquals("wrong access mode", request.getAccessMode(), result2.getAccessMode());
+            //assertEquals("wrong duration", request.getDuration(), result2.getDuration());
+            assertArrayEquals("wrong host list", request.getHostList().toArray(), result2.getHostList().toArray());
+            assertEquals("wrong user", request.getUid(), result2.getUid());
+
+            // get NFS details
             GetFileAccessRequest fileAccessRequest = new GetFileAccessRequest();
             fileAccessRequest.setBucketName(bucketName);
             GetFileAccessResult fileAccessResult = s3.getFileAccess(fileAccessRequest);
 
+            // verify NFS details
             assertNotNull("fileaccess result is null", fileAccessResult);
-            assertEquals("wrong access mode", request.getAccessMode(), fileAccessResult.getAccessMode());
-            assertEquals("wrong protocol", request.getAccessProtocol(), fileAccessResult.getAccessProtocol());
-            assertEquals("wrong duration", request.getFileAccessDuration(), fileAccessResult.getFileAccessDuration());
-            assertArrayEquals("wrong host list", request.getHostList().toArray(), fileAccessResult.getHosts().toArray());
-            assertEquals("wrong user", request.getUser(), fileAccessResult.getUser());
-
-            // verify object details
             assertNotNull("mounts is null", fileAccessResult.getMountPoints());
             assertTrue("no mounts", fileAccessResult.getMountPoints().size() > 0);
             assertNotNull("objects is null", fileAccessResult.getObjects());
             assertEquals("wrong number of objects", 1, fileAccessResult.getObjects().size());
-            assertEquals("wrong key", key, fileAccessResult.getObjects().get(0).getName());
 
             // change mode back to disabled
             request = new SetBucketFileAccessModeRequest();
             request.setBucketName(bucketName);
-            request.setAccessMode(ViPRConstants.FileAccessMode.Disabled);
+            request.setUid("501");
+            request.setAccessMode(ViPRConstants.FileAccessMode.disabled);
             s3.setBucketFileAccessMode(request);
 
             // wait until complete
-            waitForTransition(bucketName, ViPRConstants.FileAccessMode.Disabled, 5000);
+            waitForTransition(bucketName, ViPRConstants.FileAccessMode.disabled, 20000);
 
             // verify mode change
             fileAccessRequest = new GetFileAccessRequest();
             fileAccessRequest.setBucketName(bucketName);
             try {
                 s3.getFileAccess(fileAccessRequest);
-                fail("GET fileaccess should fail when access mode is Disabled");
+                fail("GET fileaccess should fail when access mode is disabled");
             } catch (AmazonS3Exception e) {
                 if (!e.getErrorCode().equals("FileAccessNotAllowed")) throw e;
             }
@@ -106,12 +108,12 @@ public class ViPRS3FileAccessTest {
 
     /*
      * allowed transitions:
-     * Disabled -> ReadOnly
-     * Disabled -> ReadWrite
-     * ReadOnly -> Disabled
-     * SwitchToReadOnly -> Disabled (cancel read-only request)
-     * ReadWrite -> Disabled
-     * SwitchToReadWrite -> Disabled (cancel read-write request)
+     * disabled -> readOnly
+     * disabled -> readWrite
+     * readOnly -> disabled
+     * switchToReadOnly -> disabled (cancel read-only request)
+     * readWrite -> disabled
+     * switchToReadWrite -> disabled (cancel read-write request)
      */
     public void testAllTransitionsOnEmptyBucket() {
 
@@ -121,7 +123,7 @@ public class ViPRS3FileAccessTest {
      * waits until the target access mode is completely transitioned on the specified bucket.
      *
      * @param bucketName bucket name
-     * @param targetMode target access mode to wait for (ReadOnly, ReadWrite, or Disabled)
+     * @param targetMode target access mode to wait for (readOnly, readWrite, or disabled)
      * @param timeout    after the specified number of milliseconds, this method will throw a TimeoutException
      * @throws InterruptedException if interrupted while sleeping between GET intervals
      * @throws TimeoutException     if the specified timeout is reached before transition is complete
@@ -129,7 +131,7 @@ public class ViPRS3FileAccessTest {
     protected void waitForTransition(String bucketName, ViPRConstants.FileAccessMode targetMode, int timeout) throws InterruptedException, TimeoutException {
         long start = System.currentTimeMillis(), interval = 500;
         while (true) {
-            GetBucketFileAccessModeResult result = s3.getBucketFileAccessMode(bucketName);
+            BucketFileAccessModeResult result = s3.getBucketFileAccessMode(bucketName);
             if (targetMode == result.getAccessMode()) return; // transition is complete
 
             if (targetMode.isTransitionState())

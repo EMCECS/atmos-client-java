@@ -182,7 +182,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         return result;
     }
 
-    public SetBucketFileAccessModeResult setBucketFileAccessMode(SetBucketFileAccessModeRequest putAccessModeRequest)
+    public BucketFileAccessModeResult setBucketFileAccessMode(SetBucketFileAccessModeRequest putAccessModeRequest)
             throws AmazonClientException {
         assertParameterNotNull(putAccessModeRequest, "The SetBucketFileAccessModeRequest parameter must be specified");
 
@@ -196,61 +196,66 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         if (putAccessModeRequest.getAccessMode() != null) {
             request.addHeader(ViPRConstants.FILE_ACCESS_MODE_HEADER, putAccessModeRequest.getAccessMode().toString());
         }
-        if (putAccessModeRequest.getAccessProtocol() != null) {
-            request.addHeader(ViPRConstants.FILE_ACCESS_PROTOCOL_HEADER, putAccessModeRequest.getAccessProtocol().toString());
-        }
-        if (putAccessModeRequest.getFileAccessDuration() > 0) { // TODO: is this an appropriate indicator?
-            request.addHeader(ViPRConstants.FILE_ACCESS_DURATION_HEADER, Long.toString(putAccessModeRequest.getFileAccessDuration()));
+        if (putAccessModeRequest.getDuration() > 0) { // TODO: is this an appropriate indicator?
+            request.addHeader(ViPRConstants.FILE_ACCESS_DURATION_HEADER, Long.toString(putAccessModeRequest.getDuration()));
         }
         if (putAccessModeRequest.getHostList() != null) {
-            request.addHeader(ViPRConstants.HOST_LIST_HEADER, join(",", putAccessModeRequest.getHostList()));
+            request.addHeader(ViPRConstants.FILE_ACCESS_HOST_LIST_HEADER, join(",", putAccessModeRequest.getHostList()));
         }
-        if (putAccessModeRequest.getUser() != null) {
-            request.addHeader(ViPRConstants.USER_HEADER, putAccessModeRequest.getUser());
+        if (putAccessModeRequest.getUid() != null) {
+            request.addHeader(ViPRConstants.FILE_ACCESS_UID_HEADER, putAccessModeRequest.getUid());
         }
         if (putAccessModeRequest.getToken() != null) {
-            request.addHeader(ViPRConstants.TOKEN_HEADER, putAccessModeRequest.getToken());
+            request.addHeader(ViPRConstants.FILE_ACCESS_TOKEN_HEADER, putAccessModeRequest.getToken());
         }
 
-        return invoke(request, new AbstractS3ResponseHandler<SetBucketFileAccessModeResult>() {
-            public AmazonWebServiceResponse<SetBucketFileAccessModeResult> handle(HttpResponse response) throws Exception {
-                SetBucketFileAccessModeResult result = new SetBucketFileAccessModeResult();
+        return invoke(request, new AbstractS3ResponseHandler<BucketFileAccessModeResult>() {
+            public AmazonWebServiceResponse<BucketFileAccessModeResult> handle(HttpResponse response) throws Exception {
+                BucketFileAccessModeResult result = new BucketFileAccessModeResult();
                 Map<String, String> headers = response.getHeaders();
 
                 if (headers.containsKey(ViPRConstants.FILE_ACCESS_MODE_HEADER))
                     result.setAccessMode(ViPRConstants.FileAccessMode.valueOf(headers.get(ViPRConstants.FILE_ACCESS_MODE_HEADER)));
                 if (headers.containsKey(ViPRConstants.FILE_ACCESS_DURATION_HEADER))
-                    result.setFileAccessDuration(Long.parseLong(headers.get(ViPRConstants.FILE_ACCESS_DURATION_HEADER)));
-                if (headers.containsKey(ViPRConstants.HOST_LIST_HEADER))
-                    result.setHostList(Arrays.asList(headers.get(ViPRConstants.HOST_LIST_HEADER).split(",")));
-                if (headers.containsKey(ViPRConstants.USER_HEADER))
-                    result.setUser(headers.get(ViPRConstants.USER_HEADER));
-                if (headers.containsKey(ViPRConstants.TOKEN_HEADER))
-                    result.setToken(headers.get(ViPRConstants.TOKEN_HEADER));
+                    result.setDuration(Long.parseLong(headers.get(ViPRConstants.FILE_ACCESS_DURATION_HEADER)));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_HOST_LIST_HEADER))
+                    result.setHostList(Arrays.asList(headers.get(ViPRConstants.FILE_ACCESS_HOST_LIST_HEADER).split(",")));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_UID_HEADER))
+                    result.setUid(headers.get(ViPRConstants.FILE_ACCESS_UID_HEADER));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_TOKEN_HEADER))
+                    result.setToken(headers.get(ViPRConstants.FILE_ACCESS_TOKEN_HEADER));
 
-                AmazonWebServiceResponse<SetBucketFileAccessModeResult> awsResponse = parseResponseMetadata(response);
+                AmazonWebServiceResponse<BucketFileAccessModeResult> awsResponse = parseResponseMetadata(response);
                 awsResponse.setResult(result);
                 return awsResponse;
             }
         }, bucketName, null);
     }
 
-    public GetBucketFileAccessModeResult getBucketFileAccessMode(String bucketName)
+    public BucketFileAccessModeResult getBucketFileAccessMode(String bucketName)
             throws AmazonClientException {
         assertParameterNotNull(bucketName, "The bucket name parameter must be specified when querying access mode");
 
         Request<GenericBucketRequest> request = createRequest(bucketName, null, new GenericBucketRequest(bucketName), HttpMethodName.GET);
         request.addParameter(ViPRConstants.ACCESS_MODE_PARAMETER, null);
 
-        return invoke(request, new AbstractS3ResponseHandler<GetBucketFileAccessModeResult>() {
-            public AmazonWebServiceResponse<GetBucketFileAccessModeResult> handle(HttpResponse response) throws Exception {
-                GetBucketFileAccessModeResult result = new GetBucketFileAccessModeResult();
+        return invoke(request, new AbstractS3ResponseHandler<BucketFileAccessModeResult>() {
+            public AmazonWebServiceResponse<BucketFileAccessModeResult> handle(HttpResponse response) throws Exception {
+                BucketFileAccessModeResult result = new BucketFileAccessModeResult();
                 Map<String, String> headers = response.getHeaders();
 
                 if (headers.containsKey(ViPRConstants.FILE_ACCESS_MODE_HEADER))
                     result.setAccessMode(ViPRConstants.FileAccessMode.valueOf(headers.get(ViPRConstants.FILE_ACCESS_MODE_HEADER)));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_DURATION_HEADER))
+                    result.setDuration(Long.parseLong(headers.get(ViPRConstants.FILE_ACCESS_DURATION_HEADER)));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_HOST_LIST_HEADER))
+                    result.setHostList(Arrays.asList(headers.get(ViPRConstants.FILE_ACCESS_HOST_LIST_HEADER).split(",")));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_UID_HEADER))
+                    result.setUid(headers.get(ViPRConstants.FILE_ACCESS_UID_HEADER));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_TOKEN_HEADER))
+                    result.setToken(headers.get(ViPRConstants.FILE_ACCESS_TOKEN_HEADER));
 
-                AmazonWebServiceResponse<GetBucketFileAccessModeResult> awsResponse = parseResponseMetadata(response);
+                AmazonWebServiceResponse<BucketFileAccessModeResult> awsResponse = parseResponseMetadata(response);
                 awsResponse.setResult(result);
                 return awsResponse;
             }
@@ -264,7 +269,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         String bucketName = getFileAccessRequest.getBucketName();
         assertParameterNotNull(bucketName, "The bucket name parameter must be specified when querying file access");
 
-        Request<GetFileAccessRequest> request = createRequest(bucketName, null, getFileAccessRequest, HttpMethodName.PUT);
+        Request<GetFileAccessRequest> request = createRequest(bucketName, null, getFileAccessRequest, HttpMethodName.GET);
         request.addParameter(ViPRConstants.FILE_ACCESS_PARAMETER, null);
 
         if (getFileAccessRequest.getMarker() != null) {
@@ -279,18 +284,6 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
                 log.trace("Beginning to parse fileaccess response XML");
                 GetFileAccessResult result = new GetFileAccessResultUnmarshaller().unmarshall(response.getContent());
                 log.trace("Done parsing fileaccess response XML");
-
-                Map<String, String> headers = response.getHeaders();
-                if (headers.containsKey(ViPRConstants.BUCKET_FILE_ACCESS_HEADER))
-                    result.setAccessMode(ViPRConstants.FileAccessMode.valueOf(headers.get(ViPRConstants.BUCKET_FILE_ACCESS_HEADER)));
-                if (headers.containsKey(ViPRConstants.BUCKET_FILE_ACCESS_PROTOCOL_HEADER))
-                    result.setAccessProtocol(ViPRConstants.FileAccessProtocol.valueOf(headers.get(ViPRConstants.BUCKET_FILE_ACCESS_PROTOCOL_HEADER)));
-                if (headers.containsKey(ViPRConstants.BUCKET_ACCESS_RESTRICTION_DURATION_HEADER))
-                    result.setFileAccessDuration(Long.parseLong(headers.get(ViPRConstants.BUCKET_ACCESS_RESTRICTION_DURATION_HEADER)));
-                if (headers.containsKey(ViPRConstants.HOST_LIST_HEADER))
-                    result.setHosts(Arrays.asList(headers.get(ViPRConstants.HOST_LIST_HEADER).split(",")));
-                if (headers.containsKey(ViPRConstants.USER_HEADER))
-                    result.setUser(headers.get(ViPRConstants.USER_HEADER));
 
                 AmazonWebServiceResponse<GetFileAccessResult> awsResponse = parseResponseMetadata(response);
                 awsResponse.setResult(result);
@@ -439,9 +432,9 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
         populateRequestMetadata(request, metadata);
         request.setContent(input);
-        
+
         if(putObjectRequest instanceof UpdateObjectRequest) {
-            request.addHeader(Headers.RANGE, 
+            request.addHeader(Headers.RANGE,
                     "bytes=" + ((UpdateObjectRequest)putObjectRequest).getUpdateRange());
         }
 
@@ -467,7 +460,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
             if (returnedMetadata != null && contentMd5 != null) {
                 byte[] clientSideHash = BinaryUtils.fromBase64(contentMd5);
                 byte[] serverSideHash = BinaryUtils.fromHex(returnedMetadata.getETag());
-    
+
                 if (!Arrays.equals(clientSideHash, serverSideHash)) {
                     fireProgressEvent(progressListener, ProgressEvent.FAILED_EVENT_CODE);
                     throw new AmazonClientException("Unable to verify integrity of data upload.  " +
@@ -498,7 +491,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
      * determined by the endpoint of the underlying S3 client in the form of
      * {namespace}.company.com, but if this is not possible, it can be
      * overridden by setting this property.
-     * 
+     *
      * @param namespace
      *            the namespace to set
      */
@@ -605,6 +598,10 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         executionContext.setCredentials(credentials);
 
         return client.execute(request, responseHandler, errorResponseHandler, executionContext);
+    }
+
+    private String join(String delimiter, List<?> values) {
+        return join(delimiter, values.toArray());
     }
 
     private String join(String delimiter, Object... values) {

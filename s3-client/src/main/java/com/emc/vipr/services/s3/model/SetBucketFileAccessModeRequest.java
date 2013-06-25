@@ -2,7 +2,6 @@ package com.emc.vipr.services.s3.model;
 
 import com.amazonaws.AmazonWebServiceRequest;
 import com.emc.vipr.services.s3.model.ViPRConstants.FileAccessMode;
-import com.emc.vipr.services.s3.model.ViPRConstants.FileAccessProtocol;
 
 import java.util.Arrays;
 import java.util.List;
@@ -10,14 +9,13 @@ import java.util.List;
 public class SetBucketFileAccessModeRequest extends AmazonWebServiceRequest {
     private String bucketName;
     private FileAccessMode accessMode;
-    private FileAccessProtocol accessProtocol;
-    private long fileAccessDuration = -1;
+    private long duration = -1;
     private List<String> hostList;
-    private String user;
+    private String uid;
     private String token;
 
     private static final FileAccessMode[] ALLOWED_ACCESS_MODES = {
-            FileAccessMode.Disabled, FileAccessMode.ReadOnly, FileAccessMode.ReadWrite};
+            FileAccessMode.disabled, FileAccessMode.readOnly, FileAccessMode.readWrite};
 
     /**
      * @return the accessMode
@@ -37,31 +35,17 @@ public class SetBucketFileAccessModeRequest extends AmazonWebServiceRequest {
     }
 
     /**
-     * @return the accessProtocol
+     * @return the duration
      */
-    public FileAccessProtocol getAccessProtocol() {
-        return accessProtocol;
+    public long getDuration() {
+        return duration;
     }
 
     /**
-     * @param accessProtocol the accessProtocol to set
+     * @param duration the duration to set
      */
-    public void setAccessProtocol( FileAccessProtocol accessProtocol ) {
-        this.accessProtocol = accessProtocol;
-    }
-
-    /**
-     * @return the fileAccessDuration
-     */
-    public long getFileAccessDuration() {
-        return fileAccessDuration;
-    }
-
-    /**
-     * @param fileAccessDuration the fileAccessDuration to set
-     */
-    public void setFileAccessDuration( long fileAccessDuration ) {
-        this.fileAccessDuration = fileAccessDuration;
+    public void setDuration(long duration) {
+        this.duration = duration;
     }
 
     /**
@@ -79,17 +63,17 @@ public class SetBucketFileAccessModeRequest extends AmazonWebServiceRequest {
     }
 
     /**
-     * @return the user
+     * @return the uid
      */
-    public String getUser() {
-        return user;
+    public String getUid() {
+        return uid;
     }
 
     /**
-     * @param user the user to set
+     * @param uid the uid to set
      */
-    public void setUser( String user ) {
-        this.user = user;
+    public void setUid( String uid ) {
+        this.uid = uid;
     }
 
     /**

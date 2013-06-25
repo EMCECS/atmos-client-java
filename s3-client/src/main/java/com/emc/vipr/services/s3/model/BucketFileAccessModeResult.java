@@ -4,11 +4,11 @@ import java.util.List;
 
 import com.emc.vipr.services.s3.model.ViPRConstants.FileAccessMode;
 
-public class SetBucketFileAccessModeResult {
+public class BucketFileAccessModeResult {
 	private FileAccessMode accessMode;
-	private long fileAccessDuration;
+	private long duration;
 	private List<String> hostList;
-	private String user;
+	private String uid;
 	private String token;
 	
 	/**
@@ -24,16 +24,16 @@ public class SetBucketFileAccessModeResult {
 		this.accessMode = accessMode;
 	}
 	/**
-	 * @return the fileAccessDuration
+	 * @return the duration
 	 */
-	public long getFileAccessDuration() {
-		return fileAccessDuration;
+	public long getDuration() {
+		return duration;
 	}
 	/**
-	 * @param fileAccessDuration the fileAccessDuration to set
+	 * @param duration the duration to set
 	 */
-	public void setFileAccessDuration(long fileAccessDuration) {
-		this.fileAccessDuration = fileAccessDuration;
+	public void setDuration(long duration) {
+		this.duration = duration;
 	}
 	/**
 	 * @return the hostList
@@ -48,16 +48,16 @@ public class SetBucketFileAccessModeResult {
 		this.hostList = hostList;
 	}
 	/**
-	 * @return the user
+	 * @return the uid
 	 */
-	public String getUser() {
-		return user;
+	public String getUid() {
+		return uid;
 	}
 	/**
-	 * @param user the user to set
+	 * @param uid the uid to set
 	 */
-	public void setUser(String user) {
-		this.user = user;
+	public void setUid(String uid) {
+		this.uid = uid;
 	}
 	/**
 	 * @return the token

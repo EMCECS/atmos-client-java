@@ -5,12 +5,7 @@ import java.util.concurrent.TimeoutException;
 
 import com.amazonaws.util.StringInputStream;
 import com.emc.vipr.services.s3.ViPRS3Client;
-import com.emc.vipr.services.s3.model.GetBucketFileAccessModeResult;
-import com.emc.vipr.services.s3.model.GetFileAccessRequest;
-import com.emc.vipr.services.s3.model.GetFileAccessResult;
-import com.emc.vipr.services.s3.model.SetBucketFileAccessModeRequest;
-import com.emc.vipr.services.s3.model.SetBucketFileAccessModeResult;
-import com.emc.vipr.services.s3.model.ViPRConstants;
+import com.emc.vipr.services.s3.model.*;
 
 public class BucketFileAccess {
     private ViPRS3Client s3;
@@ -39,17 +34,16 @@ public class BucketFileAccess {
 
             SetBucketFileAccessModeRequest request = new SetBucketFileAccessModeRequest();
             request.setBucketName(bucketName);
-            request.setAccessMode(ViPRConstants.FileAccessMode.ReadOnly);
-            request.setAccessProtocol(ViPRConstants.FileAccessProtocol.NFS);
-            request.setFileAccessDuration(fileAccessDuration);
+            request.setAccessMode(ViPRConstants.FileAccessMode.readOnly);
+            request.setDuration(fileAccessDuration);
             request.setHostList(Arrays.asList(clientHost));
-            request.setUser(clientUid);
+            request.setUid(clientUid);
 
             // change mode to read-only
             SampleUtils.log(
                     "Changing access mode on bucket %s to NFS read-only",
                     bucketName);
-            SetBucketFileAccessModeResult result = s3
+            BucketFileAccessModeResult result = s3
                     .setBucketFileAccessMode(request);
 
             // this token can be used in the future to restrict mode changes
@@ -68,7 +62,7 @@ public class BucketFileAccess {
             // wait until complete (change is asynchronous)
             SampleUtils.log("Waiting for bucket mode to change...");
             waitForTransition(bucketName,
-                    ViPRConstants.FileAccessMode.ReadOnly, 5000);
+                    ViPRConstants.FileAccessMode.readOnly, 5000);
             SampleUtils
                     .log("Change complete; bucket is now in NFS read-only mode");
 
@@ -80,27 +74,25 @@ public class BucketFileAccess {
             GetFileAccessResult fileAccessResult;
             int waitMs = 250;
 
-            // objects are asynchronously prepared and returned in the list as they become
-            // available. this block will iterate until we have paths to all objects in
-            // the bucket.
+            // objects are asynchronously prepared and returned in the list as
+            // they become available. this block will iterate until we have
+            // paths to all objects in the bucket.
             do {
                 fileAccessResult = s3.getFileAccess(fileAccessRequest);
 
-                // here are your mount points
-                SampleUtils.log("NFS mount points:");
-                for (String mountPoint : fileAccessResult.getMountPoints()) {
-                    SampleUtils.log("    %s", mountPoint);
-                }
-
-                // here are the paths to each object
-                SampleUtils.log("paths to objects:");
+                // here are your mount points for each object
+                String mountPoint = fileAccessResult.getMountPoints().get(0);
+                SampleUtils.log("NFS mount points for objects:");
                 for (com.emc.vipr.services.s3.model.Object object : fileAccessResult
                         .getObjects()) {
-                    SampleUtils.log("    %s", object.getRelativePath());
+                    SampleUtils.log("    %s:%s", mountPoint,
+                            object.getRelativePath());
                 }
 
                 if (fileAccessResult.isTruncated()) {
-                    SampleUtils.log("list of objects was truncated; will try for more objects in %dms", waitMs);
+                    SampleUtils
+                            .log("list of objects was truncated; will try for more objects in %dms",
+                                    waitMs);
                     Thread.sleep(waitMs);
                     fileAccessRequest.setMarker(fileAccessResult.getLastKey());
                 }
@@ -108,48 +100,48 @@ public class BucketFileAccess {
 
             // change mode back to disabled (must do this before going to
             // read-write)
-            SampleUtils.log("Changing file access mode back to Disabled");
+            SampleUtils.log("Changing file access mode back to disabled");
             request = new SetBucketFileAccessModeRequest();
             request.setBucketName(bucketName);
-            request.setAccessMode(ViPRConstants.FileAccessMode.Disabled);
+            request.setAccessMode(ViPRConstants.FileAccessMode.disabled);
             s3.setBucketFileAccessMode(request);
 
             // wait until complete
             SampleUtils.log("Waiting for bucket mode to change...");
             waitForTransition(bucketName,
-                    ViPRConstants.FileAccessMode.Disabled, 5000);
+                    ViPRConstants.FileAccessMode.disabled, 5000);
             SampleUtils
-                    .log("Change complete; bucket file access is now Disabled");
+                    .log("Change complete; bucket file access is now disabled");
 
             // now change to read-write
             SampleUtils.log("Changing file access mode to read-write");
             request = new SetBucketFileAccessModeRequest();
             request.setBucketName(bucketName);
-            request.setAccessMode(ViPRConstants.FileAccessMode.ReadWrite);
+            request.setAccessMode(ViPRConstants.FileAccessMode.readWrite);
             s3.setBucketFileAccessMode(request);
 
             SampleUtils.log("Waiting for bucket mode to change...");
             // wait until complete
             waitForTransition(bucketName,
-                    ViPRConstants.FileAccessMode.ReadWrite, 5000);
+                    ViPRConstants.FileAccessMode.readWrite, 5000);
             SampleUtils
                     .log("Change complete; bucket file access is now NFS read-write");
 
             // now the objects are writable via NFS
 
             // change mode back to disabled
-            SampleUtils.log("Changing file access mode back to Disabled");
+            SampleUtils.log("Changing file access mode back to disabled");
             request = new SetBucketFileAccessModeRequest();
             request.setBucketName(bucketName);
-            request.setAccessMode(ViPRConstants.FileAccessMode.Disabled);
+            request.setAccessMode(ViPRConstants.FileAccessMode.disabled);
             s3.setBucketFileAccessMode(request);
 
             // wait until complete
             SampleUtils.log("Waiting for bucket mode to change...");
             waitForTransition(bucketName,
-                    ViPRConstants.FileAccessMode.Disabled, 5000);
+                    ViPRConstants.FileAccessMode.disabled, 5000);
             SampleUtils
-                    .log("Change complete; bucket file access is now Disabled");
+                    .log("Change complete; bucket file access is now disabled");
         } finally {
             SampleUtils.cleanBucket(s3, bucketName);
         }
@@ -167,8 +159,8 @@ public class BucketFileAccess {
      * @param bucketName
      *            bucket name
      * @param targetMode
-     *            target access mode to wait for (ReadOnly, ReadWrite, or
-     *            Disabled)
+     *            target access mode to wait for (readOnly, readWrite, or
+     *            disabled)
      * @param timeout
      *            after the specified number of milliseconds, this method will
      *            throw a TimeoutException
@@ -184,7 +176,7 @@ public class BucketFileAccess {
         long start = System.currentTimeMillis(), interval = 500;
         while (true) {
             // GET the current access mode
-            GetBucketFileAccessModeResult result = s3
+            BucketFileAccessModeResult result = s3
                     .getBucketFileAccessMode(bucketName);
             if (targetMode == result.getAccessMode())
                 return; // transition is complete

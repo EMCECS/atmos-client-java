@@ -186,8 +186,8 @@ public interface ViPRS3 {
      * @param request
      *            The configured {@link SetBucketFileAccessModeRequest} request
      *            to execute.
-     * @return A {@link SetBucketFileAccessModeResult} containing the results of
-     *         the access mode change.
+     * @return A {@link com.emc.vipr.services.s3.model.BucketFileAccessModeResult}
+     *         containing the results of the access mode change.
      * @throws AmazonClientException
      *             If any errors are encountered in the client while making the
      *             request or handling the response.
@@ -196,7 +196,7 @@ public interface ViPRS3 {
      *             request. Generally, this will happen if the given transition
      *             is not valid.
      */
-    public SetBucketFileAccessModeResult setBucketFileAccessMode(
+    public BucketFileAccessModeResult setBucketFileAccessMode(
             SetBucketFileAccessModeRequest request)
             throws AmazonClientException, AmazonServiceException;
 
@@ -205,7 +205,7 @@ public interface ViPRS3 {
      * 
      * @param bucketName
      *            the name of the bucket to check.
-     * @return a {@link GetBucketFileAccessModeResult} object containing the
+     * @return a {@link BucketFileAccessModeResult} object containing the
      *         current file access mode for the bucket.
      * @throws AmazonClientException
      *             If any errors are encountered in the client while making the
@@ -214,7 +214,7 @@ public interface ViPRS3 {
      *             If any errors occurred in on the server while processing the
      *             request.
      */
-    public GetBucketFileAccessModeResult getBucketFileAccessMode(
+    public BucketFileAccessModeResult getBucketFileAccessMode(
             String bucketName) throws AmazonClientException,
             AmazonServiceException;
 

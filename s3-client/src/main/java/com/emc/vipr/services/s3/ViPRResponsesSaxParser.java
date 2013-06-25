@@ -39,17 +39,17 @@ public class ViPRResponsesSaxParser extends XmlResponsesSaxParser {
     /*
         <?xml version="1.0" encoding="UTF-8"?>
         <fileaccess_response>
-            <mountPoints>no_idea_what_goes_here</mountPoints>
-            <mountPoints>no_idea_what_goes_here</mountPoints>
+            <mountPoints>cifs://foo.foo/export</mountPoints>
+            <mountPoints>nfs://blah.blah:/export</mountPoints>
             <objects>
                <name>foo</name>
-               <deviceExport>cifs://foo.foo/foo</deviceExport>
+               <deviceExport>cifs://foo.foo/export</deviceExport>
                <relativePath>foo</relativePath>
                <owner>some_guy</owner>
             </objects>
             <objects>
                <name>blah</name>
-               <deviceExport>nfs://blahblah:/blah</deviceExport>
+               <deviceExport>nfs://blah.blah:/export</deviceExport>
                <relativePath>blah</relativePath>
                <owner>some_girl</owner>
             </objects>
