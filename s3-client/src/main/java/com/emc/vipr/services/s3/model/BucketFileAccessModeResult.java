@@ -9,7 +9,8 @@ public class BucketFileAccessModeResult {
 	private long duration;
 	private List<String> hostList;
 	private String uid;
-	private String token;
+	private String startToken;
+    private String endToken;
 	
 	/**
 	 * @return the accessMode
@@ -60,17 +61,27 @@ public class BucketFileAccessModeResult {
 		this.uid = uid;
 	}
 	/**
-	 * @return the token
+	 * @return the token that starts this file access window of objects
 	 */
-	public String getToken() {
-		return token;
+	public String getStartToken() {
+		return startToken;
 	}
 	/**
-	 * @param token the token to set
+	 * @param startToken the token that starts this file access window of objects
 	 */
-	public void setToken(String token) {
-		this.token = token;
+	public void setStartToken(String startToken) {
+		this.startToken = startToken;
 	}
-	
-	
+    /**
+     * @return the token that ends this file access window of objects
+     */
+    public String getEndToken() {
+        return endToken;
+    }
+    /**
+     * @param endToken the token that ends this file access window of objects
+     */
+    public void setEndToken(String endToken) {
+        this.endToken = endToken;
+    }
 }

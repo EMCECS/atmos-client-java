@@ -46,17 +46,14 @@ public class BucketFileAccess {
             BucketFileAccessModeResult result = s3
                     .setBucketFileAccessMode(request);
 
-            // this token can be used in the future to restrict mode changes
-            // only to objects that have been created since this request was
-            // made. For example, say you have a bucket workflow in which one
-            // process requires filesystem access and after that process is
-            // complete, the objects should once again be available via REST.
-            // This token allows you to execute your workflow in batches. You
-            // can turn on filesystem access using the previous token, which
-            // will enable it only for new objects. Once that access expires,
-            // those objects will be available again via REST. The next batch
-            // will use the token returned from this batch and so on.
-            String token = result.getToken();
+            // this token represents a point in time before which any objects that were created will be available via
+            // NFS. Objects created since this time will *not* be available via NFS unless a subsequent call is made to
+            // enable them. For example, say you have a bucket workflow in which one process requires filesystem access
+            // and after that process is complete, the objects should once again be available via REST. This token
+            // allows you to execute your workflow in batches. You can turn on filesystem access using the previous
+            // token, which will enable it only for new objects. Once that access expires, those objects will be
+            // available again via REST. The next batch will use the token returned from this batch and so on.
+            String token = result.getEndToken();
             SampleUtils.log("Token to represent net-new objects: %s", token);
 
             // wait until complete (change is asynchronous)
@@ -155,23 +152,18 @@ public class BucketFileAccess {
     /**
      * waits until the target access mode is completely transitioned on the
      * specified bucket.
-     * 
-     * @param bucketName
-     *            bucket name
-     * @param targetMode
-     *            target access mode to wait for (readOnly, readWrite, or
-     *            disabled)
-     * @param timeout
-     *            after the specified number of milliseconds, this method will
-     *            throw a TimeoutException
-     * @throws InterruptedException
-     *             if interrupted while sleeping between GET intervals
-     * @throws TimeoutException
-     *             if the specified timeout is reached before transition is
-     *             complete
+     *
+     * @param bucketName bucket name
+     * @param targetMode target access mode to wait for (readOnly, readWrite, or
+     *                   disabled)
+     * @param timeout    after the specified number of milliseconds, this method will
+     *                   throw a TimeoutException
+     * @throws InterruptedException if interrupted while sleeping between GET intervals
+     * @throws TimeoutException     if the specified timeout is reached before transition is
+     *                              complete
      */
     protected void waitForTransition(String bucketName,
-            ViPRConstants.FileAccessMode targetMode, int timeout)
+                                     ViPRConstants.FileAccessMode targetMode, int timeout)
             throws InterruptedException, TimeoutException {
         long start = System.currentTimeMillis(), interval = 500;
         while (true) {

@@ -41,8 +41,7 @@ public interface ViPRS3 {
      *             request.
      */
     public UpdateObjectResult updateObject(String bucketName, String key,
-            File file, long startOffset) throws AmazonClientException,
-            AmazonServiceException;
+            File file, long startOffset) throws AmazonClientException;
 
     /**
      * Updates an existing object. The given stream will be overlaid on the
@@ -74,7 +73,7 @@ public interface ViPRS3 {
      */
     public UpdateObjectResult updateObject(String bucketName, String key,
             InputStream input, ObjectMetadata metadata, long startOffset)
-            throws AmazonClientException, AmazonServiceException;
+            throws AmazonClientException;
 
     /**
      * Updates an existing object. The given data will be overlaid on the
@@ -92,7 +91,7 @@ public interface ViPRS3 {
      *             request.
      */
     public UpdateObjectResult updateObject(UpdateObjectRequest request)
-            throws AmazonClientException, AmazonServiceException;
+            throws AmazonClientException;
 
     /**
      * Appends to an existing object. The given file will be appended to the end
@@ -120,7 +119,7 @@ public interface ViPRS3 {
      *             request.
      */
     public AppendObjectResult appendObject(String bucketName, String key,
-            File file) throws AmazonClientException, AmazonServiceException;
+            File file) throws AmazonClientException;
 
     /**
      * Appends to an existing object. The given stream will be appended to the
@@ -155,7 +154,7 @@ public interface ViPRS3 {
      */
     public AppendObjectResult appendObject(String bucketName, String key,
             InputStream input, ObjectMetadata metadata)
-            throws AmazonClientException, AmazonServiceException;
+            throws AmazonClientException;
 
     /**
      * Appends to an existing object. The given data will be appended to the end
@@ -178,7 +177,7 @@ public interface ViPRS3 {
      *             request.
      */
     public AppendObjectResult appendObject(AppendObjectRequest request)
-            throws AmazonClientException, AmazonServiceException;
+            throws AmazonClientException;
 
     /**
      * Initiates a set file access mode request on a bucket.
@@ -198,7 +197,7 @@ public interface ViPRS3 {
      */
     public BucketFileAccessModeResult setBucketFileAccessMode(
             SetBucketFileAccessModeRequest request)
-            throws AmazonClientException, AmazonServiceException;
+            throws AmazonClientException;
 
     /**
      * Checks the current file access mode on a bucket.
@@ -215,8 +214,7 @@ public interface ViPRS3 {
      *             request.
      */
     public BucketFileAccessModeResult getBucketFileAccessMode(
-            String bucketName) throws AmazonClientException,
-            AmazonServiceException;
+            String bucketName) throws AmazonClientException;
 
     /**
      * Gets file access information for the keys in a bucket. This includes the

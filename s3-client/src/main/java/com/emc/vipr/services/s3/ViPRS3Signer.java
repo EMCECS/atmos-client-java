@@ -92,7 +92,7 @@ public class ViPRS3Signer extends S3Signer {
 
                 // Ignore any headers that are not particularly interesting.
                 if (lk.equals("content-type") || lk.equals("content-md5") || lk.equals("date") ||
-                        lk.startsWith(Headers.AMAZON_PREFIX)/* || lk.startsWith(ViPRConstants.EMC_PREFIX)*/) {
+                        lk.startsWith(Headers.AMAZON_PREFIX) || lk.startsWith(ViPRConstants.EMC_PREFIX)) {
                     interestingHeaders.put(lk, value);
                 }
             }
@@ -126,12 +126,12 @@ public class ViPRS3Signer extends S3Signer {
             }
         }
 
-        // Add all the interesting headers (i.e.: all that startwith x-amz- ;-))
+        // Add all the interesting headers (i.e.: all that startwith x-amz- or x-emc- ;-))
         for (Map.Entry<String, String> entry : interestingHeaders.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
 
-            if (key.startsWith(Headers.AMAZON_PREFIX)) {
+            if (key.startsWith(Headers.AMAZON_PREFIX) || key.startsWith(ViPRConstants.EMC_PREFIX)) {
                 buf.append(key).append(':').append(value);
             } else {
                 buf.append(value);

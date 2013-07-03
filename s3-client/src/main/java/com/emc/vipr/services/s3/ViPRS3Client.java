@@ -117,8 +117,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
 
     public UpdateObjectResult updateObject(String bucketName, String key,
-            File file, long startOffset) throws AmazonClientException,
-            AmazonServiceException {
+            File file, long startOffset) throws AmazonClientException {
         UpdateObjectRequest request = new UpdateObjectRequest(bucketName, key,
                 file).withUpdateOffset(startOffset);
 
@@ -127,7 +126,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
     public UpdateObjectResult updateObject(String bucketName, String key,
             InputStream input, ObjectMetadata metadata, long startOffset)
-            throws AmazonClientException, AmazonServiceException {
+            throws AmazonClientException {
         UpdateObjectRequest request = new UpdateObjectRequest(bucketName, key,
                 input, metadata).withUpdateOffset(startOffset);
 
@@ -135,7 +134,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     }
 
     public UpdateObjectResult updateObject(UpdateObjectRequest request)
-            throws AmazonClientException, AmazonServiceException {
+            throws AmazonClientException {
         ObjectMetadata returnedMetadata = doPut(request);
         UpdateObjectResult result = new UpdateObjectResult();
         result.setETag(returnedMetadata.getETag());
@@ -149,7 +148,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     }
 
     public AppendObjectResult appendObject(String bucketName, String key,
-            File file) throws AmazonClientException, AmazonServiceException {
+            File file) throws AmazonClientException {
         AppendObjectRequest request = new AppendObjectRequest(bucketName, key,
                 file);
 
@@ -158,7 +157,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
     public AppendObjectResult appendObject(String bucketName, String key,
             InputStream input, ObjectMetadata metadata)
-            throws AmazonClientException, AmazonServiceException {
+            throws AmazonClientException {
         AppendObjectRequest request = new AppendObjectRequest(bucketName, key,
                 input, metadata);
 
@@ -166,7 +165,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     }
 
     public AppendObjectResult appendObject(AppendObjectRequest request)
-            throws AmazonClientException, AmazonServiceException {
+            throws AmazonClientException {
         ObjectMetadata returnedMetadata = doPut(request);
         AppendObjectResult result = new AppendObjectResult();
         result.setETag(returnedMetadata.getETag());
@@ -222,8 +221,10 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
                     result.setHostList(Arrays.asList(headers.get(ViPRConstants.FILE_ACCESS_HOST_LIST_HEADER).split(",")));
                 if (headers.containsKey(ViPRConstants.FILE_ACCESS_UID_HEADER))
                     result.setUid(headers.get(ViPRConstants.FILE_ACCESS_UID_HEADER));
-                if (headers.containsKey(ViPRConstants.FILE_ACCESS_TOKEN_HEADER))
-                    result.setToken(headers.get(ViPRConstants.FILE_ACCESS_TOKEN_HEADER));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_START_TOKEN_HEADER))
+                    result.setStartToken(headers.get(ViPRConstants.FILE_ACCESS_START_TOKEN_HEADER));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER))
+                    result.setEndToken(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER);
 
                 AmazonWebServiceResponse<BucketFileAccessModeResult> awsResponse = parseResponseMetadata(response);
                 awsResponse.setResult(result);
@@ -252,8 +253,10 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
                     result.setHostList(Arrays.asList(headers.get(ViPRConstants.FILE_ACCESS_HOST_LIST_HEADER).split(",")));
                 if (headers.containsKey(ViPRConstants.FILE_ACCESS_UID_HEADER))
                     result.setUid(headers.get(ViPRConstants.FILE_ACCESS_UID_HEADER));
-                if (headers.containsKey(ViPRConstants.FILE_ACCESS_TOKEN_HEADER))
-                    result.setToken(headers.get(ViPRConstants.FILE_ACCESS_TOKEN_HEADER));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_START_TOKEN_HEADER))
+                    result.setStartToken(headers.get(ViPRConstants.FILE_ACCESS_START_TOKEN_HEADER));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER))
+                    result.setEndToken(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER);
 
                 AmazonWebServiceResponse<BucketFileAccessModeResult> awsResponse = parseResponseMetadata(response);
                 awsResponse.setResult(result);
