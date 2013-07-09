@@ -297,7 +297,8 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
     @Override
     protected Signer createSigner(Request<?> request, String bucketName, String key) {
-        String resourcePath = "/" + ((bucketName != null) ? bucketName + "/" : "")
+        String resourcePath = "/" + ((namespace != null) ? namespace + "/" : "")
+                + ((bucketName != null) ? bucketName + "/" : "")
                 + ((key != null) ? ServiceUtils.urlEncode(key) : "");
 
         return new ViPRS3Signer(request.getHttpMethod().toString(), resourcePath);
