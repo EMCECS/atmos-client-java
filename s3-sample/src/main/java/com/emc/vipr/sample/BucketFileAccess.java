@@ -1,12 +1,12 @@
 package com.emc.vipr.sample;
 
-import java.util.*;
-import java.util.concurrent.TimeoutException;
-
 import com.amazonaws.util.StringInputStream;
 import com.emc.vipr.services.s3.ViPRS3Client;
 import com.emc.vipr.services.s3.model.*;
 import com.emc.vipr.services.s3.model.Object;
+
+import java.util.*;
+import java.util.concurrent.TimeoutException;
 
 /**
  * EMC ViPR data services includes an option to export S3 buckets and Swift
@@ -16,9 +16,9 @@ import com.emc.vipr.services.s3.model.Object;
  * although when mounted read-write, you can modify existing objects.  While
  * objects are available over NFS, they are inaccessible via REST and vice versa.
  * <p/>
- * The set of objects to be exported is defined by start-token and end-token parameters, which
+ * The set of objects to be exported is defined by a start-token and an end-token, which
  * represent specific points in time for the bucket (bucket versions). These
- * tokens are returned from any call ("get" or "set") and one token may be used in subsequent
+ * tokens are returned from any call ("get" or "set"). Only one token may be used in
  * "set" calls with the following outcome:
  * <p/>
  * when setting mode to readOnly or readWrite and a token is included,
@@ -65,97 +65,57 @@ public class BucketFileAccess {
             s3.putObject(bucketName, key3, new StringInputStream(content), null);
             s3.putObject(bucketName, key4, new StringInputStream(content), null);
 
-            SetBucketFileAccessModeRequest request = new SetBucketFileAccessModeRequest();
-            request.setBucketName(bucketName);
-            request.setAccessMode(ViPRConstants.FileAccessMode.readWrite);
-            request.setDuration(fileAccessDuration);
-            request.setHostList(Arrays.asList(clientHost));
-            request.setUid(clientUid);
+            // switch to NFS access for all objects the bucket (this is the first export, so we don't have a token)
+            SampleUtils.log("Enabling NFS access for objects in workflow A");
+            String tokenA = exportNewObjects(bucketName, fileAccessDuration, Arrays.asList(clientHost),
+                    clientUid, null);
 
-            // switch to NFS access for current objects the bucket
-            SampleUtils.log("Enabling NFS access (workflow A)");
-            BucketFileAccessModeResult result = s3.setBucketFileAccessMode(request);
-
-            // the token is the bucket version. it represents a point in time. objects older than this token are now
+            // this token is a bucket version. it represents a point in time. objects older than this token are now
             // exported via NFS. any objects created after this point in time will not be accessible via NFS, but *will*
             // be accessible via REST.
-            String tokenA = result.getEndToken();
-            SampleUtils.log("Token: %s", tokenA);
+            SampleUtils.log("End-token for workflow A: %s", tokenA);
 
-            // wait until complete (change is asynchronous)
-            SampleUtils.log("Waiting for bucket mode to change...");
-            waitForTransition(bucketName, ViPRConstants.FileAccessMode.readWrite, 30000);
-            SampleUtils.log("Change complete; bucket is now in NFS read-write mode");
+            // here we get the exports and object paths
+            Map<String, List<com.emc.vipr.services.s3.model.Object>> mountMap = getNfsObjectMap(bucketName);
 
-            // now the bucket should be accessible via NFS, let's get the details
-            GetFileAccessRequest fileAccessRequest = new GetFileAccessRequest();
-            fileAccessRequest.setBucketName(bucketName);
-            GetFileAccessResult fileAccessResult = s3.getFileAccess(fileAccessRequest);
-
-            // here are your mount points and objects
-            Map<String, List<com.emc.vipr.services.s3.model.Object>> mountMap
-                    = new HashMap<String, List<com.emc.vipr.services.s3.model.Object>>();
-            for (com.emc.vipr.services.s3.model.Object object : fileAccessResult.getObjects()) {
-                List<com.emc.vipr.services.s3.model.Object> objects = mountMap.get(object.getDeviceExport());
-                if (objects == null) {
-                    objects = new ArrayList<com.emc.vipr.services.s3.model.Object>();
-                    mountMap.put(object.getDeviceExport(), objects);
-                }
-                objects.add(object);
-            }
-
-            SampleUtils.log("NFS mount points and objects (workflow A):");
+            // now we can mount the exports and process the objects in our workflow with some file-based tool
+            SampleUtils.log("processing objects in workflow A:");
             for (String export : mountMap.keySet()) {
                 SampleUtils.log("> %s", export);
                 for (Object object : mountMap.get(export)) {
+                    // for this sample, "processing" just means dumping the objects to the log
                     SampleUtils.log("> > %s => %s", object.getName(), object.getRelativePath());
                 }
             }
 
             // create more objects (part of a new workflow in the bucket)
+            Set<String> workflowBKeys = new HashSet<String>();
             s3.putObject(bucketName, key5, new StringInputStream(content), null);
+            workflowBKeys.add(key5);
             s3.putObject(bucketName, key6, new StringInputStream(content), null);
+            workflowBKeys.add(key6);
 
             // now, switch to NFS access for the new objects using the end-token returned from the last call.
             // when enabling NFS access, all objects *newer* than the token are included in the NFS export.
-            SampleUtils.log("Enabling NFS access (workflow B)");
-            request = new SetBucketFileAccessModeRequest();
-            request.setBucketName(bucketName);
-            request.setAccessMode(ViPRConstants.FileAccessMode.readWrite);
-            request.setDuration(fileAccessDuration);
-            request.setHostList(Arrays.asList(clientHost));
-            request.setUid(clientUid);
-            request.setToken(tokenA);
-            s3.setBucketFileAccessMode(request);
+            SampleUtils.log("Enabling NFS access for objects in workflow B");
+            String tokenB = exportNewObjects(bucketName, fileAccessDuration, Arrays.asList(clientHost),
+                    clientUid, tokenA);
 
-            String tokenB = result.getEndToken();
             SampleUtils.log("End-token for workflow B: %s", tokenB);
 
-            // wait until complete (change is asynchronous)
-            SampleUtils.log("Waiting for bucket mode to change...");
-            waitForTransition(bucketName, ViPRConstants.FileAccessMode.readWrite, 30000);
-            SampleUtils.log("Change complete; bucket is now in NFS read-write mode");
+            // here we get the exports and object paths
+            mountMap = getNfsObjectMap(bucketName);
 
-            // now the bucket should be accessible via NFS, let's get the details
-            fileAccessRequest = new GetFileAccessRequest();
-            fileAccessRequest.setBucketName(bucketName);
-            fileAccessResult = s3.getFileAccess(fileAccessRequest);
-
-            // here are your mount points and objects
-            mountMap = new HashMap<String, List<com.emc.vipr.services.s3.model.Object>>();
-            for (com.emc.vipr.services.s3.model.Object object : fileAccessResult.getObjects()) {
-                List<com.emc.vipr.services.s3.model.Object> objects = mountMap.get(object.getDeviceExport());
-                if (objects == null) {
-                    objects = new ArrayList<com.emc.vipr.services.s3.model.Object>();
-                    mountMap.put(object.getDeviceExport(), objects);
-                }
-                objects.add(object);
-            }
-
-            SampleUtils.log("NFS mount points and objects (workflow B):");
+            // now we can mount the exports and process the objects in our workflow with some file-based tool.
+            // we'll have to cherry-pick the new objects because the GET call returns everything (even objects from
+            // workflow A).
+            SampleUtils.log("processing objects in workflow B using filter:");
             for (String export : mountMap.keySet()) {
                 SampleUtils.log("> %s", export);
                 for (Object object : mountMap.get(export)) {
+                    // filter:
+                    if (!workflowBKeys.contains(object.getName())) continue;
+                    // for this sample, "processing" just means dumping the objects to the log
                     SampleUtils.log("> > %s => %s", object.getName(), object.getRelativePath());
                 }
             }
@@ -171,36 +131,18 @@ public class BucketFileAccess {
             // this makes all objects in first workflow available via REST again.
             // when disabling NFS access, all objects *older* than the token are excluded from the NFS export.
             SampleUtils.log("Work complete, changing file access mode back to disabled (workflow A):");
-            request = new SetBucketFileAccessModeRequest();
-            request.setBucketName(bucketName);
-            request.setAccessMode(ViPRConstants.FileAccessMode.disabled);
-            request.setToken(tokenA);
-            s3.setBucketFileAccessMode(request);
+            disableOldObjects(bucketName, tokenA);
 
-            // wait until complete
-            SampleUtils.log("Waiting for bucket mode to change...");
-            waitForTransition(bucketName, ViPRConstants.FileAccessMode.disabled, 30000);
-            SampleUtils.log("Change complete; bucket file access is now disabled");
-
-            // now the second workflow is complete.
+            // now let's assume the second workflow is complete.
             // switch mode back to disabled for these objects by passing end-token from second workflow.
             // NOTE: setting mode to disabled *without* specifying a token will disable NFS access for *all* objects in
             // the bucket.
             SampleUtils.log("Work complete, changing file access mode back to disabled (workflow B):");
-            request = new SetBucketFileAccessModeRequest();
-            request.setBucketName(bucketName);
-            request.setAccessMode(ViPRConstants.FileAccessMode.disabled);
-            request.setToken(tokenB);
-            s3.setBucketFileAccessMode(request);
+            disableOldObjects(bucketName, tokenA);
 
-            // wait until complete
-            SampleUtils.log("Waiting for bucket mode to change...");
-            waitForTransition(bucketName, ViPRConstants.FileAccessMode.disabled, 30000);
-            SampleUtils.log("Change complete; bucket file access is now disabled");
         } finally {
             SampleUtils.cleanBucket(s3, bucketName);
         }
-
     }
 
     public static void main(String[] args) throws Exception {
@@ -208,22 +150,89 @@ public class BucketFileAccess {
         instance.runSample();
     }
 
+    protected String exportNewObjects(String bucketName, long duration, List<String> hosts, String uid, String token)
+            throws TimeoutException, InterruptedException {
+
+        // create a request object and populate with parameters
+        SetBucketFileAccessModeRequest request = new SetBucketFileAccessModeRequest();
+        request.setBucketName(bucketName);
+        request.setAccessMode(ViPRConstants.FileAccessMode.readWrite);
+        request.setDuration(duration);
+        request.setHostList(hosts);
+        request.setUid(uid);
+        request.setToken(token);
+
+        // this makes the actual REST call
+        BucketFileAccessModeResult result = s3.setBucketFileAccessMode(request);
+
+        // this is the new end-token (last bucket version) of the NFS access window
+        String endToken = result.getEndToken();
+
+        // wait until change is complete (call is asynchronous)
+        waitForTransition(bucketName, ViPRConstants.FileAccessMode.readWrite, 30);
+
+        return endToken;
+    }
+
+    protected void disableOldObjects(String bucketName, String token) throws TimeoutException, InterruptedException {
+
+        // create a request object and populate with parameters
+        SetBucketFileAccessModeRequest request = new SetBucketFileAccessModeRequest();
+        request.setBucketName(bucketName);
+        request.setAccessMode(ViPRConstants.FileAccessMode.disabled);
+        request.setToken(token);
+
+        // this makes the actual REST call
+        s3.setBucketFileAccessMode(request);
+
+        // wait until change is complete (call is asynchronous)
+        waitForTransition(bucketName, ViPRConstants.FileAccessMode.disabled, 30);
+    }
+
+    protected Map<String, List<com.emc.vipr.services.s3.model.Object>> getNfsObjectMap(String bucketName) {
+
+        // create a request object and populate with parameters
+        GetFileAccessRequest fileAccessRequest = new GetFileAccessRequest();
+        fileAccessRequest.setBucketName(bucketName);
+
+        // this makes the actual REST call
+        GetFileAccessResult fileAccessResult = s3.getFileAccess(fileAccessRequest);
+
+        // the XML does not organize objects by export, so we'll create a map
+        Map<String, List<com.emc.vipr.services.s3.model.Object>> mountMap
+                = new HashMap<String, List<com.emc.vipr.services.s3.model.Object>>();
+        for (com.emc.vipr.services.s3.model.Object object : fileAccessResult.getObjects()) {
+            List<com.emc.vipr.services.s3.model.Object> objects = mountMap.get(object.getDeviceExport());
+            if (objects == null) {
+                objects = new ArrayList<com.emc.vipr.services.s3.model.Object>();
+                mountMap.put(object.getDeviceExport(), objects);
+            }
+            objects.add(object);
+        }
+        return mountMap;
+    }
+
     /**
      * waits until the target access mode is completely transitioned on the specified bucket.
      *
      * @param bucketName bucket name
      * @param targetMode target access mode to wait for (readOnly, readWrite, or disabled)
-     * @param timeout    after the specified number of milliseconds, this method will throw a TimeoutException
+     * @param timeout    after the specified number of seconds, this method will throw a TimeoutException
      * @throws InterruptedException if interrupted while sleeping between GET intervals
      * @throws TimeoutException     if the specified timeout is reached before transition is complete
      */
     protected void waitForTransition(String bucketName, ViPRConstants.FileAccessMode targetMode, int timeout)
             throws InterruptedException, TimeoutException {
+        SampleUtils.log("Waiting for bucket mode to change...");
         long start = System.currentTimeMillis(), interval = 500;
+        timeout *= 1000;
         while (true) {
             // GET the current access mode
             BucketFileAccessModeResult result = s3.getBucketFileAccessMode(bucketName);
-            if (targetMode == result.getAccessMode()) return; // transition is complete
+            if (targetMode == result.getAccessMode()) {
+                SampleUtils.log("Change complete; bucket is now in NFS %s mode", targetMode);
+                return; // transition is complete
+            }
 
             if (targetMode.isTransitionState())
                 throw new IllegalArgumentException("Invalid target mode: " + targetMode);
@@ -235,8 +244,8 @@ public class BucketFileAccess {
             // if we've reached our timeout
             long runTime = System.currentTimeMillis() - start;
             if (runTime >= timeout)
-                throw new TimeoutException(String.format("Access mode transition for %s took longer than %dms",
-                        bucketName, timeout));
+                throw new TimeoutException(String.format("Access mode transition for %s took longer than %d seconds",
+                        bucketName, timeout / 1000));
 
             // transitioning; wait and query again
             long timeLeft = timeout - runTime;
