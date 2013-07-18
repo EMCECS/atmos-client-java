@@ -22,6 +22,7 @@
   <modules>
     <module>s3-client</module>
     <module>s3-sample</module>
+    <module>vipr-object-transformations</module>
   </modules>
 
   <scm>
