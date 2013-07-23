@@ -7,7 +7,7 @@
     <property name="doc" value="doc/javadoc"/>
     <property name="lib" value="lib"/>
     <property name="samples" value="samples"/>
-    <property name="version" value="2.1.2"/>
+    <property name="version" value="2.1.3"/>
 
     <!-- Name of the JAR file -->
     <property name="jarfile" value="atmos-api-${version}.jar"/>

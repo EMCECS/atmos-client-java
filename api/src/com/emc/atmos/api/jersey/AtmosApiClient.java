@@ -116,22 +116,28 @@ import java.util.*;
 public class AtmosApiClient extends AbstractAtmosApi {
     private static final Logger l4j = Logger.getLogger( AtmosApiClient.class );
 
-    private Client client;
-    private Client client100;
+    protected Client client;
+    protected Client client100;
 
     public AtmosApiClient( AtmosConfig config ) {
-        this( config, null, null );
+        this( config, (List<Class<MessageBodyReader<?>>>) null, null );
     }
 
     public AtmosApiClient( AtmosConfig config,
                            List<Class<MessageBodyReader<?>>> readers,
                            List<Class<MessageBodyWriter<?>>> writers ) {
+        this( config,
+              JerseyApacheUtil.createApacheClient( config, false, readers, writers ),
+              JerseyApacheUtil.createApacheClient( config, true, readers, writers ) );
+    }
+
+    protected AtmosApiClient( AtmosConfig config, Client client, Client client100 ) {
         super( config );
-        this.client = JerseyUtil.createApacheClient( config, false, readers, writers );
+        this.client = client;
 
         // without writing our own client implementation, the only way to discriminate requests that enable
         // Expect: 100-continue behavior is to have two clients; one with the feature enabled and one without.
-        this.client100 = JerseyUtil.createApacheClient( config, true, readers, writers );
+        this.client100 = client100;
     }
 
     /**
@@ -231,6 +237,8 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public ObjectId createDirectory( ObjectPath path ) {
+        if ( !path.isDirectory() ) throw new AtmosException( "Path must be a directory" );
+
         CreateObjectRequest request = new CreateObjectRequest().identifier( path );
 
         ClientResponse response = build( request ).post( ClientResponse.class );
@@ -242,6 +250,8 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public ObjectId createDirectory( ObjectPath path, Acl acl, Metadata... metadata ) {
+        if ( !path.isDirectory() ) throw new AtmosException( "Path must be a directory" );
+
         CreateObjectRequest request = new CreateObjectRequest().identifier( path ).acl( acl );
         request.userMetadata( metadata );
 
@@ -625,7 +635,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     protected WebResource.Builder build( Request request ) {
         WebResource resource;
-        if ( request.supports100Continue() && config.isEnableExpect100Continue() ) {
+        if ( request.supports100Continue() && config.isEnableExpect100Continue() && client100 != null ) {
             // use client with Expect: 100-continue
             l4j.debug( "Expect: 100-continue is enabled for this request" );
             resource = client100.resource( config.resolvePath( request.getServiceRelativePath(), request.getQuery() ) );

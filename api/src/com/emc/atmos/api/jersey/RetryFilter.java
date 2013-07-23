@@ -111,8 +111,6 @@ public class RetryFilter extends ClientFilter {
                         log.warn( "Interrupted while waiting to retry: " + e.getMessage() );
                     }
                 }
-
-                // if using an InputStream, reset
             }
         }
     }

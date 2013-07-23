@@ -28,17 +28,16 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.filter.ClientFilter;
-import org.apache.http.Header;
-import org.apache.http.auth.Credentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.impl.auth.BasicScheme;
+import org.apache.commons.codec.binary.Base64;
+
+import java.io.UnsupportedEncodingException;
 
 public class ProxyAuthFilter extends ClientFilter {
-    private Credentials credentials;
+    private String proxyUser, proxyPassword;
 
     public ProxyAuthFilter( String proxyUser, String proxyPassword ) {
-        if ( proxyUser != null && proxyUser.length() > 0 )
-            credentials = new UsernamePasswordCredentials( proxyUser, proxyPassword );
+        this.proxyUser = proxyUser;
+        this.proxyPassword = proxyPassword;
     }
 
     @Override
@@ -49,9 +48,17 @@ public class ProxyAuthFilter extends ClientFilter {
     }
 
     protected void handleProxyAuth( ClientRequest request ) {
-        if ( credentials != null ) {
-            Header proxyAuthHeader = BasicScheme.authenticate( credentials, "ASCII", true );
-            request.getHeaders().putSingle( proxyAuthHeader.getName(), proxyAuthHeader.getValue() );
+        if ( proxyUser != null && proxyUser.length() > 0 ) {
+            String userPass = proxyUser + ":" + ((proxyPassword == null) ? "null" : proxyPassword);
+
+            String userPass64;
+            try {
+                userPass64 = Base64.encodeBase64String( userPass.getBytes( "UTF-8" ) );
+            } catch ( UnsupportedEncodingException e ) {
+                userPass64 = Base64.encodeBase64String( userPass.getBytes() );
+            }
+
+            request.getHeaders().putSingle( "Proxy-Authorization", "Basic " + userPass64 );
         }
     }
 }

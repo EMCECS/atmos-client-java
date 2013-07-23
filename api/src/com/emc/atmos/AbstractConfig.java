@@ -42,6 +42,7 @@ public class AbstractConfig {
     protected URI[] endpoints;
     protected boolean disableSslValidation = false;
     protected int resolveCount = 0;
+    protected LoadBalancingAlgorithm loadBalancingAlgorithm = new RoundRobinAlgorithm();
     protected ThreadLocal<URI> threadEndpoint = new ThreadLocal<URI>();
 
     public AbstractConfig( String context, URI... endpoints ) {
@@ -51,8 +52,8 @@ public class AbstractConfig {
 
     /**
      * Resolves a path relative to the API context. The returned URI will be of the format
-     * scheme://host[:port]/context/relativePath?query. This implementation will tie a specific endpoint to each thread
-     * to avoid MDS sync issues. However, multiple threads will be distributed between the configured endpoints.
+     * scheme://host[:port]/context/relativePath?query. The scheme, host and port (endpoint) to use is delegated to the
+     * configured loadBalancingAlgorithm to balance load across multiple endpoints.
      */
     public URI resolvePath( String relativePath, String query ) {
         String path = relativePath;
@@ -63,12 +64,7 @@ public class AbstractConfig {
         // don't add the context if it's already there
         if ( !path.startsWith( context ) ) path = context + path;
 
-        // tie the endpoint to the current thread to eliminate MDS sync issues when using multiple endpoints
-        URI endpoint = threadEndpoint.get();
-        if ( endpoint == null ) {
-            endpoint = endpoints[resolveCount++ % endpoints.length];
-            threadEndpoint.set( endpoint );
-        }
+        URI endpoint = loadBalancingAlgorithm.getNextEndpoint( endpoints );
 
         try {
             URI uri = new URI( endpoint.getScheme(), null, endpoint.getHost(), endpoint.getPort(),
@@ -124,5 +120,19 @@ public class AbstractConfig {
      */
     public void setEndpoints( URI[] endpoints ) {
         this.endpoints = endpoints;
+    }
+
+    /**
+     * Returns the load balancing algorithm implementation used to distribute requests between multiple endpoints.
+     */
+    public LoadBalancingAlgorithm getLoadBalancingAlgorithm() {
+        return loadBalancingAlgorithm;
+    }
+
+    /**
+     * Sets the load balancing algorithm implementation used to distribute requests between multiple endpoints.
+     */
+    public void setLoadBalancingAlgorithm( LoadBalancingAlgorithm loadBalancingAlgorithm ) {
+        this.loadBalancingAlgorithm = loadBalancingAlgorithm;
     }
 }
