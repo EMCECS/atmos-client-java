@@ -30,6 +30,7 @@ import com.emc.atmos.api.bean.*;
 import com.emc.atmos.api.jersey.AtmosApiClient;
 import com.emc.atmos.api.multipart.MultipartEntity;
 import com.emc.atmos.api.request.*;
+import com.emc.atmos.util.RandomInputStream;
 import com.emc.util.PropertiesUtil;
 import com.emc.util.StreamUtil;
 import com.sun.jersey.api.client.Client;
@@ -117,11 +118,11 @@ public class AtmosApiClientTest {
     protected void deleteRecursively( ObjectPath path ) {
         if ( path.isDirectory() ) {
             ListDirectoryRequest request = new ListDirectoryRequest().path( path );
-            for ( DirectoryEntry entry : this.api.listDirectory( request ).getEntries() ) {
-                String name = entry.getFilename();
-                if ( entry.isDirectory() ) name += "/"; // here's an inconsistency between namespace and list-directory
-                deleteRecursively( new ObjectPath( path, name ) );
-            }
+            do {
+                for ( DirectoryEntry entry : this.api.listDirectory( request ).getEntries() ) {
+                    deleteRecursively( new ObjectPath( path, entry ) );
+                }
+            } while ( request.getToken() != null );
         }
         this.api.delete( path );
     }
@@ -1645,8 +1646,8 @@ public class AtmosApiClientTest {
     }
 
     @Test
-    public void testUtf8Values() throws Exception {
-        String utf8String = "Hello ,\u0080\t \n \t\u000b";
+    public void testUtf8WhiteSpaceValues() throws Exception {
+        String utf8String = "Hello ,\u0080 \r \u000B \t \n \t";
 
         CreateObjectRequest request = new CreateObjectRequest();
         request.userMetadata( new Metadata( "utf8Key", utf8String, false ) );
@@ -2223,11 +2224,8 @@ public class AtmosApiClientTest {
     @Test
     public void testIssue9() throws Exception {
         int threadCount = 10;
-        final byte[] randomBuffer = new byte[10 * 1024]; // 10k buffer of random bytes
-        new Random().nextBytes( randomBuffer );
 
-        final CreateObjectRequest request = new CreateObjectRequest();
-        request.userMetadata( new Metadata( "test-data", null, true ) );
+        final int objectSize = 10 * 1000 * 1000; // not a power of 2
         final AtmosApi atmosApi = api;
         final List<ObjectIdentifier> cleanupList = new ArrayList<ObjectIdentifier>();
         ThreadPoolExecutor executor = new ThreadPoolExecutor( threadCount, threadCount, 0, TimeUnit.SECONDS,
@@ -2236,14 +2234,10 @@ public class AtmosApiClientTest {
             for ( int i = 0; i < threadCount; i++ ) {
                 executor.execute( new Thread() {
                     public void run() {
-                        ObjectId oid = atmosApi.createObject( request.content( new InputStream() {
-                            int i = 0;
-
-                            @Override
-                            public int read() throws IOException {
-                                return (int) randomBuffer[i++ % randomBuffer.length] & 0xFF;
-                            }
-                        } ).contentLength( 10 * 1000 * 1000 ) ).getObjectId();
+                        CreateObjectRequest request = new CreateObjectRequest();
+                        request.content( new RandomInputStream( objectSize ) ).contentLength( objectSize )
+                               .userMetadata( new Metadata( "test-data", null, true ) );
+                        ObjectId oid = atmosApi.createObject( request ).getObjectId();
                         cleanupList.add( oid );
                     }
                 } );

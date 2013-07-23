@@ -24,10 +24,10 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.esu.test;
 
+import com.emc.atmos.util.RandomInputStream;
 import com.emc.esu.api.*;
 import com.emc.esu.api.Checksum.Algorithm;
 import com.emc.esu.api.rest.DownloadHelper;
-import com.emc.esu.api.rest.EsuRestApi;
 import com.emc.esu.api.rest.UploadHelper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
@@ -2333,9 +2333,8 @@ public abstract class EsuApiTest {
     @Test
     public void testIssue9() throws Exception {
         int threadCount = 10;
-        final byte[] randomBuffer = new byte[10 * 1024]; // 10k buffer of random bytes
-        new Random().nextBytes( randomBuffer );
 
+        final int objectSize = 10 * 1000 * 1000; // size is not a power of 2.
         final MetadataList list = new MetadataList();
         list.addMetadata( new Metadata( "test-data", null, true ) );
         final EsuApi api = esu;
@@ -2346,15 +2345,8 @@ public abstract class EsuApiTest {
             for ( int i = 0; i < threadCount; i++ ) {
                 executor.execute( new Thread() {
                     public void run() {
-                        ObjectId oid = api.createObjectFromStream( null, list, new InputStream() {
-                            int i = 0;
-
-                            @Override
-                            public int read() throws IOException {
-                                int ret = (int) randomBuffer[i++ % randomBuffer.length];
-                                return ret;
-                            }
-                        }, 10 * 1000 * 1000, null );
+                        ObjectId oid = api.createObjectFromStream( null, list, new RandomInputStream( objectSize ),
+                                                                   objectSize, null );
                         cleanupList.add( oid );
                     }
                 } );
