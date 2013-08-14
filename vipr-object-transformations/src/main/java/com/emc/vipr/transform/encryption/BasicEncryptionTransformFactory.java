@@ -1,19 +1,34 @@
-package com.emc.vipr.transform;
+package com.emc.vipr.transform.encryption;
 
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Map;
 
 public class BasicEncryptionTransformFactory extends
         EncryptionTransformFactory<BasicEncryptionTransformer> {
 
     public KeyPair masterEncryptionKey;
-
-    public Map<String, KeyPair> masterDecryptionKeys;
+    private String masterEncryptionKeyFingerprint;
+    private Map<String, KeyPair> masterDecryptionKeys;
 
     public void setMasterEncryptionKey(KeyPair pair) {
+        this.masterEncryptionKey = pair;
+        try {
+            this.masterEncryptionKeyFingerprint = KeyUtils.getRsaPublicKeyFingerprint((RSAPublicKey)pair.getPublic());
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error adding master key", e);
+        }
+        addMasterDecryptionKey(pair);
     }
 
     public void addMasterDecryptionKey(KeyPair pair) {
+        try {
+            String fingerprint = KeyUtils.getRsaPublicKeyFingerprint((RSAPublicKey)pair.getPublic());
+            masterDecryptionKeys.put(fingerprint, pair);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error adding master key", e);
+        }
     }
 
     @Override

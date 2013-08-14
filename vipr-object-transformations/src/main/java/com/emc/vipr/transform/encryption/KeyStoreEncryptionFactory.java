@@ -1,4 +1,4 @@
-package com.emc.vipr.transform;
+package com.emc.vipr.transform.encryption;
 
 import java.security.KeyStore;
 import java.util.Map;

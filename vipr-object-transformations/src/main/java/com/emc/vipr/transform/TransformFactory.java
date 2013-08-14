@@ -9,9 +9,6 @@ import java.util.Map;
  * @param <T> the class of transformer that this class produces.
  */
 public abstract class TransformFactory<T extends Transformer> {
-    // Some predefined transformation classes
-    public static final String ENCRYPTION_CLASS = "ENC";
-    public static final String COMPRESSION_CLASS = "COMP";
     
     private Integer priority;
 
