@@ -29,7 +29,7 @@ public abstract class InputTransform {
      * @param in the inbound input stream.
      * @return the input stream wrapped with a decoder.
      */
-    public abstract InputStream decodeInputStream(InputStream in);
+    public abstract InputStream getDecodedInputStream();
 
     /**
      * Decodes the object's metadata.  Usually, this will simply return the object's
@@ -38,5 +38,7 @@ public abstract class InputTransform {
      * @param metadata the object's metadata
      * @return the decoded metadata.
      */
-    public abstract Map<String, String> decodeMetadata(Map<String, String> metadata);
+    public Map<String, String> getDecodedMetadata() {
+        return metadataToDecode;
+    }
 }

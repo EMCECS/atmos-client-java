@@ -1,6 +1,8 @@
 package com.emc.vipr.transform;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Map;
 
 /**
@@ -11,14 +13,15 @@ import java.util.Map;
  */
 public abstract class TransformFactory<T extends OutputTransform, U extends InputTransform> {
     
-    private Integer priority;
+    private int priority;
 
     /** 
      * Gets an "output" transform for the factory in its current
      * state.  This will be used to transform raw data on its way "out" to the server.
      * @return a transform that can encode the outbound object stream.
+     * @throws IOException 
      */
-    public abstract T getOutputTransform(InputStream streamToEncode, Map<String,String> metadataToEncode);
+    public abstract T getOutputTransform(OutputStream streamToEncode, Map<String,String> metadataToEncode) throws IOException;
 
     /**
      * Gets the "input" transform for the given class and metadata.
@@ -28,9 +31,10 @@ public abstract class TransformFactory<T extends OutputTransform, U extends Inpu
      * @param metadata metadata extracted from the inbound object (used to fine-tune
      * the transformation and/or provide metadata to also be transformed).
      * @return a transform that can decode the inbound object stream.
+     * @throws IOException 
      */
-    public abstract U getInputTransform(String transformClass, String config, 
-            Map<String, String> metadata);
+    public abstract U getInputTransform(String transformConfig, 
+            InputStream streamToDecode, Map<String, String> metadata) throws IOException;
 
     /**
      * Gets the high-level class of transform that this factory provides.  The
@@ -49,8 +53,19 @@ public abstract class TransformFactory<T extends OutputTransform, U extends Inpu
      * need to be checked.
      * @return true if this factory can decode the given object stream.
      */
-    public boolean canDecode(String transformClass, String config, Map<String,String> metadata) {
-        return getTransformClass().equals(transformClass);
+    public boolean canDecode(String transformConfig, Map<String,String> metadata) {
+        //
+        return getTransformClass().equals(splitTransformConfig(transformConfig)[0]);
+    }
+    
+    protected String[] splitTransformConfig(String transformConfig) {
+        String[] configTuple = transformConfig.split(":", 2);
+        
+        if(configTuple.length != 2) {
+            throw new IllegalArgumentException("Invalid transform config string: " + transformConfig);
+        }
+        
+        return configTuple;
     }
 
     /**
@@ -61,7 +76,7 @@ public abstract class TransformFactory<T extends OutputTransform, U extends Inpu
      * will take precedence.
      * @return this factory's priority.
      */
-    public Integer getPriority() {
+    public int getPriority() {
         return priority;
     }
     
@@ -69,7 +84,7 @@ public abstract class TransformFactory<T extends OutputTransform, U extends Inpu
      * Sets the priority for this factory.
      * @param priority
      */
-    public void setPriority(Integer priority) {
+    public void setPriority(int priority) {
         this.priority = priority;
     }
 

@@ -41,6 +41,8 @@ public class LZMAOutputStreamTest {
             classByteStream.write(buffer, 0, c);
         }
         data = classByteStream.toByteArray();
+        
+        classin.close();
     }
 
     /**

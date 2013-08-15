@@ -7,10 +7,12 @@ public abstract class OutputTransform {
 
     protected OutputStream streamToEncode;
     protected Map<String, String> metadataToEncode;
+    private String transformConfig;
 
-    public OutputTransform(OutputStream streamToEncode, Map<String, String> metadataToEncode) {
+    public OutputTransform(OutputStream streamToEncode, Map<String, String> metadataToEncode, String transformConfig) {
         this.streamToEncode = streamToEncode;
         this.metadataToEncode = metadataToEncode;
+        this.transformConfig = transformConfig;
     }
     
     /**
@@ -27,5 +29,13 @@ public abstract class OutputTransform {
      * @return the "encoded" metadata
      */
     public abstract Map<String, String> getEncodedMetadata();
+
+    /**
+     * Gets this transformation's mode string, e.g. "COMP:LZMA/3"
+     * @return the mode string.
+     */
+    public String getTransformConfig() {
+        return transformConfig;
+    }
 
 }

@@ -15,8 +15,8 @@ import com.emc.vipr.transform.OutputTransform;
 public abstract class EncryptionOutputTransform extends OutputTransform {
 
     public EncryptionOutputTransform(OutputStream streamToEncode,
-            Map<String, String> metadataToEncode) {
-        super(streamToEncode, metadataToEncode);
+            Map<String, String> metadataToEncode, String transformConfig) {
+        super(streamToEncode, metadataToEncode, transformConfig);
     }
 
 }

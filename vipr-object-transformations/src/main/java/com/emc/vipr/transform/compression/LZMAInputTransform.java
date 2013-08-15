@@ -26,7 +26,7 @@ public class LZMAInputTransform extends CompressionInputTransform {
     }
     
     @Override
-    public InputStream decodeInputStream(InputStream in) {
+    public InputStream getDecodedInputStream() {
         return lzmaInput;
     }
 

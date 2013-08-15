@@ -1,6 +1,8 @@
 package com.emc.vipr.transform.encryption;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.KeyStore;
 import java.util.Map;
 
@@ -34,16 +36,19 @@ public class KeyStoreEncryptionFactory extends
 
     @Override
     public BasicEncryptionOutputTransform getOutputTransform(
-            InputStream streamToEncode, Map<String, String> metadataToEncode) {
+            OutputStream streamToEncode, Map<String, String> metadataToEncode)
+            throws IOException {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public BasicEncryptionInputTransform getInputTransform(
-            String transformClass, String config, Map<String, String> metadata) {
+            String transformConfig, InputStream streamToDecode,
+            Map<String, String> metadata) throws IOException {
         // TODO Auto-generated method stub
         return null;
     }
 
+    
 }

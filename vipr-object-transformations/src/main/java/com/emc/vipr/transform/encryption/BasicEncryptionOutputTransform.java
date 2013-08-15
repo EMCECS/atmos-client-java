@@ -7,6 +7,8 @@ import java.io.OutputStream;
 import java.security.KeyPair;
 import java.util.Map;
 
+import com.emc.vipr.transform.TransformConstants;
+
 /**
  * @author cwikj
  *
@@ -18,8 +20,9 @@ public class BasicEncryptionOutputTransform extends EncryptionOutputTransform {
      * @param metadataToEncode
      */
     public BasicEncryptionOutputTransform(OutputStream streamToEncode,
-            Map<String, String> metadataToEncode, KeyPair asymmetricKey) {
-        super(streamToEncode, metadataToEncode);
+            Map<String, String> metadataToEncode, KeyPair asymmetricKey, String encryptionConfig) {
+        super(streamToEncode, metadataToEncode, 
+                TransformConstants.ENCRYPTION_CLASS + ":" + encryptionConfig);
         // TODO Auto-generated constructor stub
     }
 

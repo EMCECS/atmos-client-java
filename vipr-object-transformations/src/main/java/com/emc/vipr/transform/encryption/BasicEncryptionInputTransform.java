@@ -27,7 +27,7 @@ public class BasicEncryptionInputTransform extends EncryptionInputTransform {
      * @see com.emc.vipr.transform.InputTransform#decodeInputStream(java.io.InputStream)
      */
     @Override
-    public InputStream decodeInputStream(InputStream in) {
+    public InputStream getDecodedInputStream() {
         // TODO Auto-generated method stub
         return null;
     }
@@ -36,7 +36,7 @@ public class BasicEncryptionInputTransform extends EncryptionInputTransform {
      * @see com.emc.vipr.transform.InputTransform#decodeMetadata(java.util.Map)
      */
     @Override
-    public Map<String, String> decodeMetadata(Map<String, String> metadata) {
+    public Map<String, String> getDecodedMetadata() {
         // TODO Auto-generated method stub
         return null;
     }
