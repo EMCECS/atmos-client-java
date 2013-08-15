@@ -1,34 +1,39 @@
 package com.emc.vipr.transform;
 
+import java.io.InputStream;
 import java.util.Map;
 
 /**
- * Abstract base class that produces both "outbound" transformers that encode data and
- * "inbound" transformers that decode data.
+ * Abstract base class that produces both "output" transformers that encode data and
+ * "output" transforms that decode data.
  *
- * @param <T> the class of transformer that this class produces.
+ * @param <T> the class of transform that this class produces.
  */
-public abstract class TransformFactory<T extends Transformer> {
+public abstract class TransformFactory<T extends OutputTransform, U extends InputTransform> {
     
     private Integer priority;
 
     /** 
-     * Gets an "outbound" transformer for the factory in its current
-     * state.  This will be used to transform raw data on its way "out".
-     * @return a transformer that can encode the outbound object stream.
+     * Gets an "output" transform for the factory in its current
+     * state.  This will be used to transform raw data on its way "out" to the server.
+     * @return a transform that can encode the outbound object stream.
      */
-    public abstract T getTransformer();
+    public abstract T getOutputTransform(InputStream streamToEncode, Map<String,String> metadataToEncode);
 
     /**
-     * Gets the "inbound" transformer for the given object metadata.
-     * @param metadata metadata extracted from the inbound object
-     * @return a transformer that can decode the inbound object stream.
+     * Gets the "input" transform for the given class and metadata.
+     * @param transformClass the class of transform (in case a particular factory can
+     * handle multiple transform types)
+     * @param config the configuration of the transformClass.
+     * @param metadata metadata extracted from the inbound object (used to fine-tune
+     * the transformation and/or provide metadata to also be transformed).
+     * @return a transform that can decode the inbound object stream.
      */
-    public abstract T getTransformer(String transformClass, String config, 
+    public abstract U getInputTransform(String transformClass, String config, 
             Map<String, String> metadata);
 
     /**
-     * Gets the high-level class of transformer that this factory provides.  The
+     * Gets the high-level class of transform that this factory provides.  The
      * transform engine will use this to test whether the registered factory can decode
      * the given object.
      * @return the transformation class, e.g. "COMP" for compression or "ENC" for 
@@ -49,9 +54,9 @@ public abstract class TransformFactory<T extends Transformer> {
     }
 
     /**
-     * Gets the priority of this factory.  For outbound configurations, higher priority
+     * Gets the priority of this factory.  For output configurations, higher priority
      * transformations will be applied first (e.g. compression should be applied before
-     * encryption and therefore higher priority).  For inbound configurations, there may
+     * encryption and therefore higher priority).  For input configurations, there may
      * be multiple factories that can handle an object and the one with higher priority
      * will take precedence.
      * @return this factory's priority.

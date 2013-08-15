@@ -1,12 +1,13 @@
 package com.emc.vipr.transform.encryption;
 
+import java.io.InputStream;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Map;
 
 public class BasicEncryptionTransformFactory extends
-        EncryptionTransformFactory<BasicEncryptionTransformer> {
+        EncryptionTransformFactory<BasicEncryptionOutputTransform, BasicEncryptionInputTransform> {
 
     public KeyPair masterEncryptionKey;
     private String masterEncryptionKeyFingerprint;
@@ -38,20 +39,21 @@ public class BasicEncryptionTransformFactory extends
     }
 
     @Override
-    public BasicEncryptionTransformer getTransformer() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public BasicEncryptionTransformer getTransformer(String transformClass,
-            String config, Map<String, String> metadata) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public String getTransformClass() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public BasicEncryptionOutputTransform getOutputTransform(
+            InputStream streamToEncode, Map<String, String> metadataToEncode) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public BasicEncryptionInputTransform getInputTransform(
+            String transformClass, String config, Map<String, String> metadata) {
         // TODO Auto-generated method stub
         return null;
     }

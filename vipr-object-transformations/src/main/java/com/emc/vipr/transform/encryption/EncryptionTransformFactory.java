@@ -16,7 +16,7 @@ import com.emc.vipr.transform.TransformFactory;
  *
  * @param <T> the class of EncryptionTransformer that the factory will produce.
  */
-public abstract class EncryptionTransformFactory<T extends EncryptionTransformer> extends TransformFactory<T> {
+public abstract class EncryptionTransformFactory<T extends EncryptionOutputTransform, U extends EncryptionInputTransform> extends TransformFactory<T,U> {
     protected Provider provider;
     protected String algorithm;
     
