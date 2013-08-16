@@ -24,36 +24,12 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.esu.api.rest;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
+import com.emc.esu.api.*;
+import org.apache.http.*;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.*;
 import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
@@ -63,36 +39,24 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.impl.cookie.DateParseException;
 import org.apache.http.impl.cookie.DateUtils;
 import org.apache.http.message.AbstractHttpMessage;
-import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 import org.jdom.Document;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
 
-import com.emc.esu.api.Acl;
-import com.emc.esu.api.BufferSegment;
-import com.emc.esu.api.Checksum;
-import com.emc.esu.api.DirectoryEntry;
-import com.emc.esu.api.EsuException;
-import com.emc.esu.api.Extent;
-import com.emc.esu.api.Grantee;
-import com.emc.esu.api.Identifier;
-import com.emc.esu.api.ListOptions;
-import com.emc.esu.api.MetadataList;
-import com.emc.esu.api.MetadataTag;
-import com.emc.esu.api.MetadataTags;
-import com.emc.esu.api.ObjectId;
-import com.emc.esu.api.ObjectInfo;
-import com.emc.esu.api.ObjectMetadata;
-import com.emc.esu.api.ObjectPath;
-import com.emc.esu.api.ObjectResult;
-import com.emc.esu.api.ServiceInformation;
-import com.emc.esu.api.Version;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.security.GeneralSecurityException;
+import java.util.*;
 
 /**
  * This is an enhanced version of the REST API that uses the Apache Commons
@@ -120,15 +84,10 @@ public class EsuRestApiApache extends AbstractEsuRestApi {
      */
     public EsuRestApiApache(String host, int port, String uid, String sharedSecret) {
         super(host, port, uid, sharedSecret);
+
         SchemeRegistry schemeRegistry = new SchemeRegistry();
-        
-        if( port == 443 || (""+port).endsWith( "43" ) ) {
-            schemeRegistry.register(
-                    new Scheme("https", port, SSLSocketFactory.getSocketFactory()));
-        } else {
-            schemeRegistry.register(
-                 new Scheme("http", port, PlainSocketFactory.getSocketFactory()));
-        }
+        schemeRegistry.register(new Scheme("https", port, SSLSocketFactory.getSocketFactory()));
+        schemeRegistry.register(new Scheme("http", port, PlainSocketFactory.getSocketFactory()));
 
         PoolingClientConnectionManager cm = new PoolingClientConnectionManager(schemeRegistry);
         // Increase max total connection to 200
