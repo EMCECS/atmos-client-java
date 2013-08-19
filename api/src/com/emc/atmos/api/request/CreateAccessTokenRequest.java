@@ -29,6 +29,7 @@ import com.emc.atmos.api.ObjectId;
 import com.emc.atmos.api.ObjectPath;
 import com.emc.atmos.api.RestUtil;
 import com.emc.atmos.api.bean.AccessTokenPolicy;
+import com.emc.util.HttpUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -59,9 +60,11 @@ public class CreateAccessTokenRequest extends ObjectRequest<CreateAccessTokenReq
         if ( identifier != null ) {
             if ( identifier instanceof ObjectId )
                 RestUtil.addValue( headers, RestUtil.XHEADER_OBJECTID, identifier );
-            else if ( identifier instanceof ObjectPath )
-                RestUtil.addValue( headers, RestUtil.XHEADER_PATH, identifier );
-            else
+            else if ( identifier instanceof ObjectPath ) {
+                // enable UTF-8
+                RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
+                RestUtil.addValue( headers, RestUtil.XHEADER_PATH, HttpUtil.encodeUtf8( identifier.toString() ) );
+            } else
                 throw new UnsupportedOperationException(
                         "Only object ID and path are currently supported in access tokens" );
         }
