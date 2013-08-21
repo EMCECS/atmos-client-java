@@ -4,6 +4,7 @@
 package com.emc.vipr.transform.encryption;
 
 import java.io.InputStream;
+import java.security.Provider;
 import java.util.Map;
 
 import com.emc.vipr.transform.InputTransform;
@@ -13,11 +14,12 @@ import com.emc.vipr.transform.InputTransform;
  *
  */
 public abstract class EncryptionInputTransform extends InputTransform {
+    protected Provider provider;
 
     public EncryptionInputTransform(InputStream streamToDecode,
-            Map<String, String> metadataToDecode) {
+            Map<String, String> metadataToDecode, Provider provider) {
         super(streamToDecode, metadataToDecode);
-        // TODO Auto-generated constructor stub
+        this.provider = provider;
     }
 
 }

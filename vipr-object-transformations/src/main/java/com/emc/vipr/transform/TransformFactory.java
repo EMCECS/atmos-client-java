@@ -34,7 +34,7 @@ public abstract class TransformFactory<T extends OutputTransform, U extends Inpu
      * @throws IOException 
      */
     public abstract U getInputTransform(String transformConfig, 
-            InputStream streamToDecode, Map<String, String> metadata) throws IOException;
+            InputStream streamToDecode, Map<String, String> metadata) throws IOException, TransformException;
 
     /**
      * Gets the high-level class of transform that this factory provides.  The

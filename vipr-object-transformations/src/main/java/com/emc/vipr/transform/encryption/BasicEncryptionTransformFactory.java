@@ -16,6 +16,9 @@ import javax.crypto.NoSuchPaddingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.emc.vipr.transform.TransformConstants;
+import com.emc.vipr.transform.TransformException;
+
 public class BasicEncryptionTransformFactory
         extends
         EncryptionTransformFactory<BasicEncryptionOutputTransform, BasicEncryptionInputTransform> {
@@ -82,9 +85,29 @@ public class BasicEncryptionTransformFactory
     @Override
     public BasicEncryptionInputTransform getInputTransform(
             String transformConfig, InputStream streamToDecode,
-            Map<String, String> metadata) throws IOException {
-        // TODO Auto-generated method stub
-        return null;
+            Map<String, String> metadata) throws IOException, TransformException {
+
+        String[] transformTuple = splitTransformConfig(transformConfig);
+        if(transformTuple.length != 2) {
+            throw new TransformException("Invalid transform configuration: " + transformConfig);
+        }
+        
+        if(!TransformConstants.ENCRYPTION_CLASS.equals(transformTuple[0])) {
+            throw new TransformException("Unsupported transform class: " + transformTuple[0]);
+        }
+        
+        // Find master key
+        String masterKeyId = metadata.get(TransformConstants.META_ENCRYPTION_KEY_ID);
+        if(masterKeyId == null) {
+            throw new TransformException("Could not decrypt object. No master key ID set on object.");
+        }
+        
+        KeyPair masterKey = masterDecryptionKeys.get(masterKeyId);
+        if(masterKey == null) {
+            throw new TransformException("Could not decrypt object. No master key with ID " + masterKeyId + " found");
+        }
+
+        return new BasicEncryptionInputTransform(transformTuple[1], streamToDecode, metadata, masterKey, provider);
     }
 
     /**
@@ -106,7 +129,7 @@ public class BasicEncryptionTransformFactory
                     "The minimum RSA key size supported is 1024 bits. Your key is "
                             + keySize + " bits");
         } else if (keySize == 1024) {
-            logger.warn("1024-bit RSA key detected. Support for 1024-bit RSA keys may soon be removed from the JDK. Please upgrade to a stronger key (e.g. 2048-bit).");
+            logger.info("1024-bit RSA key detected. Support for 1024-bit RSA keys may soon be removed from the JDK. Please upgrade to a stronger key (e.g. 2048-bit).");
         }
     }
 

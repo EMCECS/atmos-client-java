@@ -8,6 +8,7 @@ import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -15,7 +16,14 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.SecretKeySpec;
+
 import org.apache.commons.codec.binary.Base64;
+
+import com.emc.vipr.transform.TransformConstants;
 
 /**
  * @author cwikj
@@ -153,5 +161,55 @@ public class KeyUtils {
         }
 
     }
+    
+    public static SecretKey decryptKey(String encodedKey, String algorithm, Provider provider, KeyPair masterKey) {
+        try {
+            Cipher cipher = null;
+            if(provider != null) {
+                cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM, provider);
+            } else {
+                cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM);
+            }
+            
+            cipher.init(Cipher.DECRYPT_MODE, masterKey.getPrivate());
+            
+            byte[] keyData = Base64.decodeBase64(encodedKey.getBytes("US-ASCII"));
+            
+            byte[] decryptedKey = cipher.doFinal(keyData);
+            
+            return new SecretKeySpec(decryptedKey, algorithm);
+        } catch(GeneralSecurityException e) {
+            throw new RuntimeException("Error encrypting object key: " + e, e);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Error encrypting object key: " + e, e);
+        }
+
+    }
+    
+    public static String encryptKey(SecretKey key, Provider provider, KeyPair masterKey) {
+        try {
+            Cipher cipher = null;
+            if(provider != null) {
+                cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM, provider);
+            } else {
+                cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM);
+            }
+            
+            cipher.init(Cipher.ENCRYPT_MODE, masterKey.getPublic());
+            
+            byte[] encryptedKey = cipher.doFinal(key.getEncoded());
+            
+            return new String(Base64.encodeBase64(encryptedKey), "US-ASCII");
+        } catch(GeneralSecurityException e) {
+            throw new RuntimeException("Error encrypting object key: " + e, e);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Error encrypting object key: " + e, e);
+        }
+
+    }
+
+
+
+
 
 }

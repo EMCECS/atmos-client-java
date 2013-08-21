@@ -8,7 +8,6 @@ import java.io.UnsupportedEncodingException;
 import java.security.DigestOutputStream;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -140,7 +139,7 @@ public class BasicEncryptionOutputTransform extends EncryptionOutputTransform im
         }
         encodedMetadata.put(TransformConstants.META_ENCRYPTION_IV, encodedIv);
         encodedMetadata.put(TransformConstants.META_ENCRYPTION_KEY_ID, masterEncryptionKeyFingerprint);
-        encodedMetadata.put(TransformConstants.META_ENCRYPTION_OBJECT_KEY, encryptKey(k));
+        encodedMetadata.put(TransformConstants.META_ENCRYPTION_OBJECT_KEY, KeyUtils.encryptKey(k, provider, masterKey));
         encodedMetadata.put(TransformConstants.META_ENCRYPTION_UNENC_SHA1, KeyUtils.toHexPadded(digest));
         encodedMetadata.put(TransformConstants.META_ENCRYPTION_UNENC_SIZE, ""+counterStream.getByteCount());
         
@@ -149,28 +148,6 @@ public class BasicEncryptionOutputTransform extends EncryptionOutputTransform im
                 signMetadata(encodedMetadata, (RSAPrivateKey) masterKey.getPrivate()));
         
         return encodedMetadata;
-    }
-
-    private String encryptKey(SecretKey key) {
-        try {
-            Cipher cipher = null;
-            if(provider != null) {
-                cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM, provider);
-            } else {
-                cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM);
-            }
-            
-            cipher.init(Cipher.ENCRYPT_MODE, masterKey.getPublic());
-            
-            byte[] encryptedKey = cipher.doFinal(key.getEncoded());
-            
-            return new String(Base64.encodeBase64(encryptedKey), "US-ASCII");
-        } catch(GeneralSecurityException e) {
-            throw new RuntimeException("Error encrypting object key: " + e, e);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Error encrypting object key: " + e, e);
-        }
-
     }
 
     @Override
