@@ -13,8 +13,17 @@ public interface TransformConstants {
     //////////////////////////
     // Encryption Constants //
     //////////////////////////
+    public static final String DEFAULT_ENCRYPTION_TRANSFORM = "AES/CBC/PKCS5Padding";
+    public static final int DEFAULT_ENCRYPTION_KEY_SIZE = 128;
+    public static final String METADATA_SIGNATURE_ALGORITHM = "SHA256withRSA";
+    public static final String KEY_ENCRYPTION_TRANSFORM = "RSA/ECB/OAEPWithSHA-1AndMGF1Padding";
     
-    public static final String DEFAULT_ENCRYPTION_MODE = "AES256/CBC/PKCS5Padding";
+    public static final String META_ENCRYPTION_KEY_ID = METADATA_PREFIX + "enc-key-id";
+    public static final String META_ENCRYPTION_OBJECT_KEY = METADATA_PREFIX + "enc-object-key";
+    public static final String META_ENCRYPTION_IV = METADATA_PREFIX + "iv";
+    public static final String META_ENCRYPTION_UNENC_SIZE = METADATA_PREFIX + "enc-unencrypted-size";
+    public static final String META_ENCRYPTION_UNENC_SHA1 = METADATA_PREFIX + "enc-unencrypted-sha1";
+    public static final String META_ENCRYPTION_META_SIG = METADATA_PREFIX + "enc-metadata-signature";
     
     ///////////////////////////
     // Compression Constants //

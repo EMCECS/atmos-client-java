@@ -1,11 +1,21 @@
 package com.emc.vipr.transform.encryption;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
+import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.codec.binary.Base64;
 
 /**
  * @author cwikj
@@ -113,6 +123,35 @@ public class KeyUtils {
         }
         
         return derEncodeValue((byte)0x30, objectData);
+    }
+    
+    /**
+     * Constructs an RSA KeyPair from base-64 encoded key material.
+     * @param publicKey The Base-64 encoded RSA public key in X.509 format.
+     * @param privateKey The Base-64 encoded RSA private key in PKCS#8 format.
+     * @return the KeyPair object containing both keys.
+     */
+    public static KeyPair rsaKeyPairFromBase64(String publicKey, String privateKey) {
+        try {
+            byte[] pubKeyBytes = Base64.decodeBase64(publicKey.getBytes("US-ASCII"));
+            byte[] privKeyBytes = Base64.decodeBase64(privateKey.getBytes("US-ASCII"));
+            
+            X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(pubKeyBytes);
+            PKCS8EncodedKeySpec privKeySpec = new PKCS8EncodedKeySpec(privKeyBytes);
+            
+            PublicKey pubKey;
+            PrivateKey privKey;
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            pubKey = keyFactory.generatePublic(pubKeySpec);
+            privKey = keyFactory.generatePrivate(privKeySpec);
+            
+            return new KeyPair(pubKey, privKey);
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException("Could not load key pair: " + e, e);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Could not load key pair: " + e, e);
+        }
+
     }
 
 }
