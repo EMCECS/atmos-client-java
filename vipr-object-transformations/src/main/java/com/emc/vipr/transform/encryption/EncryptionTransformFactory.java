@@ -11,6 +11,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 
 import com.emc.vipr.transform.TransformConstants;
+import com.emc.vipr.transform.TransformException;
 import com.emc.vipr.transform.TransformFactory;
 
 /**
@@ -70,11 +71,14 @@ public abstract class EncryptionTransformFactory<T extends EncryptionOutputTrans
     }
 
     /**
-     * 
+     * "Rekeys" an object.  This will locate the 
      * @param metadata
      * @return
+     * @throws TransformException 
+     * @throws DoesNotNeedRekeyException if the object is already up to date with the
+     * latest master key and does not need to be rekeyed. 
      */
-    public abstract Map<String, String> rekey(Map<String, String> metadata);
+    public abstract Map<String, String> rekey(Map<String, String> metadata) throws TransformException, DoesNotNeedRekeyException;
 
     public void setCryptoProvider(java.security.Provider provider) {
         this.provider = provider;

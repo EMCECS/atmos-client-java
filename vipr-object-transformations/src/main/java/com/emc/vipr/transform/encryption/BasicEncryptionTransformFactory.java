@@ -7,11 +7,13 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +36,7 @@ public class BasicEncryptionTransformFactory
         super();
         masterDecryptionKeys = new HashMap<String, KeyPair>();
     }
-    
+
     public BasicEncryptionTransformFactory(String encryptionTransform,
             int keySize, Provider provider) throws InvalidKeyException,
             NoSuchAlgorithmException, NoSuchPaddingException {
@@ -42,8 +44,10 @@ public class BasicEncryptionTransformFactory
     }
 
     public void setMasterEncryptionKey(KeyPair pair) {
-        if(!(pair.getPublic() instanceof RSAPublicKey)) {
-            throw new IllegalArgumentException("Only RSA KeyPairs are allowed, not " + pair.getPublic().getAlgorithm());
+        if (!(pair.getPublic() instanceof RSAPublicKey)) {
+            throw new IllegalArgumentException(
+                    "Only RSA KeyPairs are allowed, not "
+                            + pair.getPublic().getAlgorithm());
         }
         checkKeyLength(pair);
         this.masterEncryptionKey = pair;
@@ -68,53 +72,106 @@ public class BasicEncryptionTransformFactory
     }
 
     @Override
-    public Map<String, String> rekey(Map<String, String> metadata) {
-        // TODO Auto-generated method stub
-        return null;
-    }
+    public Map<String, String> rekey(Map<String, String> metadata)
+            throws TransformException {
+        String oldKeyId = metadata
+                .get(TransformConstants.META_ENCRYPTION_KEY_ID);
+        if (oldKeyId == null) {
+            throw new TransformException(
+                    "Metadata does not contain a master key ID");
+        }
+        if (oldKeyId.equals(masterEncryptionKeyFingerprint)) {
+            // This object is already using the current key.
+            logger.info("Object is already using the current master key");
+            throw new DoesNotNeedRekeyException(
+                    "Object is already using the current master key");
+        }
+        // Make sure we have the old key
+        if (!masterDecryptionKeys.containsKey(oldKeyId)) {
+            throw new TransformException("Master key with fingerprint "
+                    + oldKeyId + " not found");
+        }
+        
+        KeyPair oldKey = masterDecryptionKeys.get(oldKeyId);
+        String encodedKey = metadata.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY);
+        if(encodedKey == null) {
+            throw new TransformException("Encrypted object key not found");
+        }
+        
+        String algorithm = getEncryptionAlgorithm();
+        
+        SecretKey objectKey = KeyUtils.decryptKey(encodedKey, algorithm, provider, 
+                oldKey.getPrivate());
+        
+        // Re-encrypt key with the current master key
+        String newKey = KeyUtils.encryptKey(objectKey, provider, 
+                masterEncryptionKey.getPublic());
+        
+        Map<String, String> newMetadata = new HashMap<String, String>();
+        newMetadata.putAll(metadata);
+        newMetadata.remove(TransformConstants.META_ENCRYPTION_META_SIG);
+        newMetadata.put(TransformConstants.META_ENCRYPTION_OBJECT_KEY, newKey);
+        newMetadata.put(TransformConstants.META_ENCRYPTION_KEY_ID, 
+                masterEncryptionKeyFingerprint);
+        
+        // Re-sign
+        String signature = KeyUtils.signMetadata(newMetadata, 
+                (RSAPrivateKey) masterEncryptionKey.getPrivate(), provider);
+        newMetadata.put(TransformConstants.META_ENCRYPTION_META_SIG, signature);
 
+        return newMetadata;
+    }
+    
     @Override
     public BasicEncryptionOutputTransform getOutputTransform(
             OutputStream streamToEncode, Map<String, String> metadataToEncode)
             throws IOException {
-        return new BasicEncryptionOutputTransform(streamToEncode, 
-                metadataToEncode, masterEncryptionKeyFingerprint, masterEncryptionKey, 
-                encryptionTransform, keySize, provider);
+        return new BasicEncryptionOutputTransform(streamToEncode,
+                metadataToEncode, masterEncryptionKeyFingerprint,
+                masterEncryptionKey, encryptionTransform, keySize, provider);
     }
 
     @Override
     public BasicEncryptionInputTransform getInputTransform(
             String transformConfig, InputStream streamToDecode,
-            Map<String, String> metadata) throws IOException, TransformException {
+            Map<String, String> metadata) throws IOException,
+            TransformException {
 
         String[] transformTuple = splitTransformConfig(transformConfig);
-        if(transformTuple.length != 2) {
-            throw new TransformException("Invalid transform configuration: " + transformConfig);
-        }
-        
-        if(!TransformConstants.ENCRYPTION_CLASS.equals(transformTuple[0])) {
-            throw new TransformException("Unsupported transform class: " + transformTuple[0]);
-        }
-        
-        // Find master key
-        String masterKeyId = metadata.get(TransformConstants.META_ENCRYPTION_KEY_ID);
-        if(masterKeyId == null) {
-            throw new TransformException("Could not decrypt object. No master key ID set on object.");
-        }
-        
-        KeyPair masterKey = masterDecryptionKeys.get(masterKeyId);
-        if(masterKey == null) {
-            throw new TransformException("Could not decrypt object. No master key with ID " + masterKeyId + " found");
+        if (transformTuple.length != 2) {
+            throw new TransformException("Invalid transform configuration: "
+                    + transformConfig);
         }
 
-        return new BasicEncryptionInputTransform(transformTuple[1], streamToDecode, metadata, masterKey, provider);
+        if (!TransformConstants.ENCRYPTION_CLASS.equals(transformTuple[0])) {
+            throw new TransformException("Unsupported transform class: "
+                    + transformTuple[0]);
+        }
+
+        // Find master key
+        String masterKeyId = metadata
+                .get(TransformConstants.META_ENCRYPTION_KEY_ID);
+        if (masterKeyId == null) {
+            throw new TransformException(
+                    "Could not decrypt object. No master key ID set on object.");
+        }
+
+        KeyPair masterKey = masterDecryptionKeys.get(masterKeyId);
+        if (masterKey == null) {
+            throw new TransformException(
+                    "Could not decrypt object. No master key with ID "
+                            + masterKeyId + " found");
+        }
+
+        return new BasicEncryptionInputTransform(transformTuple[1],
+                streamToDecode, metadata, masterKey, provider);
     }
 
     /**
-     * Check for acceptable RSA key lengths. 1024-bit keys are not secure anymore
-     * and 512-bit keys are unacceptable. Newer JDKs have already removed
-     * support for the 512-bit keys and the 1024-bit keys may be removed in the
-     * future:
+     * Check for acceptable RSA key lengths. 1024-bit keys are not secure
+     * anymore and 512-bit keys are unacceptable. Newer JDKs have already
+     * removed support for the 512-bit keys and the 1024-bit keys may be removed
+     * in the future:
      * http://mail.openjdk.java.net/pipermail/security-dev/2012-December/
      * 006195.html
      * 

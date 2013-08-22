@@ -21,7 +21,7 @@ public abstract class TransformFactory<T extends OutputTransform, U extends Inpu
      * @return a transform that can encode the outbound object stream.
      * @throws IOException 
      */
-    public abstract T getOutputTransform(OutputStream streamToEncode, Map<String,String> metadataToEncode) throws IOException;
+    public abstract T getOutputTransform(OutputStream streamToEncode, Map<String,String> metadataToEncode) throws IOException, TransformException;
 
     /**
      * Gets the "input" transform for the given class and metadata.

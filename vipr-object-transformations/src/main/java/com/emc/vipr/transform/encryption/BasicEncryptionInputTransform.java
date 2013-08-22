@@ -51,7 +51,8 @@ public class BasicEncryptionInputTransform extends EncryptionInputTransform {
             throw new TransformException("Object key not found in object metadata");
         }
         
-        SecretKey sk = KeyUtils.decryptKey(encodedObjectKey, transformParams[0], provider, masterKey);
+        SecretKey sk = KeyUtils.decryptKey(encodedObjectKey, transformParams[0], provider, 
+                masterKey.getPrivate());
         
         // Get IV
         String encodedIv = metadataToDecode.get(TransformConstants.META_ENCRYPTION_IV);

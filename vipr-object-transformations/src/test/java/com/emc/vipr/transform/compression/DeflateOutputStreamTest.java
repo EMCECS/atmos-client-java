@@ -56,7 +56,7 @@ public class DeflateOutputStreamTest {
                 m.get(TransformConstants.META_COMPRESSION_COMP_RATIO));
         assertEquals("Uncompressed size incorrect", 2516125, Long.parseLong(m
                 .get(TransformConstants.META_COMPRESSION_UNCOMP_SIZE)));
-        assertEquals("Compressed size incorrect", 223542, Long.parseLong(m
+        assertEquals("Compressed size incorrect", 223548, Long.parseLong(m
                 .get(TransformConstants.META_COMPRESSION_COMP_SIZE)));
 
     }

@@ -65,9 +65,10 @@ public class KeyUtilsTest {
         SecretKey sk = kg.generateKey();
         logger.info("AES Key: " + KeyUtils.toHexPadded(sk.getEncoded()));
         
-        String encryptedKey = KeyUtils.encryptKey(sk, null, masterKey);
+        String encryptedKey = KeyUtils.encryptKey(sk, null, masterKey.getPublic());
         
-        SecretKey sk2 = KeyUtils.decryptKey(encryptedKey, "AES", null, masterKey);
+        SecretKey sk2 = KeyUtils.decryptKey(encryptedKey, "AES", null, 
+                masterKey.getPrivate());
         
         assertEquals("Keys not equal", sk, sk2);
         assertArrayEquals("Key data not equal", sk.getEncoded(), sk2.getEncoded());

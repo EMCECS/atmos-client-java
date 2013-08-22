@@ -1,9 +1,13 @@
 package com.emc.vipr.transform.encryption;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.KeyPair;
@@ -69,11 +73,6 @@ public class BasicEncryptionTransformFactoryTest {
         }
 
         fail("RSA key < 1024 bits should have been rejected by factory");
-    }
-
-    @Test
-    public void testRekey() {
-        fail("Not yet implemented");
     }
 
     @Test
@@ -225,8 +224,63 @@ public class BasicEncryptionTransformFactoryTest {
      * decrypting. The old key should be found and used as the decryption key.
      */
     @Test
-    public void testKeyRotation() {
+    public void testRekey() throws Exception {
+        BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
+        factory.setMasterEncryptionKey(oldKey);
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Map<String, String> metadata = new HashMap<String, String>();
+        metadata.put("name1", "value1");
+        metadata.put("name2", "value2");
+        BasicEncryptionOutputTransform outTransform = factory
+                .getOutputTransform(out, metadata);
+
+        // Get some data to encrypt.
+        InputStream classin = this.getClass().getClassLoader()
+                .getResourceAsStream("uncompressed.txt");
+        ByteArrayOutputStream classByteStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int c = 0;
+        while ((c = classin.read(buffer)) != -1) {
+            classByteStream.write(buffer, 0, c);
+        }
+        byte[] uncompressedData = classByteStream.toByteArray();
+        classin.close();
+
+        OutputStream encryptedStream = outTransform.getEncodedOutputStream();
+        encryptedStream.write(uncompressedData);
+        encryptedStream.close();
+        
+        byte[] encryptedObject = out.toByteArray();
+        Map<String, String> objectMetadata = outTransform.getEncodedMetadata();
+        
+        // Now, rekey.
+        factory.setMasterEncryptionKey(masterKey);
+        Map<String, String> objectMetadata2 = factory.rekey(objectMetadata);
+        
+        // Verify that the key ID and encrypted object key changed.
+        assertNotEquals("Master key ID should have changed", 
+                objectMetadata.get(TransformConstants.META_ENCRYPTION_KEY_ID),
+                objectMetadata2.get(TransformConstants.META_ENCRYPTION_KEY_ID));
+        assertNotEquals("Encrypted object key should have changed", 
+                objectMetadata.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY),
+                objectMetadata2.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY));
+        
+        // Decrypt with updated key
+        ByteArrayInputStream encodedInput = new ByteArrayInputStream(encryptedObject);
+        InputTransform inTransform = factory.getInputTransform(
+                outTransform.getTransformConfig(), encodedInput, objectMetadata2);
+        InputStream inStream = inTransform.getDecodedInputStream();
+        
+        ByteArrayOutputStream decodedOut = new ByteArrayOutputStream();
+        while ((c = inStream.read(buffer)) != -1) {
+            decodedOut.write(buffer, 0, c);
+        }
+        
+        byte[] decodedData = decodedOut.toByteArray();
+        
+        assertArrayEquals("Decrypted output incorrect", uncompressedData, decodedData);
+        
     }
 
 }

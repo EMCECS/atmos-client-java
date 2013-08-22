@@ -82,9 +82,11 @@ public class BasicEncryptionOutputTransform extends EncryptionOutputTransform im
 
             keygen.init(keySize);
             k = keygen.generateKey();
+            //System.out.println("Key: " + KeyUtils.toHexPadded(k.getEncoded()));
 
             cipher.init(Cipher.ENCRYPT_MODE, k);
             iv = cipher.getIV();
+            //System.out.println("IV: " + KeyUtils.toHexPadded(iv));
 
             MessageDigest sha1 = null;
             if (provider != null) {
@@ -138,14 +140,19 @@ public class BasicEncryptionOutputTransform extends EncryptionOutputTransform im
             throw new RuntimeException("Could not encode IV", e);
         }
         encodedMetadata.put(TransformConstants.META_ENCRYPTION_IV, encodedIv);
-        encodedMetadata.put(TransformConstants.META_ENCRYPTION_KEY_ID, masterEncryptionKeyFingerprint);
-        encodedMetadata.put(TransformConstants.META_ENCRYPTION_OBJECT_KEY, KeyUtils.encryptKey(k, provider, masterKey));
-        encodedMetadata.put(TransformConstants.META_ENCRYPTION_UNENC_SHA1, KeyUtils.toHexPadded(digest));
-        encodedMetadata.put(TransformConstants.META_ENCRYPTION_UNENC_SIZE, ""+counterStream.getByteCount());
+        encodedMetadata.put(TransformConstants.META_ENCRYPTION_KEY_ID, 
+                masterEncryptionKeyFingerprint);
+        encodedMetadata.put(TransformConstants.META_ENCRYPTION_OBJECT_KEY, 
+                KeyUtils.encryptKey(k, provider, masterKey.getPublic()));
+        encodedMetadata.put(TransformConstants.META_ENCRYPTION_UNENC_SHA1, 
+                KeyUtils.toHexPadded(digest));
+        encodedMetadata.put(TransformConstants.META_ENCRYPTION_UNENC_SIZE, 
+                ""+counterStream.getByteCount());
         
         // Sign x-emc fields.
         encodedMetadata.put(TransformConstants.META_ENCRYPTION_META_SIG, 
-                signMetadata(encodedMetadata, (RSAPrivateKey) masterKey.getPrivate()));
+                KeyUtils.signMetadata(encodedMetadata, 
+                        (RSAPrivateKey) masterKey.getPrivate(), provider));
         
         return encodedMetadata;
     }

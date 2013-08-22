@@ -3,6 +3,7 @@ package com.emc.vipr.transform.encryption;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.MessageDigest;
@@ -10,18 +11,25 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.emc.vipr.transform.TransformConstants;
 
@@ -30,6 +38,7 @@ import com.emc.vipr.transform.TransformConstants;
  *
  */
 public class KeyUtils {
+    private static final Logger logger = LoggerFactory.getLogger(KeyUtils.class);
     
     /**
      * Computes the fingerprint of an RSA public key.  This should be equivalent to the
@@ -162,7 +171,7 @@ public class KeyUtils {
 
     }
     
-    public static SecretKey decryptKey(String encodedKey, String algorithm, Provider provider, KeyPair masterKey) {
+    public static SecretKey decryptKey(String encodedKey, String algorithm, Provider provider, PrivateKey privateKey) {
         try {
             Cipher cipher = null;
             if(provider != null) {
@@ -171,7 +180,7 @@ public class KeyUtils {
                 cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM);
             }
             
-            cipher.init(Cipher.DECRYPT_MODE, masterKey.getPrivate());
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
             
             byte[] keyData = Base64.decodeBase64(encodedKey.getBytes("US-ASCII"));
             
@@ -186,7 +195,7 @@ public class KeyUtils {
 
     }
     
-    public static String encryptKey(SecretKey key, Provider provider, KeyPair masterKey) {
+    public static String encryptKey(SecretKey key, Provider provider, PublicKey publicKey) {
         try {
             Cipher cipher = null;
             if(provider != null) {
@@ -195,7 +204,7 @@ public class KeyUtils {
                 cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM);
             }
             
-            cipher.init(Cipher.ENCRYPT_MODE, masterKey.getPublic());
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
             
             byte[] encryptedKey = cipher.doFinal(key.getEncoded());
             
@@ -209,7 +218,102 @@ public class KeyUtils {
     }
 
 
+    /**
+     * 
+     * @param metadata
+     * @return
+     */
+    public static String signMetadata(Map<String, String> metadata,
+            RSAPrivateKey privateKey, Provider provider) {
+        // Get the set of keys to sign and sort them.
+        List<String> keys = new ArrayList<String>();
 
+        for (String key : metadata.keySet()) {
+            if (key.startsWith(TransformConstants.METADATA_PREFIX)) {
+                keys.add(key);
+            }
+        }
+
+        Collections.sort(keys, new Comparator<String>() {
+
+            @Override
+            public int compare(String s1, String s2) {
+                if (s1 == null && s2 == null) {
+                    return 0;
+                }
+                if (s1 == null) {
+                    return -s2.toLowerCase().compareTo(s1);
+                }
+
+                return s1.toLowerCase().compareTo(s2.toLowerCase());
+            }
+
+        });
+
+        StringBuffer canonicalString = new StringBuffer();
+        for (String key : keys) {
+            canonicalString.append(key.toLowerCase() + ":" + metadata.get(key)
+                    + "\n");
+        }
+
+        logger.debug("Canonical string: '%s'", canonicalString);
+        byte[] bytes;
+        try {
+            bytes = canonicalString.toString().getBytes("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            // Should never happen since UTF-8 is required.
+            throw new RuntimeException("Could not render string to bytes");
+        }
+
+        Signature sig = null;
+        try {
+            if (provider != null) {
+                sig = Signature.getInstance(
+                        TransformConstants.METADATA_SIGNATURE_ALGORITHM,
+                        provider);
+            } else {
+                sig = Signature
+                        .getInstance(TransformConstants.METADATA_SIGNATURE_ALGORITHM);
+            }
+            sig.initSign(privateKey);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(
+                    "Could not initialize signature algorithm: " + e, e);
+        } catch (InvalidKeyException e) {
+            // TODO Auto-generated catch block
+            throw new RuntimeException(
+                    "Could not initialize signature algorithm: " + e, e);
+        }
+        
+        // Sign it!
+        try {
+            sig.update(bytes);
+            byte[] signature = sig.sign();
+            
+            // Base-64
+            byte[] b64sig = Base64.encodeBase64(signature);
+            
+            return new String(b64sig, "US-ASCII");
+        } catch (SignatureException e) {
+            throw new RuntimeException("Could not compute metadata signature: " + e);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Could not encode metadata signature: " + e);
+        }
+
+    }
+
+    public static byte[] extractSubjectKeyIdentifier(byte[] derSki) {
+        // The first four bytes are DER encoding for the object type and length:
+        // 04 16 04 14: octet-stream(22 bytes) { octet-stream(20 bytes) }
+        // So, we just want the last 20 bytes to get the SHA1 fingerprint of the pubkey
+        byte[] dst = new byte[20];
+        if(derSki.length != 24) {
+            throw new RuntimeException("DER-encoded SKI should be 24 bytes");
+        }
+        
+        System.arraycopy(derSki, 4, dst, 0, 20);
+        return dst;
+    }
 
 
 }
