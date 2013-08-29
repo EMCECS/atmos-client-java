@@ -12,12 +12,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -33,6 +35,7 @@ public class BasicEncryptionTransformFactoryTest {
     private Properties keyprops;
     private KeyPair masterKey;
     private KeyPair oldKey;
+    protected Provider provider;
 
     @Before
     public void setUp() throws Exception {
@@ -53,6 +56,7 @@ public class BasicEncryptionTransformFactoryTest {
     public void testRejectSmallKey() throws Exception {
         // An RSA key < 1024 bits should be rejected as a master key.
         BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
+        factory.setCryptoProvider(provider);
         KeyPair smallKey = null;
         try {
             smallKey = KeyUtils.rsaKeyPairFromBase64(
@@ -78,12 +82,14 @@ public class BasicEncryptionTransformFactoryTest {
     @Test
     public void testSetMasterEncryptionKey() throws Exception {
         BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
+        factory.setCryptoProvider(provider);
         factory.setMasterEncryptionKey(masterKey);
     }
 
     @Test
     public void testAddMasterDecryptionKey() throws Exception {
         BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
+        factory.setCryptoProvider(provider);
         factory.setMasterEncryptionKey(masterKey);
         factory.addMasterDecryptionKey(oldKey);
     }
@@ -91,6 +97,7 @@ public class BasicEncryptionTransformFactoryTest {
     @Test
     public void testGetOutputTransform() throws Exception {
         BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
+        factory.setCryptoProvider(provider);
         factory.setMasterEncryptionKey(masterKey);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Map<String, String> metadata = new HashMap<String, String>();
@@ -136,7 +143,7 @@ public class BasicEncryptionTransformFactoryTest {
                 objectData.get(TransformConstants.META_ENCRYPTION_IV));
         assertEquals("Incorrect master encryption key ID",
                 KeyUtils.getRsaPublicKeyFingerprint((RSAPublicKey) masterKey
-                        .getPublic()),
+                        .getPublic(), provider),
                 objectData.get(TransformConstants.META_ENCRYPTION_KEY_ID));
         assertNotNull("Missing object key",
                 objectData.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY));
@@ -169,6 +176,7 @@ public class BasicEncryptionTransformFactoryTest {
                 .getResourceAsStream("encrypted.txt.aes128");
 
         BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
+        factory.setCryptoProvider(provider);
         factory.setMasterEncryptionKey(masterKey);
 
         // Load the transform.
@@ -208,6 +216,7 @@ public class BasicEncryptionTransformFactoryTest {
         KeyPair myKeyPair = keyGenerator.generateKeyPair();
 
         BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
+        factory.setCryptoProvider(provider);
 
         try {
             factory.setMasterEncryptionKey(myKeyPair);
@@ -226,7 +235,78 @@ public class BasicEncryptionTransformFactoryTest {
     @Test
     public void testRekey() throws Exception {
         BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
+        factory.setCryptoProvider(provider);
         factory.setMasterEncryptionKey(oldKey);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Map<String, String> metadata = new HashMap<String, String>();
+        metadata.put("name1", "value1");
+        metadata.put("name2", "value2");
+        BasicEncryptionOutputTransform outTransform = factory
+                .getOutputTransform(out, metadata);
+
+        // Get some data to encrypt.
+        InputStream classin = this.getClass().getClassLoader()
+                .getResourceAsStream("uncompressed.txt");
+        ByteArrayOutputStream classByteStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int c = 0;
+        while ((c = classin.read(buffer)) != -1) {
+            classByteStream.write(buffer, 0, c);
+        }
+        byte[] uncompressedData = classByteStream.toByteArray();
+        classin.close();
+
+        OutputStream encryptedStream = outTransform.getEncodedOutputStream();
+        encryptedStream.write(uncompressedData);
+        encryptedStream.close();
+        
+        byte[] encryptedObject = out.toByteArray();
+        Map<String, String> objectMetadata = outTransform.getEncodedMetadata();
+        
+        // Now, rekey.
+        factory.setMasterEncryptionKey(masterKey);
+        Map<String, String> objectMetadata2 = factory.rekey(objectMetadata);
+        
+        // Verify that the key ID and encrypted object key changed.
+        assertNotEquals("Master key ID should have changed", 
+                objectMetadata.get(TransformConstants.META_ENCRYPTION_KEY_ID),
+                objectMetadata2.get(TransformConstants.META_ENCRYPTION_KEY_ID));
+        assertNotEquals("Encrypted object key should have changed", 
+                objectMetadata.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY),
+                objectMetadata2.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY));
+        
+        // Decrypt with updated key
+        ByteArrayInputStream encodedInput = new ByteArrayInputStream(encryptedObject);
+        InputTransform inTransform = factory.getInputTransform(
+                outTransform.getTransformConfig(), encodedInput, objectMetadata2);
+        InputStream inStream = inTransform.getDecodedInputStream();
+        
+        ByteArrayOutputStream decodedOut = new ByteArrayOutputStream();
+        while ((c = inStream.read(buffer)) != -1) {
+            decodedOut.write(buffer, 0, c);
+        }
+        
+        byte[] decodedData = decodedOut.toByteArray();
+        
+        assertArrayEquals("Decrypted output incorrect", uncompressedData, decodedData);
+        
+    }
+    
+    /**
+     * Test encrypting with one key, changing the master encryption key, then
+     * decrypting. The old key should be found and used as the decryption key.
+     */
+    @Test
+    public void testRekey256() throws Exception {
+        BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
+        factory.setCryptoProvider(provider);
+        factory.setMasterEncryptionKey(oldKey);
+        
+        Assume.assumeTrue("256-bit AES is not supported", 
+                BasicEncryptionTransformFactory.getMaxKeySize("AES") > 128);
+        factory.setEncryptionSettings(TransformConstants.DEFAULT_ENCRYPTION_TRANSFORM, 
+                256, provider);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Map<String, String> metadata = new HashMap<String, String>();

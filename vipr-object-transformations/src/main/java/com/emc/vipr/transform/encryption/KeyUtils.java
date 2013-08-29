@@ -49,10 +49,15 @@ public class KeyUtils {
      * @return the key's fingerprint as a string of hexadecimal characters.
      * @throws NoSuchAlgorithmException if the SHA1 algorithm could not be initialized.
      */
-    public static String getRsaPublicKeyFingerprint(RSAPublicKey pubKey) 
+    public static String getRsaPublicKeyFingerprint(RSAPublicKey pubKey, Provider provider) 
             throws NoSuchAlgorithmException {
         byte[] pubkeyEnc = derEncodeRSAPublicKey(pubKey);
-        MessageDigest sha1 = MessageDigest.getInstance("sha1");
+        MessageDigest sha1;
+        if(provider != null) {
+            sha1 = MessageDigest.getInstance("sha1", provider);
+        } else {
+            sha1 = MessageDigest.getInstance("sha1");
+        }
         byte[] pubkeyDigest = sha1.digest(pubkeyEnc);
         
         return toHexPadded(pubkeyDigest);

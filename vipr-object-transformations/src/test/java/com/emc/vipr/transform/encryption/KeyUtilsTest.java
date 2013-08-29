@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Properties;
 
@@ -20,6 +21,7 @@ public class KeyUtilsTest {
 
     private Properties keyprops;
     private KeyPair masterKey;
+    protected Provider provider;
 
     @Before
     public void setUp() throws Exception {
@@ -39,7 +41,7 @@ public class KeyUtilsTest {
         assertEquals("Key fingerprint invalid",
                 "000317457b5645b7b5c4daf4cf6780c05438effd",
                 KeyUtils.getRsaPublicKeyFingerprint((RSAPublicKey) masterKey
-                        .getPublic()));
+                        .getPublic(), provider));
     }
 
     @Test
@@ -60,17 +62,21 @@ public class KeyUtilsTest {
     @Test
     public void testEncryptDecryptKey() throws NoSuchAlgorithmException {
         // Make an AES secret key
-        KeyGenerator kg = KeyGenerator.getInstance("AES");
+        KeyGenerator kg;
+        if(provider != null) {
+            kg = KeyGenerator.getInstance("AES", provider);
+        } else {
+            kg = KeyGenerator.getInstance("AES");
+        }
         kg.init(128);
         SecretKey sk = kg.generateKey();
         logger.info("AES Key: " + KeyUtils.toHexPadded(sk.getEncoded()));
         
-        String encryptedKey = KeyUtils.encryptKey(sk, null, masterKey.getPublic());
+        String encryptedKey = KeyUtils.encryptKey(sk, provider, masterKey.getPublic());
         
-        SecretKey sk2 = KeyUtils.decryptKey(encryptedKey, "AES", null, 
+        SecretKey sk2 = KeyUtils.decryptKey(encryptedKey, "AES", provider, 
                 masterKey.getPrivate());
         
-        assertEquals("Keys not equal", sk, sk2);
         assertArrayEquals("Key data not equal", sk.getEncoded(), sk2.getEncoded());
         
     }

@@ -12,10 +12,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
+import java.security.Provider;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -33,6 +35,7 @@ public class KeyStoreEncryptionFactoryTest {
     private String keystorePassword = "viprviprvipr";
     private String keyAlias = "masterkey";
     private String keystoreFile = "keystore.jks";
+    protected Provider provider;
 
     @Before
     public void setUp() throws Exception {
@@ -52,7 +55,71 @@ public class KeyStoreEncryptionFactoryTest {
     @Test
     public void testRekey() throws Exception {
         KeyStoreEncryptionFactory factory = new KeyStoreEncryptionFactory(keystore, 
-                "oldkey", keystorePassword.toCharArray());
+                "oldkey", keystorePassword.toCharArray(), provider);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Map<String, String> metadata = new HashMap<String, String>();
+        metadata.put("name1", "value1");
+        metadata.put("name2", "value2");
+        BasicEncryptionOutputTransform outTransform = factory
+                .getOutputTransform(out, metadata);
+
+        // Get some data to encrypt.
+        InputStream classin = this.getClass().getClassLoader()
+                .getResourceAsStream("uncompressed.txt");
+        ByteArrayOutputStream classByteStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int c = 0;
+        while ((c = classin.read(buffer)) != -1) {
+            classByteStream.write(buffer, 0, c);
+        }
+        byte[] uncompressedData = classByteStream.toByteArray();
+        classin.close();
+
+        OutputStream encryptedStream = outTransform.getEncodedOutputStream();
+        encryptedStream.write(uncompressedData);
+        encryptedStream.close();
+        
+        byte[] encryptedObject = out.toByteArray();
+        Map<String, String> objectMetadata = outTransform.getEncodedMetadata();
+        
+        // Now, rekey.
+        factory.setMasterEncryptionKeyAlias(keyAlias);
+        Map<String, String> objectMetadata2 = factory.rekey(objectMetadata);
+        
+        // Verify that the key ID and encrypted object key changed.
+        assertNotEquals("Master key ID should have changed", 
+                objectMetadata.get(TransformConstants.META_ENCRYPTION_KEY_ID),
+                objectMetadata2.get(TransformConstants.META_ENCRYPTION_KEY_ID));
+        assertNotEquals("Encrypted object key should have changed", 
+                objectMetadata.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY),
+                objectMetadata2.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY));
+        
+        // Decrypt with updated key
+        ByteArrayInputStream encodedInput = new ByteArrayInputStream(encryptedObject);
+        InputTransform inTransform = factory.getInputTransform(
+                outTransform.getTransformConfig(), encodedInput, objectMetadata2);
+        InputStream inStream = inTransform.getDecodedInputStream();
+        
+        ByteArrayOutputStream decodedOut = new ByteArrayOutputStream();
+        while ((c = inStream.read(buffer)) != -1) {
+            decodedOut.write(buffer, 0, c);
+        }
+        
+        byte[] decodedData = decodedOut.toByteArray();
+        
+        assertArrayEquals("Decrypted output incorrect", uncompressedData, decodedData);
+    }
+
+    @Test
+    public void testRekey256() throws Exception {
+        KeyStoreEncryptionFactory factory = new KeyStoreEncryptionFactory(keystore, 
+                "oldkey", keystorePassword.toCharArray(), provider);
+
+        Assume.assumeTrue("256-bit AES is not supported", 
+                KeyStoreEncryptionFactory.getMaxKeySize("AES") > 128);
+        factory.setEncryptionSettings(TransformConstants.DEFAULT_ENCRYPTION_TRANSFORM, 
+                256, provider);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Map<String, String> metadata = new HashMap<String, String>();
@@ -113,7 +180,7 @@ public class KeyStoreEncryptionFactoryTest {
         // Should fail if key not found.
         try {
             new KeyStoreEncryptionFactory(keystore, 
-                    "NoKey", keystorePassword.toCharArray());
+                    "NoKey", keystorePassword.toCharArray(), provider);
             fail("Should not init with invalid key alias");
         } catch(InvalidKeyException e) {
             // OK
@@ -123,7 +190,7 @@ public class KeyStoreEncryptionFactoryTest {
     @Test
     public void testGetOutputTransform() throws Exception {
         KeyStoreEncryptionFactory factory = new KeyStoreEncryptionFactory(keystore, 
-                keyAlias, keystorePassword.toCharArray());
+                keyAlias, keystorePassword.toCharArray(), provider);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Map<String, String> metadata = new HashMap<String, String>();
         metadata.put("name1", "value1");
@@ -199,7 +266,7 @@ public class KeyStoreEncryptionFactoryTest {
                 .getResourceAsStream("encrypted.txt.keystore.aes128");
 
         KeyStoreEncryptionFactory factory = new KeyStoreEncryptionFactory(keystore, 
-                keyAlias, keystorePassword.toCharArray());
+                keyAlias, keystorePassword.toCharArray(), provider);
 
         // Load the transform.
         InputTransform inTransform = factory.getInputTransform("ENC:AES/CBC/PKCS5Padding", encryptedObject, objectMetadata);

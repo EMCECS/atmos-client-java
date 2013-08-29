@@ -9,6 +9,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.util.Enumeration;
@@ -39,12 +40,20 @@ public class KeyStoreEncryptionFactory extends
     private Map<String, String> idToAliasMap;
 
     public KeyStoreEncryptionFactory(KeyStore keyStore,
-            String masterEncryptionKeyAlias, char[] keyStorePassword) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, TransformException {
+            String masterEncryptionKeyAlias, 
+            char[] keyStorePassword) throws InvalidKeyException, 
+                NoSuchAlgorithmException, NoSuchPaddingException, TransformException {
+        this(keyStore, masterEncryptionKeyAlias, keyStorePassword, null);
+    }
+
+    public KeyStoreEncryptionFactory(KeyStore keyStore,
+            String masterEncryptionKeyAlias, char[] keyStorePassword, Provider provider) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, TransformException {
         super();
         this.keyStore = keyStore;
         this.masterEncryptionKeyAlias = masterEncryptionKeyAlias;
         this.keyStorePassword = keyStorePassword;
         this.idToAliasMap = new HashMap<String, String>();
+        this.provider = provider;
         
         // Make sure the master encryption key alias exists.
         try {
@@ -82,7 +91,8 @@ public class KeyStoreEncryptionFactory extends
             return fingerprint;
         } else {
             // Compute the fingerprint
-            return KeyUtils.getRsaPublicKeyFingerprint((RSAPublicKey) cert.getPublicKey());
+            return KeyUtils.getRsaPublicKeyFingerprint((RSAPublicKey) cert.getPublicKey(),
+                    provider);
         }
         
     }

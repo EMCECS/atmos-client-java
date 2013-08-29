@@ -53,7 +53,7 @@ public class BasicEncryptionTransformFactory
         this.masterEncryptionKey = pair;
         try {
             this.masterEncryptionKeyFingerprint = KeyUtils
-                    .getRsaPublicKeyFingerprint((RSAPublicKey) pair.getPublic());
+                    .getRsaPublicKeyFingerprint((RSAPublicKey) pair.getPublic(), provider);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Error adding master key", e);
         }
@@ -63,7 +63,7 @@ public class BasicEncryptionTransformFactory
     public void addMasterDecryptionKey(KeyPair pair) {
         try {
             String fingerprint = KeyUtils
-                    .getRsaPublicKeyFingerprint((RSAPublicKey) pair.getPublic());
+                    .getRsaPublicKeyFingerprint((RSAPublicKey) pair.getPublic(), provider);
             masterDecryptionKeys.put(fingerprint, pair);
             masterEncryptionKeyFingerprint = fingerprint;
         } catch (NoSuchAlgorithmException e) {
