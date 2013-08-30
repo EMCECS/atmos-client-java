@@ -16,7 +16,7 @@
             <include name="*.jar"/>
         </fileset>
         <fileset dir="${esu_java_path}/build">
-            <include name="emcesu.jar"/>
+            <include name="*.jar"/>
         </fileset>
         <fileset dir="${esu_java_path}/lib">
             <include name="*.jar"/>
@@ -45,19 +45,9 @@
             </manifest>
             <fileset dir="classes"/>
             <fileset dir="${esu_java_path}/classes"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/commons-codec-1.4.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jdom.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-client-1.13.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-core-1.13.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/log4j-1.2.16.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/rest_model-1.0.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/security-1.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/commons-logging-1.1.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpclient-4.1.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpclient-cache-4.1.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpcore-4.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpmime-4.1.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/commons-cli-1.2.jar"/>
+            <zipgroupfileset dir="${esu_java_path}/lib" includes="*.jar" excludes="META-INF/*.SF"/>
+            <zipgroupfileset dir="${esu_java_path}/commons-httpclient" includes="*.jar" excludes="META-INF/*.SF"/>
+            <zipgroupfileset dir="lib" includes="*.jar" excludes="META-INF/*.SF"/>
         </jar>
     </target>
 	

@@ -14,6 +14,8 @@
 
     <property name="esu_java_path" location="../../api" />
 
+    <property name="version" value="2.1.0" />
+
 	<!--ANT 1.7 is required                                        -->
 	<!-- Classpath to compile with -->
 	<path id="classpath">
@@ -65,39 +67,15 @@
     </target>
 
     <target name="create_run_jar" depends="compile">
-        <jar destfile="${dist}/AtmosSync.jar" filesetmanifest="mergewithoutmain">
+        <jar destfile="${dist}/AtmosSync.jar" manifest="${src}/MANIFEST.MF">
             <manifest>
-                <attribute name="Main-Class" value="com.emc.atmos.sync.AtmosSync2"/>
-                <attribute name="Class-Path" value="."/>
+                <attribute name="Implementation-Version" value="${version}"/>
             </manifest>
             <fileset dir="classes"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/aws-java-sdk-1.3.0.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/c3p0-0.9.1.2.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/commons-cli-1.2.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/gson-2.0.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/jgrapht-0.8.2.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/mysql-connector-java-5.1.18-bin.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.asm-3.1.0.RELEASE.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.beans-3.1.0.RELEASE.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.context-3.1.0.RELEASE.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.context.support-3.1.0.RELEASE.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.core-3.1.0.RELEASE.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.expression-3.1.0.RELEASE.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.jdbc-3.1.0.RELEASE.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="lib/org.springframework.transaction-3.1.0.RELEASE.jar"/>
             <fileset dir="${esu_java_path}/classes"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/commons-codec-1.4.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jdom.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-apache-client4-1.16.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-client-1.16.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/jersey-core-1.16.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/log4j-1.2.16.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/lib/security-1.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/commons-logging-1.1.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpclient-4.2.2.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpclient-cache-4.2.2.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpcore-4.2.2.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="${esu_java_path}/commons-httpclient/httpmime-4.2.2.jar"/>
+            <zipgroupfileset dir="${esu_java_path}/lib" includes="*.jar" excludes="META-INF/*.SF"/>
+            <zipgroupfileset dir="${esu_java_path}/commons-httpclient" includes="*.jar" excludes="META-INF/*.SF"/>
+            <zipgroupfileset dir="lib" includes="*.jar" excludes="META-INF/*.SF"/>
         </jar>
     </target>
 
