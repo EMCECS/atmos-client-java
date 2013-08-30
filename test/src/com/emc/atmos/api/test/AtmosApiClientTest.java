@@ -1598,7 +1598,7 @@ public class AtmosApiClientTest {
         BufferSegment segment = new BufferSegment( testData, 0, chunkSize );
 
         // upload in chunks
-        sha0.update( segment.getBuffer(), segment.getOffset(), segment.getSize() );
+        sha0.update( segment );
         l4j.debug( "Create checksum: " + sha0 );
         CreateObjectRequest request = new CreateObjectRequest();
         request.content( segment ).userMetadata( new Metadata( "policy", "erasure", false ) ).setWsChecksum( sha0 );
@@ -2349,7 +2349,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testReadAccessToken() throws Exception {
-        ObjectPath path = new ObjectPath( TESTDIR + "read_token_test" );
+        ObjectPath path = new ObjectPath( TESTDIR + "read_token \n,<x> test" );
         ObjectId id = api.createObject( path, "hello", "text/plain" );
 
         Calendar expiration = Calendar.getInstance();
@@ -2706,7 +2706,15 @@ public class AtmosApiClientTest {
         String tokenId = PropertiesUtil.getProperty( fileName, "atmos.uid" );
         String secretKey = PropertiesUtil.getProperty( fileName, "atmos.secret" );
 
-        return new AtmosConfig( tokenId, secretKey, uris.toArray( new URI[uris.size()] ) );
+        AtmosConfig config = new AtmosConfig( tokenId, secretKey, uris.toArray( new URI[uris.size()] ) );
+
+        try {
+            config.setProxyUri( new URI( PropertiesUtil.getProperty( fileName, "atmos.proxyUrl" ) ) );
+        } catch (RuntimeException e) {
+            // no proxy
+        }
+
+        return config;
     }
 
     private class RetryInputStream extends InputStream {
