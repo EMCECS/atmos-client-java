@@ -58,6 +58,13 @@ public class RunningChecksum extends ChecksumValue {
         this.offset += length;
     }
 
+    /**
+     * Convenience method to pass in a buffer segment.
+     */
+    public void update( BufferSegment segment ) {
+        this.update( segment.getBuffer(), segment.getOffset(), segment.getSize() );
+    }
+
     @Override
     public ChecksumAlgorithm getAlgorithm() {
         return algorithm;
