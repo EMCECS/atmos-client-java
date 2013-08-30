@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Main-Class: com.emc.atmos.sync.AtmosSync2
+Class-Path: .
+
+Name: com.emc.atmos.sync
+Specification-Title: "AtmosSync Tool"
+Specification-Version: "2.1"
+Specification-Vendor: "EMC".
+Implementation-Title: "AtmosSync2"
+Implementation-Vendor: "EMC"
