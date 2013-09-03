@@ -22,52 +22,55 @@
 //      CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 //      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //      POSSIBILITY OF SUCH DAMAGE.
-package com.emc.acdp.api.test;
+package com.emc.acdp.report;
 
-import com.emc.acdp.AcdpException;
-import com.emc.acdp.api.AcdpAdminConfig;
-import com.emc.acdp.api.jersey.AcdpAdminApiClient;
-import com.emc.util.PropertiesUtil;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 
-import junit.framework.Assert;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+public class CsvRenderer extends Renderer {
+    private CSVPrinter printer;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
-public class ErrorTest {
-    private static final String DO_NOT_CREATE_THIS_ACCOUNT = "delete_this_account_immediately";
-
-    AcdpAdminApiClient admin;
-
-    @Before
-    public void setUp() throws Exception {
-        try {
-            admin = new AcdpAdminApiClient( loadAdminConfig( "acdp.properties" ) );
-        } catch(Exception e) {
-            Assume.assumeNoException("Loading acdp.properties failed", e);
-        }
-
+    public CsvRenderer( OutputStream outputStream ) {
+        super( outputStream );
+        printer = new CSVPrinter( new OutputStreamWriter( outputStream ), CSVFormat.DEFAULT );
     }
 
-    @Test
-    public void testErrorParsing() {
-        try {
-            admin.getAccount( DO_NOT_CREATE_THIS_ACCOUNT );
-            Assert.fail( "Test account should not exist, but does!" );
-        } catch ( AcdpException e ) {
-            Assert.assertNotNull( "ACDP code is null", e.getAcdpCode() );
+    @Override
+    public void renderHeader( Map<String, String> headerLabels ) throws IOException {
+        List<String> headers = new ArrayList<String>();
+        for ( String columnName : getColumnNames() ) {
+            headers.add( headerLabels.get( columnName ) );
         }
+        printer.printRecords( headers.toArray( new String[headers.size()] ) );
     }
 
-    private AcdpAdminConfig loadAdminConfig( String fileName ) throws URISyntaxException {
-        URI endpoint = new URI( PropertiesUtil.getProperty( fileName, "acdp.admin.endpoint" ) );
-        String username = PropertiesUtil.getProperty( fileName, "acdp.admin.username" );
-        String password = PropertiesUtil.getProperty( fileName, "acdp.admin.password" );
+    @Override
+    public void renderRow( ReportRow row ) throws IOException {
+        List<String> values = new ArrayList<String>();
+        for ( String columnName : getColumnNames() ) {
+            Object value = row.get( columnName );
+            if ( value != null ) values.add( value.toString() );
+            else values.add( "" );
+        }
+        printer.printRecords( values.toArray( new String[values.size()] ) );
+    }
 
-        return new AcdpAdminConfig( endpoint.getScheme(), endpoint.getHost(), endpoint.getPort(), username, password );
+    @Override
+    public void flush() throws IOException {
+        printer.flush();
+    }
+
+    @Override
+    public void done() throws IOException {
+        printer.flush();
+        outputStream.close();
+        printer = null;
     }
 }

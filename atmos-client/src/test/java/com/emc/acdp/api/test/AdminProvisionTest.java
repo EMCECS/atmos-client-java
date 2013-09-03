@@ -30,7 +30,9 @@ import com.emc.acdp.api.jersey.AcdpAdminApiClient;
 import com.emc.cdp.services.rest.model.Account;
 import com.emc.esu.api.EsuException;
 import com.emc.util.PropertiesUtil;
+
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 import java.net.URI;
@@ -49,7 +51,11 @@ public class AdminProvisionTest {
     private AcdpAdminConfig config;
 
     public AdminProvisionTest() throws Exception {
-        config = loadAdminConfig( "acdp.properties" );
+        try {
+            config = loadAdminConfig( "acdp.properties" );
+        } catch(Exception e) {
+            Assume.assumeNoException("Loading acdp.properties failed", e);
+        }
     }
 
     @Test

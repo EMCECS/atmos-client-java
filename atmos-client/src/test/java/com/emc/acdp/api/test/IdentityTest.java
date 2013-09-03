@@ -34,7 +34,9 @@ import com.emc.cdp.services.rest.model.IdentityList;
 import com.emc.cdp.services.rest.model.ObjectFactory;
 import com.emc.cdp.services.rest.model.Profile;
 import com.emc.util.PropertiesUtil;
+
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,8 +53,13 @@ public class IdentityTest {
 
     @Before
     public void setUp() throws Exception {
-        mgmt = new AcdpMgmtApiClient( loadMgmtConfig( "acdp.properties" ) );
-        admin = new AcdpAdminApiClient( loadAdminConfig( "acdp.properties" ) );
+        try {
+            mgmt = new AcdpMgmtApiClient( loadMgmtConfig( "acdp.properties" ) );
+            admin = new AcdpAdminApiClient( loadAdminConfig( "acdp.properties" ) );
+        } catch(Exception e) {
+            Assume.assumeNoException("Loading acdp.properties failed", e);
+        }
+
     }
 
     @Test

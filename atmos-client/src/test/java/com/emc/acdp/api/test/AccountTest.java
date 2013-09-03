@@ -32,8 +32,10 @@ import com.emc.cdp.services.rest.model.Account;
 import com.emc.cdp.services.rest.model.Attribute;
 import com.emc.cdp.services.rest.model.ObjectFactory;
 import com.emc.util.PropertiesUtil;
+
 import org.apache.log4j.Logger;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -52,7 +54,11 @@ public class AccountTest {
     AcdpAdminConfig config;
 
     public AccountTest() throws Exception {
-        config = loadAdminConfig( "acdp.properties" );
+        try {
+            config = loadAdminConfig( "acdp.properties" );
+        } catch(Exception e) {
+            Assume.assumeNoException("Loading acdp.properties failed", e);
+        }
     }
 
     @Before

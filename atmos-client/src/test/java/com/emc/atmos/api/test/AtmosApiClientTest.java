@@ -41,15 +41,18 @@ import com.sun.jersey.api.client.filter.ClientFilter;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.BodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.ws.rs.core.MediaType;
+
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -1981,7 +1984,11 @@ public class AtmosApiClientTest {
         // Read back the content
         String content = new String( this.api.readObject( id, null, byte[].class ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
-
+        
+        // Check policyname
+        Map<String,Metadata> sysmeta = this.api.getSystemMetadata(id, "policyname");
+        Assume.assumeTrue("policyname != retaindelete", "retaindelete".equals(sysmeta.get("policyname")));
+        
         // Get the object info
         ObjectInfo oi = this.api.getObjectInfo( id );
         Assert.assertNotNull( "ObjectInfo null", oi );

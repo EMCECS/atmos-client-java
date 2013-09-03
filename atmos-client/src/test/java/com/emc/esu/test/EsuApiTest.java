@@ -29,14 +29,17 @@ import com.emc.esu.api.*;
 import com.emc.esu.api.Checksum.Algorithm;
 import com.emc.esu.api.rest.DownloadHelper;
 import com.emc.esu.api.rest.UploadHelper;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+
 import java.io.*;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -2160,6 +2163,7 @@ public abstract class EsuApiTest {
     //---------- Features supported by the Atmos 2.0 REST API. ----------\\
 
     // TODO: If this is not supported, remove it
+    @Ignore("Turned off by default.")
     @Test
     public void testHardLink() throws Exception {
         ObjectPath op1 = new ObjectPath("/" + rand8char() + ".tmp");

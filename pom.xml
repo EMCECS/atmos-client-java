@@ -24,6 +24,7 @@
     <module>s3-sample</module>
     <module>jersey-apache-httpclient4</module>
     <module>atmos-client</module>
+    <module>atmos-sample</module>
   </modules>
 
   <scm>
