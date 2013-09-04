@@ -32,6 +32,7 @@ import java.security.NoSuchAlgorithmException;
 import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
+import org.junit.Assume;
 import org.junit.Test;
 
 import com.emc.esu.sysmgmt.ListHostsResponse;
@@ -66,9 +67,10 @@ public class EsuSysMgmtApiTest {
     	}
     	
     	proto = System.getProperty("atmos.sysmgmt.proto");
-    	if( proto == null ) {
-    		throw new RuntimeException( "atmos.sysmgmt.proto is null.  Set in atmos.properties or on command line with -Datmos.sysmgmt.proto" );
-    	}
+    	Assume.assumeTrue("atmos.sysmgmt.proto is null", proto != null);
+//    	if( proto == null ) {
+//    		throw new RuntimeException( "atmos.sysmgmt.proto is null.  Set in atmos.properties or on command line with -Datmos.sysmgmt.proto" );
+//    	}
     	host = System.getProperty( "atmos.sysmgmt.host" );
     	if( host == null ) {
     		throw new RuntimeException( "atmos.sysmgmt.host is null.  Set in atmos.properties or on command line with -Datmos.sysmgmt.host" );
