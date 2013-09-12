@@ -15,6 +15,7 @@ import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.internal.*;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.transform.Unmarshaller;
@@ -35,15 +36,17 @@ import java.util.Map.Entry;
  *
  */
 public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
-     private static Log log = LogFactory.getLog(ViPRS3Client.class);
+    private static Log log = LogFactory.getLog(ViPRS3Client.class);
 
     /** Responsible for handling error responses from all S3 service calls. */
-    private S3ErrorResponseHandler errorResponseHandler = new S3ErrorResponseHandler();
+    protected S3ErrorResponseHandler errorResponseHandler = new S3ErrorResponseHandler();
 
-    private AWSCredentialsProvider awsCredentialsProvider;
-    private NamespaceRequestHandler nsRequestHandler;
+    protected AWSCredentialsProvider awsCredentialsProvider;
+    protected NamespaceRequestHandler nsRequestHandler;
 
-	private String namespace;
+    protected S3ClientOptions clientOptions = new S3ClientOptions();
+
+	protected String namespace;
 
     /**
      * Constructs a new ViPR S3 client using the specified AWS credentials to
@@ -114,7 +117,15 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 		this.awsCredentialsProvider = credentialsProvider;
 	}
 
-
+    /**
+     * This allows us to extend S3ClientOptions in the future. For now, setPathStyleAccess(true) if you do not want
+     * to use virtual-host-style namespaces/buckets (the default).
+     */
+    @Override
+    public void setS3ClientOptions(S3ClientOptions clientOptions) {
+        super.setS3ClientOptions(clientOptions);
+        this.clientOptions = new S3ClientOptions(clientOptions);
+    }
 
     public UpdateObjectResult updateObject(String bucketName, String key,
             File file, long startOffset) throws AmazonClientException {
@@ -297,9 +308,18 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
     @Override
     protected Signer createSigner(Request<?> request, String bucketName, String key) {
-        String resourcePath = "/" + ((namespace != null) ? namespace + "/" : "")
-                + ((bucketName != null) ? bucketName + "/" : "")
+        String resourcePath = "/" + ((bucketName != null) ? bucketName + "/" : "")
                 + ((key != null) ? ServiceUtils.urlEncode(key) : "");
+
+        // make sure namespace is set appropriately
+        if (namespace != null) {
+            if (!clientOptions.isPathStyleAccess()) { // pathStyleAccess == false indicates virtual-host-style
+                resourcePath = "/" + namespace + resourcePath;
+            } else {
+                if (!request.getHeaders().containsKey(ViPRConstants.NAMESPACE_HEADER))
+                    request.addHeader(ViPRConstants.NAMESPACE_HEADER, namespace);
+            }
+        }
 
         return new ViPRS3Signer(request.getHttpMethod().toString(), resourcePath);
     }
@@ -481,23 +501,22 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
 
 	/**
-	 * Gets the currently configured ViPR namespace.  If null, the
+	 * Gets the current ViPR namespace for this client.  If null, the
 	 * namespace will be automatically selected from the endpoint
 	 * hostname.
-	 * @return the current ViPR namespace
+	 * @return the ViPR namespace associated with this client
 	 */
 	public String getNamespace() {
 		return namespace;
 	}
 
     /**
-     * Sets the ViPR namespace to use. Generally, this will be automatically
+     * Sets the ViPR namespace to use for this client. Generally, this will be automatically
      * determined by the endpoint of the underlying S3 client in the form of
      * {namespace}.company.com, but if this is not possible, it can be
      * overridden by setting this property.
      *
-     * @param namespace
-     *            the namespace to set
+     * @param namespace the namespace to set
      */
     public synchronized void setNamespace(String namespace) {
         this.namespace = namespace;

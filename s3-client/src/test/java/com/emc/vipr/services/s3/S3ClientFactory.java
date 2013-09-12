@@ -41,9 +41,9 @@ import com.amazonaws.services.s3.model.EncryptionMaterials;
 public class S3ClientFactory {
     public static final String VIPR_PROPERTIES_FILE = "vipr.properties";
     
-    public static final String PROP_ACCESS_KEY_ID = "vipr.access_key_id";
-    public static final String PROP_SECRET_KEY = "vipr.secret_key";
-    public static final String PROP_ENDPOINT = "vipr.endpoint";
+    public static final String PROP_ACCESS_KEY_ID = "vipr.s3.access_key_id";
+    public static final String PROP_SECRET_KEY = "vipr.s3.secret_key";
+    public static final String PROP_ENDPOINT = "vipr.s3.endpoint";
     public static final String PROP_NAMESPACE = "vipr.namespace";
     public static final String PROP_PUBLIC_KEY = "vipr.encryption.publickey";
     public static final String PROP_PRIVATE_KEY = "vipr.encryption.privatekey";

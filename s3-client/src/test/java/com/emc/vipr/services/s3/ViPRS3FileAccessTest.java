@@ -28,9 +28,9 @@ public class ViPRS3FileAccessTest {
         s3 = S3ClientFactory.getS3Client();
     }
 
-//    @Test
+    @Test
     public void testBasicReadOnly() throws Exception {
-        String bucketName = "test.vipr-fileaccess-basic-read-only";
+        String bucketName = "test.vipr-basic-read-only2";
         String key = "basic-read-only.txt";
         String content = "Hello read-only!";
 
@@ -45,8 +45,8 @@ public class ViPRS3FileAccessTest {
             request.setBucketName(bucketName);
             request.setAccessMode(ViPRConstants.FileAccessMode.readOnly);
             request.setDuration(300); // seconds
-            request.setHostList(Arrays.asList("10.6.143.99", "10.6.143.100"));
-            request.setUid("501"); // restrictions??
+            request.setHostList(Arrays.asList("10.6.143.99", "10.6.143.100")); // client IP(s)
+            request.setUid("501"); // client's OS UID
 
             // change mode to read-only
             BucketFileAccessModeResult result = s3.setBucketFileAccessMode(request);
@@ -54,18 +54,18 @@ public class ViPRS3FileAccessTest {
             assertNotNull("set access-mode result is null", result);
             assertTrue("wrong access mode", request.getAccessMode() == result.getAccessMode()
                     || result.getAccessMode().transitionsToTarget(request.getAccessMode()));
-            //assertEquals("wrong duration", request.getDuration(), result.getDuration());
+            assertTrue("wrong duration", request.getDuration() - result.getDuration() < 5);
             assertArrayEquals("wrong host list", request.getHostList().toArray(), result.getHostList().toArray());
             assertEquals("wrong user", request.getUid(), result.getUid());
 
             // wait until complete (change is asynchronous)
-            waitForTransition(bucketName, ViPRConstants.FileAccessMode.readOnly, 20000);
+            waitForTransition(bucketName, ViPRConstants.FileAccessMode.readOnly, 30000);
 
             // verify mode change
             BucketFileAccessModeResult result2 = s3.getBucketFileAccessMode(bucketName);
 
             assertEquals("wrong access mode", request.getAccessMode(), result2.getAccessMode());
-            //assertEquals("wrong duration", request.getDuration(), result2.getDuration());
+            assertTrue("wrong duration", request.getDuration() - result2.getDuration() < 5);
             assertArrayEquals("wrong host list", request.getHostList().toArray(), result2.getHostList().toArray());
             assertEquals("wrong user", request.getUid(), result2.getUid());
 
@@ -84,12 +84,11 @@ public class ViPRS3FileAccessTest {
             // change mode back to disabled
             request = new SetBucketFileAccessModeRequest();
             request.setBucketName(bucketName);
-            request.setUid("501");
             request.setAccessMode(ViPRConstants.FileAccessMode.disabled);
             s3.setBucketFileAccessMode(request);
 
             // wait until complete
-            waitForTransition(bucketName, ViPRConstants.FileAccessMode.disabled, 20000);
+            waitForTransition(bucketName, ViPRConstants.FileAccessMode.disabled, 30000);
 
             // verify mode change
             fileAccessRequest = new GetFileAccessRequest();
@@ -98,25 +97,12 @@ public class ViPRS3FileAccessTest {
                 s3.getFileAccess(fileAccessRequest);
                 fail("GET fileaccess should fail when access mode is disabled");
             } catch (AmazonS3Exception e) {
-                if (!e.getErrorCode().equals("FileAccessNotAllowed")) throw e;
+                if (!"FileAccessNotAllowed".equals(e.getErrorCode())) throw e;
             }
 
         } finally {
             cleanBucket(bucketName);
         }
-    }
-
-    /*
-     * allowed transitions:
-     * disabled -> readOnly
-     * disabled -> readWrite
-     * readOnly -> disabled
-     * switchToReadOnly -> disabled (cancel read-only request)
-     * readWrite -> disabled
-     * switchToReadWrite -> disabled (cancel read-write request)
-     */
-    public void testAllTransitionsOnEmptyBucket() {
-
     }
 
     /**
