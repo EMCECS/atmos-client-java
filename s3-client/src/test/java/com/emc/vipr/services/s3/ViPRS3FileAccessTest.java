@@ -28,14 +28,26 @@ public class ViPRS3FileAccessTest {
         s3 = S3ClientFactory.getS3Client();
     }
 
+    protected void createBucket(String bucketName) {
+        try {
+            s3.createBucket(bucketName);
+        } catch(AmazonS3Exception e) {
+            if(e.getStatusCode() == 409) {
+                // Ignore; bucket exists;
+            } else {
+                throw e;
+            }
+        }
+    }
+
     @Test
     public void testBasicReadOnly() throws Exception {
-        String bucketName = "test.vipr-basic-read-only2";
+        String bucketName = "test.vipr-basic-read-only";
         String key = "basic-read-only.txt";
         String content = "Hello read-only!";
 
         try {
-            s3.createBucket(bucketName);
+            createBucket(bucketName);
             StringInputStream ss = new StringInputStream(content);
             ObjectMetadata om = new ObjectMetadata();
             om.setContentLength(ss.available());
@@ -59,13 +71,13 @@ public class ViPRS3FileAccessTest {
             assertEquals("wrong user", request.getUid(), result.getUid());
 
             // wait until complete (change is asynchronous)
-            waitForTransition(bucketName, ViPRConstants.FileAccessMode.readOnly, 30000);
+            waitForTransition(bucketName, ViPRConstants.FileAccessMode.readOnly, 60000);
 
             // verify mode change
             BucketFileAccessModeResult result2 = s3.getBucketFileAccessMode(bucketName);
 
             assertEquals("wrong access mode", request.getAccessMode(), result2.getAccessMode());
-            assertTrue("wrong duration", request.getDuration() - result2.getDuration() < 5);
+            assertTrue("wrong duration", request.getDuration() > result2.getDuration());
             assertArrayEquals("wrong host list", request.getHostList().toArray(), result2.getHostList().toArray());
             assertEquals("wrong user", request.getUid(), result2.getUid());
 

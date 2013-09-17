@@ -3,7 +3,7 @@ package com.emc.vipr.sample;
 import com.amazonaws.util.StringInputStream;
 import com.emc.vipr.services.s3.ViPRS3Client;
 import com.emc.vipr.services.s3.model.*;
-import com.emc.vipr.services.s3.model.Object;
+import com.emc.vipr.services.s3.model.FileAccessObject;
 
 import java.util.*;
 import java.util.concurrent.TimeoutException;
@@ -45,7 +45,7 @@ public class BucketFileAccess {
     }
 
     public void runSample() throws Exception {
-        String bucketName = "temp.vipr-fileaccess";
+        String bucketName = "temp.vipr-fileaccess2";
         String key1 = "test1.txt";
         String key2 = "test2.txt";
         String key3 = "test3.txt";
@@ -65,24 +65,24 @@ public class BucketFileAccess {
             s3.putObject(bucketName, key3, new StringInputStream(content), null);
             s3.putObject(bucketName, key4, new StringInputStream(content), null);
 
-            // switch to NFS access for all objects the bucket (this is the first export, so we don't have a token)
-            SampleUtils.log("Enabling NFS access for objects in workflow A");
+            // switch to NFS access for all objects in the bucket (this is the first export, so we don't have a token)
+            SampleUtils.log("Enabling NFS access for all objects in bucket %s..", bucketName);
             String tokenA = exportNewObjects(bucketName, fileAccessDuration, Arrays.asList(clientHost),
                     clientUid, null);
 
             // this token is a bucket version. it represents a point in time. objects older than this token are now
             // exported via NFS. any objects created after this point in time will not be accessible via NFS, but *will*
             // be accessible via REST.
-            SampleUtils.log("End-token for workflow A: %s", tokenA);
+            SampleUtils.log("This export represents version %s of the bucket", tokenA);
 
             // here we get the exports and object paths
-            Map<String, List<com.emc.vipr.services.s3.model.Object>> mountMap = getNfsObjectMap(bucketName);
+            Map<String, List<FileAccessObject>> mountMap = getNfsObjectMap(bucketName);
 
             // now we can mount the exports and process the objects in our workflow with some file-based tool
-            SampleUtils.log("processing objects in workflow A:");
+            SampleUtils.log("processing objects in version %s..", tokenA);
             for (String export : mountMap.keySet()) {
                 SampleUtils.log("> %s", export);
-                for (Object object : mountMap.get(export)) {
+                for (FileAccessObject object : mountMap.get(export)) {
                     // for this sample, "processing" just means dumping the objects to the log
                     SampleUtils.log("> > %s => %s", object.getName(), object.getRelativePath());
                 }
@@ -97,22 +97,22 @@ public class BucketFileAccess {
 
             // now, switch to NFS access for the new objects using the end-token returned from the last call.
             // when enabling NFS access, all objects *newer* than the token are included in the NFS export.
-            SampleUtils.log("Enabling NFS access for objects in workflow B");
+            SampleUtils.log("Enabling NFS access for new objects since version %s..", tokenA);
             String tokenB = exportNewObjects(bucketName, fileAccessDuration, Arrays.asList(clientHost),
                     clientUid, tokenA);
 
-            SampleUtils.log("End-token for workflow B: %s", tokenB);
+            SampleUtils.log("Now the export represents version %s of the bucket", tokenB);
 
             // here we get the exports and object paths
             mountMap = getNfsObjectMap(bucketName);
 
             // now we can mount the exports and process the objects in our workflow with some file-based tool.
             // we'll have to cherry-pick the new objects because the GET call returns everything (even objects from
-            // workflow A).
-            SampleUtils.log("processing objects in workflow B using filter:");
+            // the last workflow).
+            SampleUtils.log("processing only new objects by using a filter..");
             for (String export : mountMap.keySet()) {
                 SampleUtils.log("> %s", export);
-                for (Object object : mountMap.get(export)) {
+                for (FileAccessObject object : mountMap.get(export)) {
                     // filter:
                     if (!workflowBKeys.contains(object.getName())) continue;
                     // for this sample, "processing" just means dumping the objects to the log
@@ -130,14 +130,14 @@ public class BucketFileAccess {
             // switch mode back to disabled for those objects by passing end-token from first workflow.
             // this makes all objects in first workflow available via REST again.
             // when disabling NFS access, all objects *older* than the token are excluded from the NFS export.
-            SampleUtils.log("Work complete, changing file access mode back to disabled (workflow A):");
+            SampleUtils.log("Work complete on first set of objects, disabling file access for version %s..", tokenA);
             disableOldObjects(bucketName, tokenA);
 
             // now let's assume the second workflow is complete.
             // switch mode back to disabled for these objects by passing end-token from second workflow.
             // NOTE: setting mode to disabled *without* specifying a token will disable NFS access for *all* objects in
             // the bucket.
-            SampleUtils.log("Work complete, changing file access mode back to disabled (workflow B):");
+            SampleUtils.log("Work complete on second set of objects, disabling file access for version %s..", tokenB);
             disableOldObjects(bucketName, tokenA);
 
         } finally {
@@ -189,7 +189,7 @@ public class BucketFileAccess {
         waitForTransition(bucketName, ViPRConstants.FileAccessMode.disabled, 30);
     }
 
-    protected Map<String, List<com.emc.vipr.services.s3.model.Object>> getNfsObjectMap(String bucketName) {
+    protected Map<String, List<FileAccessObject>> getNfsObjectMap(String bucketName) {
 
         // create a request object and populate with parameters
         GetFileAccessRequest fileAccessRequest = new GetFileAccessRequest();
@@ -199,12 +199,12 @@ public class BucketFileAccess {
         GetFileAccessResult fileAccessResult = s3.getFileAccess(fileAccessRequest);
 
         // the XML does not organize objects by export, so we'll create a map
-        Map<String, List<com.emc.vipr.services.s3.model.Object>> mountMap
-                = new HashMap<String, List<com.emc.vipr.services.s3.model.Object>>();
-        for (com.emc.vipr.services.s3.model.Object object : fileAccessResult.getObjects()) {
-            List<com.emc.vipr.services.s3.model.Object> objects = mountMap.get(object.getDeviceExport());
+        Map<String, List<FileAccessObject>> mountMap
+                = new HashMap<String, List<FileAccessObject>>();
+        for (FileAccessObject object : fileAccessResult.getObjects()) {
+            List<FileAccessObject> objects = mountMap.get(object.getDeviceExport());
             if (objects == null) {
-                objects = new ArrayList<com.emc.vipr.services.s3.model.Object>();
+                objects = new ArrayList<FileAccessObject>();
                 mountMap.put(object.getDeviceExport(), objects);
             }
             objects.add(object);

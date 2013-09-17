@@ -16,7 +16,6 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Properties;
 
-import com.emc.vipr.services.s3.NamespaceRequestHandler;
 import com.emc.vipr.services.s3.ViPRS3Client;
 import org.apache.commons.codec.binary.Base64;
 
@@ -34,8 +33,8 @@ import com.amazonaws.services.s3.model.EncryptionMaterials;
  * <dl>vipr.secret_key</dl><dd>(Required) The shared secret key</dd>
  * <dl>vipr.endpoint</dl><dd>(Required) The endpoint hostname or IP address of the ViPR
  * data service server to use</dd>
- * <dl>vipr.namespace</dl><dd>(Optional) The ViPR namespace to connect to.  Generally
- * this is required if your endpoint is an IP or not in the format of {namespace}.company.com</dd>
+ * <dl>vipr.namespace</dl><dd>(Optional) The ViPR namespace to connect to if not using the default namespace of
+ * your tenant.</dd>
  * </dt>
  *
  * @author cwikj
@@ -43,9 +42,9 @@ import com.amazonaws.services.s3.model.EncryptionMaterials;
 public class S3ClientFactory {
     public static final String VIPR_PROPERTIES_FILE = "vipr.properties";
 
-    public static final String PROP_ACCESS_KEY_ID = "vipr.access_key_id";
-    public static final String PROP_SECRET_KEY = "vipr.secret_key";
-    public static final String PROP_ENDPOINT = "vipr.endpoint";
+    public static final String PROP_ACCESS_KEY_ID = "vipr.s3.access_key_id";
+    public static final String PROP_SECRET_KEY = "vipr.s3.secret_key";
+    public static final String PROP_ENDPOINT = "vipr.s3.endpoint";
     public static final String PROP_NAMESPACE = "vipr.namespace";
     public static final String PROP_PUBLIC_KEY = "vipr.encryption.publickey";
     public static final String PROP_PRIVATE_KEY = "vipr.encryption.privatekey";
@@ -142,12 +141,6 @@ public class S3ClientFactory {
         BasicAWSCredentials creds = new BasicAWSCredentials(accessKey, secretKey);
         AmazonS3EncryptionClient client = new AmazonS3EncryptionClient(creds, keys);
         client.setEndpoint(endpoint);
-
-        String namespace = props.getProperty(PROP_NAMESPACE);
-        if (namespace != null) {
-            NamespaceRequestHandler handler = new NamespaceRequestHandler(namespace);
-            client.addRequestHandler(handler);
-        }
 
         checkProxyConfig(client, props);
 

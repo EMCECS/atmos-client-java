@@ -2,6 +2,7 @@ package com.emc.vipr.services.s3;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.model.transform.XmlResponsesSaxParser;
+import com.emc.vipr.services.s3.model.FileAccessObject;
 import com.emc.vipr.services.s3.model.GetFileAccessResult;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -60,8 +61,8 @@ public class ViPRResponsesSaxParser extends XmlResponsesSaxParser {
         private GetFileAccessResult result = new GetFileAccessResult();
         private StringBuilder text;
         private List<String> mountPoints = new ArrayList<String>();
-        private List<com.emc.vipr.services.s3.model.Object> objects = new ArrayList<com.emc.vipr.services.s3.model.Object>();
-        private com.emc.vipr.services.s3.model.Object object, lastObject;
+        private List<FileAccessObject> objects = new ArrayList<FileAccessObject>();
+        private FileAccessObject object, lastObject;
 
         public GetFileAccessResult getResult() {
             return result;
@@ -89,7 +90,7 @@ public class ViPRResponsesSaxParser extends XmlResponsesSaxParser {
             } else if (name.equals("owner")) {
                 text.setLength(0);
             } else if (name.equals("objects")) {
-                object = new com.emc.vipr.services.s3.model.Object();
+                object = new FileAccessObject();
             } else {
                 log.warn("Ignoring unexpected tag <" + name + ">");
             }

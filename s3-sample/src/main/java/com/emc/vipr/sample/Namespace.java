@@ -6,16 +6,15 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3EncryptionClient;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.EncryptionMaterials;
-import com.emc.vipr.services.s3.NamespaceRequestHandler;
 import com.emc.vipr.services.s3.ViPRS3Client;
 
 public class Namespace {
     /**
      * If you're using ViPR namespaces other than the default, then you should
      * use the ViPRS3Client implementation and
-     * call setNamespace(). The only exception to this is if you wish to use an
-     * encryption client, like AmazonS3EncryptionClient, which does not have a
-     * counterpart in the ViPR SDK. Here are examples of each.
+     * call setNamespace(). If you wish to use an
+     * encryption client like AmazonS3EncryptionClient, which does not have a
+     * counterpart in the ViPR SDK, then you must use the default namespace. Here are examples of each.
      * 
      * @throws Exception
      */
@@ -41,18 +40,15 @@ public class Namespace {
     clientOptions.setPathStyleAccess(true);
     client.setS3ClientOptions(clientOptions);
 
-	// This is how you instantiate the encryption client using the
-	// namespace handler. If you are using the default namespace, this isn't necessary.
+	// This is how you instantiate the encryption client. you can only use the default namespace with this client.
 	EncryptionMaterials keys = null; // defining the keys is left to you
 
 	creds = new BasicAWSCredentials(accessKey, secretKey);
 	AmazonS3EncryptionClient client2 = new AmazonS3EncryptionClient(creds,
 		keys);
 	client2.setEndpoint(endpoint);
-	client2.addRequestHandler(new NamespaceRequestHandler(namespace));
-	
-	// that's it!  Now, all of your requests will have an explicit namespace
-	// specified.
+
+	// that's it!
     }
 
     /**
