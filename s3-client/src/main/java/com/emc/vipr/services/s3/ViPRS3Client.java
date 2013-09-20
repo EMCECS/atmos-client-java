@@ -22,6 +22,7 @@ import com.amazonaws.transform.Unmarshaller;
 import com.amazonaws.util.BinaryUtils;
 import com.amazonaws.util.Md5Utils;
 import com.emc.vipr.services.s3.model.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -40,6 +41,12 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
     /** Responsible for handling error responses from all S3 service calls. */
     protected S3ErrorResponseHandler errorResponseHandler = new S3ErrorResponseHandler();
+    
+    /** Shared response handler for operations with no response.  */
+    private S3XmlResponseHandler<Void> voidResponseHandler = new S3XmlResponseHandler<Void>(null);
+    
+    /** Utilities for validating bucket names */
+    private final BucketNameUtils bucketNameUtils = new BucketNameUtils();
 
     protected AWSCredentialsProvider awsCredentialsProvider;
     protected NamespaceRequestHandler nsRequestHandler;
@@ -622,6 +629,82 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
         return client.execute(request, responseHandler, errorResponseHandler, executionContext);
     }
+    
+    /**
+     * ViPR-specific create bucket command.  This version of the command adds some
+     * options specific to EMC ViPR, specifically the ability to set the ViPR project ID
+     * and Object Virtual Pool ID on the new bucket.
+     * @param createBucketRequest the configuration parameters for the new bucket. 
+     */
+    public Bucket createBucket(ViPRCreateBucketRequest createBucketRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(createBucketRequest,
+                "The CreateBucketRequest parameter must be specified when creating a bucket");
+
+        String bucketName = createBucketRequest.getBucketName();
+        String region = createBucketRequest.getRegion();
+        assertParameterNotNull(bucketName,
+                "The bucket name parameter must be specified when creating a bucket");
+
+        if (bucketName != null) bucketName = bucketName.trim();
+        bucketNameUtils.validateBucketName(bucketName);
+
+        Request<ViPRCreateBucketRequest> request = createRequest(bucketName, null, createBucketRequest, HttpMethodName.PUT);
+
+        if ( createBucketRequest.getAccessControlList() != null ) {
+            addAclHeaders(request, createBucketRequest.getAccessControlList());
+        } else if ( createBucketRequest.getCannedAcl() != null ) {
+            request.addHeader(Headers.S3_CANNED_ACL, createBucketRequest.getCannedAcl().toString());
+        }
+        
+        // ViPR specific: projectId and vpoolId.
+        if(createBucketRequest.getProjectId() != null) {
+            request.addHeader(ViPRConstants.PROJECT_HEADER, createBucketRequest.getProjectId());
+        }
+        if(createBucketRequest.getVpoolId() != null) {
+            request.addHeader(ViPRConstants.VPOOL_HEADER, createBucketRequest.getVpoolId());
+        }
+
+        /*
+         * If we're talking to a region-specific endpoint other than the US, we
+         * *must* specify a location constraint. Try to derive the region from
+         * the endpoint.
+         */
+        if ( region == null ) {
+            String endpoint = this.endpoint.getHost();
+            if ( endpoint.contains("us-west-1") ) {
+                region = Region.US_West.toString();
+            } else if ( endpoint.contains("us-west-2") ) {
+                region = Region.US_West_2.toString();
+            } else if ( endpoint.contains("eu-west-1") ) {
+                region = Region.EU_Ireland.toString();
+            } else if ( endpoint.contains("ap-southeast-1") ) {
+                region = Region.AP_Singapore.toString();
+            } else if ( endpoint.contains("ap-northeast-1") ) {
+                region = Region.AP_Tokyo.toString();
+            } else if ( endpoint.contains("sa-east-1") ) {
+                region = Region.SA_SaoPaulo.toString();
+            }
+        }
+
+        /*
+         * We can only send the CreateBucketConfiguration if we're *not*
+         * creating a bucket in the US region.
+         */
+        if (region != null && !region.toUpperCase().equals(Region.US_Standard.toString())) {
+            XmlWriter xml = new XmlWriter();
+            xml.start("CreateBucketConfiguration", "xmlns", Constants.XML_NAMESPACE);
+            xml.start("LocationConstraint").value(region).end();
+            xml.end();
+
+            request.setContent(new ByteArrayInputStream(xml.getBytes()));
+        }
+
+        invoke(request, voidResponseHandler, bucketName, null);
+
+        return new Bucket(bucketName);
+    }
+
 
     private String join(String delimiter, List<?> values) {
         return join(delimiter, values.toArray());

@@ -14,6 +14,9 @@ public interface ViPRConstants {
     static final String FILE_ACCESS_TOKEN_HEADER = "x-emc-file-access-token";
     static final String FILE_ACCESS_START_TOKEN_HEADER = "x-emc-file-access-start-token";
     static final String FILE_ACCESS_END_TOKEN_HEADER = "x-emc-file-access-end-token";
+    
+    static final String PROJECT_HEADER = "x-emc-project-id";
+    static final String VPOOL_HEADER = "x-emc-vpool";
 
     // Parameter names
     static final String ACCESS_MODE_PARAMETER = "accessmode";
