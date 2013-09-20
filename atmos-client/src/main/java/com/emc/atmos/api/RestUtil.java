@@ -71,6 +71,8 @@ public final class RestUtil {
     public static final String XHEADER_UTF8 = "x-emc-utf8";
     public static final String XHEADER_VERSION_OID = "x-emc-version-oid";
     public static final String XHEADER_WSCHECKSUM = "x-emc-wschecksum";
+    public static final String XHEADER_PROJECT = "x-emc-project-id";
+    public static final String XHEADER_OBJECT_VPOOL = "x-emc-vpool";
 
     public static final String TYPE_MULTIPART = "multipart";
     public static final String TYPE_MULTIPART_BYTE_RANGES = "multipart/byteranges";

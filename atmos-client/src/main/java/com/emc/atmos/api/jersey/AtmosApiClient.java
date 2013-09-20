@@ -34,11 +34,13 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.filter.ClientFilter;
+
 import org.apache.log4j.Logger;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -699,4 +701,11 @@ public class AtmosApiClient extends AbstractAtmosApi {
             return new MeasuredInputStream( (InputStream) content, request.getContentLength() );
         } else return content;
     }
+
+    @Override
+    public String createSubtenant(CreateSubtenantRequest request) {
+        ClientResponse response = build( request ).put( ClientResponse.class );
+        return response.getHeaders().get("subtenantID").get(0);
+    }
+
 }

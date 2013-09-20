@@ -492,4 +492,13 @@ public interface AtmosApi {
      */
     <T> GenericResponse<T> execute( PreSignedRequest request, Class<T> resultType, Object content )
             throws URISyntaxException;
+    
+    /**
+     * Creates a new Atmos Subtenant in EMC ViPR.  This operation is not supported on
+     * pure Atmos systems.
+     * @param request The {@link CreateSubtenantRequest} containing the parameters for
+     * the new subtenant.
+     * @return The ID of the new subtenant, e.g. "75077194912140aaa95911c237103695"
+     */
+    String createSubtenant(CreateSubtenantRequest request);
 }
