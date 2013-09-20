@@ -5,7 +5,7 @@ import java.util.List;
 public class GetFileAccessResult {
     private List<String> mountPoints;
     private boolean isTruncated;
-    private List<Object> objects;
+    private List<FileAccessObject> objects;
 
     private String lastKey;
 
@@ -38,11 +38,11 @@ public class GetFileAccessResult {
     /**
      * @return NFS details for all the objects accessible via NFS.
      */
-    public List<Object> getObjects() {
+    public List<FileAccessObject> getObjects() {
         return objects;
     }
 
-    public void setObjects(List<Object> objects) {
+    public void setObjects(List<FileAccessObject> objects) {
         this.objects = objects;
     }
 

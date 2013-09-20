@@ -77,8 +77,12 @@ public class S3ClientFactory {
         
         return props;
     }
-    
+
     public static ViPRS3Client getS3Client() {
+        return getS3Client(false);
+    }
+
+    public static ViPRS3Client getS3Client(boolean setNamespace) {
         try {
             Properties props = getProperties();
             
@@ -91,7 +95,7 @@ public class S3ClientFactory {
             client.setEndpoint(endpoint);
                         
             String namespace = props.getProperty(PROP_NAMESPACE);
-            if(namespace != null) {
+            if(namespace != null && setNamespace) {
                client.setNamespace(namespace);
             }
             checkProxyConfig(client, props);
@@ -138,12 +142,6 @@ public class S3ClientFactory {
         BasicAWSCredentials creds = new BasicAWSCredentials(accessKey, secretKey);
         AmazonS3EncryptionClient client = new AmazonS3EncryptionClient(creds, keys);
         client.setEndpoint(endpoint);
-        
-        String namespace = props.getProperty(PROP_NAMESPACE);
-        if(namespace != null) {
-           NamespaceRequestHandler handler = new NamespaceRequestHandler(namespace);
-           client.addRequestHandler(handler);
-        }
         
         checkProxyConfig(client, props);
         

@@ -1,6 +1,7 @@
 package com.emc.vipr.services.s3;
 
 import com.amazonaws.util.StringInputStream;
+import com.emc.vipr.services.s3.model.FileAccessObject;
 import com.emc.vipr.services.s3.model.GetFileAccessResult;
 import org.junit.Assert;
 import org.junit.Test;
@@ -36,7 +37,7 @@ public class ViPRResponsesSaxParserTest {
         Assert.assertEquals("wrong object number", 2, result.getObjects().size());
         Assert.assertEquals("wrong mount point value", "no_idea_what_goes_here", result.getMountPoints().get(0));
         Assert.assertEquals("wrong mount point value", "no_idea_what_goes_here", result.getMountPoints().get(1));
-        com.emc.vipr.services.s3.model.Object object = result.getObjects().get(0);
+        FileAccessObject object = result.getObjects().get(0);
         Assert.assertEquals("wrong object name", "foo", object.getName());
         Assert.assertEquals("wrong object export", "cifs://foo.foo/foo", object.getDeviceExport());
         Assert.assertEquals("wrong object relative path", "foo", object.getRelativePath());

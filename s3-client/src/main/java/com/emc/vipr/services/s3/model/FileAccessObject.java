@@ -1,6 +1,6 @@
 package com.emc.vipr.services.s3.model;
 
-public class Object {
+public class FileAccessObject {
     private String name;
     private String deviceExport;
     private String relativePath;

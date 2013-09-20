@@ -23,6 +23,7 @@ public class AtomicAppend {
             // first create an object
             SampleUtils.log("Creating object %s/%s with content: %s",
                     bucketName, key, content);
+            s3.createBucket(bucketName);
             s3.putObject(bucketName, key, new StringInputStream(content), null);
 
             // now we want to append to the object; we don't care exactly where

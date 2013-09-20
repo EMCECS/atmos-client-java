@@ -19,7 +19,7 @@ import com.amazonaws.services.s3.model.S3Object;
  * connection to ViPR.
  */
 public class BasicS3Test {
-    ViPRS3Client vipr;
+    protected ViPRS3Client vipr;
     
     private static final String TEST_BUCKET = "basic-s3-tests";
 

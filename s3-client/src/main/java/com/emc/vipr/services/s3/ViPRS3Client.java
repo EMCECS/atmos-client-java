@@ -28,6 +28,8 @@ import org.apache.commons.logging.LogFactory;
 
 import java.io.*;
 import java.lang.Object;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.Map.Entry;
@@ -49,7 +51,6 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     private final BucketNameUtils bucketNameUtils = new BucketNameUtils();
 
     protected AWSCredentialsProvider awsCredentialsProvider;
-    protected NamespaceRequestHandler nsRequestHandler;
 
     protected S3ClientOptions clientOptions = new S3ClientOptions();
 
@@ -242,7 +243,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
                 if (headers.containsKey(ViPRConstants.FILE_ACCESS_START_TOKEN_HEADER))
                     result.setStartToken(headers.get(ViPRConstants.FILE_ACCESS_START_TOKEN_HEADER));
                 if (headers.containsKey(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER))
-                    result.setEndToken(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER);
+                    result.setEndToken(headers.get(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER));
 
                 AmazonWebServiceResponse<BucketFileAccessModeResult> awsResponse = parseResponseMetadata(response);
                 awsResponse.setResult(result);
@@ -313,22 +314,73 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         }, bucketName, null);
     }
 
+    /**
+     * Overridden to specify the namespace via vHost or header. This choice is consistent with the
+     * bucket convention used in the standard AWS client.  vHost buckets implies vHost namespace, otherwise the
+     * namespace is specified in a header.
+     */
     @Override
-    protected Signer createSigner(Request<?> request, String bucketName, String key) {
-        String resourcePath = "/" + ((bucketName != null) ? bucketName + "/" : "")
-                + ((key != null) ? ServiceUtils.urlEncode(key) : "");
+    protected <X extends AmazonWebServiceRequest> Request<X> createRequest(String bucketName, String key, X originalRequest, HttpMethodName httpMethod) {
+        Request<X> request = super.createRequest(bucketName, key, originalRequest, httpMethod);
 
-        // make sure namespace is set appropriately
         if (namespace != null) {
-            if (!clientOptions.isPathStyleAccess()) { // pathStyleAccess == false indicates virtual-host-style
-                resourcePath = "/" + namespace + resourcePath;
+            // is this a vHost request?
+            if (vHostRequest(request, bucketName)) {
+                // then prepend the namespace and bucket into the request host
+                request.setEndpoint(convertToVirtualHostEndpoint(namespace, bucketName));
             } else {
+                // otherwise add a header for namespace
                 if (!request.getHeaders().containsKey(ViPRConstants.NAMESPACE_HEADER))
                     request.addHeader(ViPRConstants.NAMESPACE_HEADER, namespace);
             }
         }
 
+        return request;
+    }
+
+    /**
+     * Overridden to provide our own signer, which will include x-emc headers and namespace in the signature.
+     */
+    @Override
+    protected Signer createSigner(Request<?> request, String bucketName, String key) {
+        String resourcePath = "/" + ((bucketName != null) ? bucketName + "/" : "")
+                + ((key != null) ? ServiceUtils.urlEncode(key) : "");
+
+        // if we're using a vHost request, the namespace must be prepended to the resource path when signing
+        if (namespace != null && vHostRequest(request, bucketName)) {
+            resourcePath = "/" + namespace + resourcePath;
+        }
+
         return new ViPRS3Signer(request.getHttpMethod().toString(), resourcePath);
+    }
+
+    private boolean vHostRequest(Request<?> request, String bucketName) {
+        return request.getResourcePath() == null || !request.getResourcePath().startsWith(bucketName + "/");
+    }
+
+    /**
+     * Converts the current endpoint set for this client into virtual addressing
+     * style, by placing the name of the specified bucket and namespace before the S3
+     * endpoint.
+     *
+     * Convention is bucket.namespace.root-host (i.e. my-bucket.my-namespace.vipr-s3.my-company.com)
+     *
+     * @param namespace
+     *            The namespace to use in the virtual addressing style
+     *            of the returned URI.
+     * @param bucketName
+     *            The name of the bucket to use in the virtual addressing style
+     *            of the returned URI.
+     *
+     * @return A new URI, creating from the current service endpoint URI and the
+     *         specified namespace and bucket.
+     */
+    private URI convertToVirtualHostEndpoint(String namespace, String bucketName) {
+        try {
+            return new URI(endpoint.getScheme() + "://" + bucketName + "." + namespace + "." + endpoint.getAuthority());
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid namespace or bucket name: " + bucketName + "." + namespace, e);
+        }
     }
 
     /**
@@ -527,16 +579,6 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
      */
     public synchronized void setNamespace(String namespace) {
         this.namespace = namespace;
-        if (nsRequestHandler != null) {
-            // Remove the old handler
-            removeRequestHandler(nsRequestHandler);
-            nsRequestHandler = null;
-        }
-        if (namespace != null) {
-            // Create a new handler
-            nsRequestHandler = new NamespaceRequestHandler(namespace);
-            addRequestHandler(nsRequestHandler);
-        }
     }
 
     /**
