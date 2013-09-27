@@ -24,23 +24,18 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.esu.test;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-
-import junit.framework.Assert;
-
-import org.apache.log4j.Logger;
-import org.junit.Assume;
-import org.junit.Test;
-
+import com.emc.atmos.util.AtmosClientFactory;
 import com.emc.esu.sysmgmt.ListHostsResponse;
 import com.emc.esu.sysmgmt.ListRmgResponse;
 import com.emc.esu.sysmgmt.SysMgmtApi;
 import com.emc.esu.sysmgmt.SysMgmtResponse;
 import com.emc.esu.sysmgmt.pox.GetUidResponse;
 import com.emc.esu.sysmgmt.pox.ListRmgResponsePox;
+import com.emc.util.PropertiesUtil;
+import junit.framework.Assert;
+import org.apache.log4j.Logger;
+import org.junit.Assume;
+import org.junit.Test;
 
 /**
  * @author cwikj
@@ -57,28 +52,16 @@ public class EsuSysMgmtApiTest {
 	private SysMgmtApi api;
 
 	public EsuSysMgmtApiTest() {
-    	InputStream in = ClassLoader.getSystemResourceAsStream("atmos.properties");
-    	if( in != null ) {
-    		try {
-				System.getProperties().load(in);
-			} catch (IOException e) {
-				throw new RuntimeException( "Could not load atmos.properties", e);
-			}
-    	}
-    	
-    	proto = System.getProperty("atmos.sysmgmt.proto");
+    	proto = PropertiesUtil.getProperty(AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.sysmgmt.proto");
     	Assume.assumeTrue("atmos.sysmgmt.proto is null", proto != null);
 //    	if( proto == null ) {
 //    		throw new RuntimeException( "atmos.sysmgmt.proto is null.  Set in atmos.properties or on command line with -Datmos.sysmgmt.proto" );
 //    	}
-    	host = System.getProperty( "atmos.sysmgmt.host" );
-    	if( host == null ) {
-    		throw new RuntimeException( "atmos.sysmgmt.host is null.  Set in atmos.properties or on command line with -Datmos.sysmgmt.host" );
-    	}
-    	port = Integer.parseInt( System.getProperty( "atmos.sysmgmt.port" ) );
+    	host = PropertiesUtil.getRequiredProperty(AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.sysmgmt.host");
+    	port = Integer.parseInt( PropertiesUtil.getRequiredProperty(AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.sysmgmt.port") );
     	
-    	username = System.getProperty("atmos.sysmgmt.username");
-    	password = System.getProperty("atmos.sysmgmt.password");
+    	username = PropertiesUtil.getRequiredProperty(AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.sysmgmt.username");
+    	password = PropertiesUtil.getRequiredProperty(AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.sysmgmt.password");
     	
     	api = new SysMgmtApi(proto, host, port, username, password);
     	

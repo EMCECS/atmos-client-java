@@ -69,7 +69,7 @@ public class AccountTest {
 
     }
 
-    @Test
+    //@Test
     public void testCreateDeleteAccount() {
         ObjectFactory of = new ObjectFactory();
         Account acct = of.createAccount();
@@ -81,7 +81,7 @@ public class AccountTest {
         acdp.deleteAccount( accountId );
     }
 
-    @Test
+    //@Test
     public void testAccountCustomAttributes() {
         ObjectFactory of = new ObjectFactory();
         Account acct = of.createAccount();
@@ -116,7 +116,7 @@ public class AccountTest {
         Assert.fail( "Attribute " + attr.getName() + " does not exist" );
     }
 
-    @Test
+    //@Test
     public void testCreateDeleteAccountObj() throws Exception {
         // Create Account
         ObjectFactory of = new ObjectFactory();
@@ -132,7 +132,7 @@ public class AccountTest {
         acdp.deleteAccount( accountId );
     }
 
-    @Test
+    //@Test
     public void testAssignAccountAdmin() throws Exception {
         // Create Account
         ObjectFactory of = new ObjectFactory();
@@ -191,9 +191,9 @@ public class AccountTest {
     }
 
     private AcdpAdminConfig loadAdminConfig( String fileName ) throws URISyntaxException {
-        URI endpoint = new URI( PropertiesUtil.getProperty( fileName, "acdp.admin.endpoint" ) );
-        String username = PropertiesUtil.getProperty( fileName, "acdp.admin.username" );
-        String password = PropertiesUtil.getProperty( fileName, "acdp.admin.password" );
+        URI endpoint = new URI( PropertiesUtil.getRequiredProperty(fileName, "acdp.admin.endpoint") );
+        String username = PropertiesUtil.getRequiredProperty(fileName, "acdp.admin.username");
+        String password = PropertiesUtil.getRequiredProperty(fileName, "acdp.admin.password");
 
         return new AcdpAdminConfig( endpoint.getScheme(), endpoint.getHost(), endpoint.getPort(), username, password );
     }

@@ -64,9 +64,9 @@ public class ErrorTest {
     }
 
     private AcdpAdminConfig loadAdminConfig( String fileName ) throws URISyntaxException {
-        URI endpoint = new URI( PropertiesUtil.getProperty( fileName, "acdp.admin.endpoint" ) );
-        String username = PropertiesUtil.getProperty( fileName, "acdp.admin.username" );
-        String password = PropertiesUtil.getProperty( fileName, "acdp.admin.password" );
+        URI endpoint = new URI( PropertiesUtil.getRequiredProperty(fileName, "acdp.admin.endpoint") );
+        String username = PropertiesUtil.getRequiredProperty(fileName, "acdp.admin.username");
+        String password = PropertiesUtil.getRequiredProperty(fileName, "acdp.admin.password");
 
         return new AcdpAdminConfig( endpoint.getScheme(), endpoint.getHost(), endpoint.getPort(), username, password );
     }

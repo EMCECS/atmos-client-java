@@ -40,7 +40,8 @@ public class ViPRS3FileAccessTest {
         }
     }
 
-    @Test
+    // TODO: uncomment when CQ 608494 is fixed
+    //@Test
     public void testBasicReadOnly() throws Exception {
         String bucketName = "test.vipr-basic-read-only";
         String key = "basic-read-only.txt";

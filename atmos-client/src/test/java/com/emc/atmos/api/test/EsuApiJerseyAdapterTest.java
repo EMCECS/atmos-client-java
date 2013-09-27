@@ -26,24 +26,19 @@ package com.emc.atmos.api.test;
 
 import com.emc.atmos.api.AtmosConfig;
 import com.emc.atmos.api.jersey.EsuApiJerseyAdapter;
+import com.emc.atmos.util.AtmosClientFactory;
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.rest.AbstractEsuRestApi;
 import com.emc.esu.test.EsuApiTest;
-import com.emc.util.PropertiesUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class EsuApiJerseyAdapterTest extends EsuApiTest {
     private AtmosConfig config;
 
     public EsuApiJerseyAdapterTest() throws Exception {
-        config = loadAtmosConfig( "atmos.properties" );
+        config = AtmosClientFactory.getAtmosConfig();
         uid = config.getTokenId();
         config.setDisableSslValidation( true );
         config.setEnableExpect100Continue( false );
@@ -96,17 +91,5 @@ public class EsuApiJerseyAdapterTest extends EsuApiTest {
     public void testServerOffset() throws Exception {
         long offset = ((AbstractEsuRestApi) esu).calculateServerOffset();
         l4j.info( "Server offset: " + offset + " milliseconds" );
-    }
-
-    private AtmosConfig loadAtmosConfig( String fileName ) throws URISyntaxException {
-        String[] endpoints = PropertiesUtil.getProperty( fileName, "atmos.endpoints" ).split( "," );
-        List<URI> uris = new ArrayList<URI>();
-        for ( String endpoint : endpoints ) {
-            uris.add( new URI( endpoint ) );
-        }
-        String tokenId = PropertiesUtil.getProperty( fileName, "atmos.uid" );
-        String secretKey = PropertiesUtil.getProperty( fileName, "atmos.secret" );
-
-        return new AtmosConfig( tokenId, secretKey, uris.toArray( new URI[uris.size()] ) );
     }
 }

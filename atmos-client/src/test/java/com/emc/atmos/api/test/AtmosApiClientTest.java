@@ -30,8 +30,8 @@ import com.emc.atmos.api.bean.*;
 import com.emc.atmos.api.jersey.AtmosApiClient;
 import com.emc.atmos.api.multipart.MultipartEntity;
 import com.emc.atmos.api.request.*;
+import com.emc.atmos.util.AtmosClientFactory;
 import com.emc.atmos.util.RandomInputStream;
-import com.emc.util.PropertiesUtil;
 import com.emc.util.StreamUtil;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -41,22 +41,15 @@ import com.sun.jersey.api.client.filter.ClientFilter;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.BodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
-
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.ws.rs.core.MediaType;
-
 import java.io.*;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
@@ -79,7 +72,7 @@ public class AtmosApiClientTest {
     protected List<ObjectIdentifier> cleanup = Collections.synchronizedList( new ArrayList<ObjectIdentifier>() );
 
     public AtmosApiClientTest() throws Exception {
-        config = loadAtmosConfig( "atmos.properties" );
+        config = AtmosClientFactory.getAtmosConfig();
         config.setDisableSslValidation( false );
         config.setEnableExpect100Continue( false );
         config.setEnableRetry( false );
@@ -2708,26 +2701,6 @@ public class AtmosApiClientTest {
         policy.setMaxUploads( 10 );
         policy.setSource( source );
         return policy;
-    }
-
-    private AtmosConfig loadAtmosConfig( String fileName ) throws URISyntaxException {
-        String[] endpoints = PropertiesUtil.getProperty( fileName, "atmos.endpoints" ).split( "," );
-        List<URI> uris = new ArrayList<URI>();
-        for ( String endpoint : endpoints ) {
-            uris.add( new URI( endpoint ) );
-        }
-        String tokenId = PropertiesUtil.getProperty( fileName, "atmos.uid" );
-        String secretKey = PropertiesUtil.getProperty( fileName, "atmos.secret" );
-
-        AtmosConfig config = new AtmosConfig( tokenId, secretKey, uris.toArray( new URI[uris.size()] ) );
-
-        try {
-            config.setProxyUri( new URI( PropertiesUtil.getProperty( fileName, "atmos.proxyUrl" ) ) );
-        } catch (RuntimeException e) {
-            // no proxy
-        }
-
-        return config;
     }
 
     private class RetryInputStream extends InputStream {

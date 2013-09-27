@@ -23,21 +23,18 @@
 //      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //      POSSIBILITY OF SUCH DAMAGE.
 /**
- * 
+ *
  */
 package com.emc.esu.test;
 
-import java.io.IOException;
-import java.io.InputStream;
-
+import com.emc.atmos.util.AtmosClientFactory;
 import com.emc.esu.api.EsuApi;
-import junit.framework.Assert;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.rest.EsuRestApiApache;
+import com.emc.util.PropertiesUtil;
+import junit.framework.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @author jason
@@ -58,36 +55,17 @@ public class EsuRestApiApacheTest extends EsuApiTest {
      * Hostname or IP of ESU server.  Set in atmos.properties or -Datmos.host
      */
     private String host;
-    
+
     /**
      * Port of ESU server (usually 80 or 443). Set in atmos.properties or -Datmos.port
      */
     private int port = 80;
-    
-    public EsuRestApiApacheTest() {
-    	InputStream in = ClassLoader.getSystemResourceAsStream( "atmos.properties" );
-    	if( in != null ) {
-    		try {
-				System.getProperties().load(in);
-			} catch (IOException e) {
-				throw new RuntimeException( "Could not load atmos.properties", e);
-			}
-    	}
-    	
-    	uid2 = System.getProperty( "atmos.uid" );
-    	if( uid2 == null ) {
-    		throw new RuntimeException( "atmos.uid is null.  Set in atmos.properties or on command line with -Datmos.uid" );
-    	}
-    	secret = System.getProperty( "atmos.secret" );
-    	if( secret == null ) {
-    		throw new RuntimeException( "atmos.secret is null.  Set in atmos.properties or on command line with -Datmos.secret" );
-    	}
-    	host = System.getProperty( "atmos.host" );
-    	if( host == null ) {
-    		throw new RuntimeException( "atmos.host is null.  Set in atmos.properties or on command line with -Datmos.host" );
-    	}
-    	port = Integer.parseInt( System.getProperty( "atmos.port" ) );
 
+    public EsuRestApiApacheTest() {
+    	uid2 = PropertiesUtil.getRequiredProperty(AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.uid");
+    	secret = PropertiesUtil.getRequiredProperty(AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.secret");
+    	host = PropertiesUtil.getRequiredProperty(AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.host");
+    	port = Integer.parseInt( PropertiesUtil.getRequiredProperty(AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.port") );
     }
 
     /**
@@ -123,7 +101,7 @@ public class EsuRestApiApacheTest extends EsuApiTest {
            testCreateEmptyObject();
            Assert.fail( "Expected exception to be thrown" );
        } catch( EsuException e ) {
-           Assert.assertEquals( "Expected error code 1032 for signature failure", 
+           Assert.assertEquals( "Expected error code 1032 for signature failure",
                    1032, e.getAtmosCode() );
        } finally {
            esu = tempEsu;
@@ -141,10 +119,10 @@ public class EsuRestApiApacheTest extends EsuApiTest {
             testCreateEmptyObject();
             Assert.fail( "Expected exception to be thrown" );
         } catch( EsuException e ) {
-            Assert.assertEquals( "Expected error code 404 for bad context root", 
+            Assert.assertEquals( "Expected error code 404 for bad context root",
                     404, e.getHttpCode() );
         }
-        
+
     }
 
     @Test

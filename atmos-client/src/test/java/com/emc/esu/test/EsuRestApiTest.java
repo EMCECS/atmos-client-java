@@ -24,21 +24,20 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.esu.test;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.emc.atmos.util.AtmosClientFactory;
 import com.emc.esu.api.EsuApi;
+import com.emc.esu.api.EsuException;
+import com.emc.esu.api.rest.EsuRestApi;
 import com.emc.esu.api.rest.LBEsuRestApi;
+import com.emc.esu.sysmgmt.SysMgmtApi;
+import com.emc.util.PropertiesUtil;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.emc.esu.api.EsuException;
-import com.emc.esu.api.rest.EsuRestApi;
-import com.emc.esu.sysmgmt.SysMgmtApi;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class EsuRestApiTest extends EsuApiTest {
     /**
@@ -69,29 +68,11 @@ public class EsuRestApiTest extends EsuApiTest {
     public EsuRestApiTest() {
     	super();
 
-    	InputStream in = ClassLoader.getSystemResourceAsStream("atmos.properties");
-    	if( in != null ) {
-    		try {
-				System.getProperties().load(in);
-			} catch (IOException e) {
-				throw new RuntimeException( "Could not load atmos.properties", e);
-			}
-    	}
-
-    	uid2 = System.getProperty( "atmos.uid" );
-    	if( uid2 == null ) {
-    		throw new RuntimeException( "atmos.uid is null.  Set in atmos.properties or on command line with -Datmos.uid" );
-    	}
-    	secret = System.getProperty( "atmos.secret" );
-    	if( secret == null ) {
-    		throw new RuntimeException( "atmos.secret is null.  Set in atmos.properties or on command line with -Datmos.secret" );
-    	}
-    	host = System.getProperty( "atmos.host" );
-    	if( host == null ) {
-    		throw new RuntimeException( "atmos.host is null.  Set in atmos.properties or on command line with -Datmos.host" );
-    	}
-        hosts = System.getProperty( "atmos.hosts" );
-    	port = Integer.parseInt( System.getProperty( "atmos.port" ) );
+        uid2 = PropertiesUtil.getRequiredProperty( AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.uid" );
+        secret = PropertiesUtil.getRequiredProperty( AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.secret" );
+        host = PropertiesUtil.getRequiredProperty( AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.host" );
+        port = Integer.parseInt( PropertiesUtil.getRequiredProperty( AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.port" ) );
+        hosts = PropertiesUtil.getProperty(AtmosClientFactory.ATMOS_PROPERTIES_FILE, "atmos.hosts");
     }
 
     /**

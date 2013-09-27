@@ -24,8 +24,7 @@
 //      POSSIBILITY OF SUCH DAMAGE.
 package com.emc.util;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -33,14 +32,24 @@ public class PropertiesUtil {
     private static Set<String> loadedFiles = new TreeSet<String>();
 
     private static void loadConfig( String fileName ) {
-        InputStream in = ClassLoader.getSystemResourceAsStream( fileName );
-        if ( in != null ) {
-            try {
-                System.getProperties().load( in );
-            } catch ( IOException e ) {
-                throw new RuntimeException( "Could not load " + fileName, e );
-            }
+        try {
+            InputStream in = ClassLoader.getSystemResourceAsStream( fileName );
+
+            // try in home directory too
+            if ( in == null )
+                in = new FileInputStream( new File( System.getProperty( "user.home" ) + File.separator + fileName ) );
+
+            System.getProperties().load( in );
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Could not load " + fileName, e );
         }
+    }
+
+    public static String getRequiredProperty( String fileName, String key ) {
+        String value = getProperty( fileName, key );
+        if ( value == null )
+            throw new RuntimeException( key + " is null.  Set in " + fileName + " or on command line with -D" + key );
+        return value;
     }
 
     public static synchronized String getProperty( String fileName, String key ) {
@@ -49,10 +58,7 @@ public class PropertiesUtil {
             loadedFiles.add( fileName );
         }
 
-        String value = System.getProperty( key );
-        if ( value == null )
-            throw new RuntimeException( key + " is null.  Set in " + fileName + " or on command line with -D" + key );
-        return value;
+        return System.getProperty( key );
     }
 
     private PropertiesUtil() {
