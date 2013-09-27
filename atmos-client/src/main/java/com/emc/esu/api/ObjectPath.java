@@ -67,7 +67,6 @@ public class ObjectPath implements Identifier {
     
     /**
      * Gets the name of the object (the last path component)
-     * @return
      */
     public String getName() {
     	if( isDirectory() ) {

@@ -89,8 +89,7 @@ public class S3ClientFactory {
             String endpoint = getPropertyNotEmpty(props, PROP_ENDPOINT);
 
             BasicAWSCredentials creds = new BasicAWSCredentials(accessKey, secretKey);
-            ViPRS3Client client = new ViPRS3Client(creds);
-            client.setEndpoint(endpoint);
+            ViPRS3Client client = new ViPRS3Client(endpoint, creds);
 
             String namespace = props.getProperty(PROP_NAMESPACE);
             if (namespace != null) {
@@ -107,8 +106,6 @@ public class S3ClientFactory {
     /**
      * Creates an EncryptionClient for testing.  Loads the public and private keys from
      * the properties file (not suitable for production).
-     *
-     * @return
      * @throws IOException
      */
     public static AmazonS3EncryptionClient getEncryptionClient() throws IOException {

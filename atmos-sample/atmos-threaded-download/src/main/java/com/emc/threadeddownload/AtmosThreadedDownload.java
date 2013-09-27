@@ -1,4 +1,4 @@
-// Copyright (c) 2012, EMC Corporation.
+package com.emc.threadeddownload;// Copyright (c) 2012, EMC Corporation.
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
 //
@@ -45,8 +45,6 @@ import com.emc.esu.api.Extent;
 import com.emc.esu.api.MetadataList;
 import com.emc.esu.api.ObjectPath;
 import com.emc.esu.api.rest.EsuRestApi;
-import com.emc.threadeddownload.DownloadBlock;
-import com.emc.threadeddownload.ProgressListener;
 
 
 public class AtmosThreadedDownload implements ProgressListener {

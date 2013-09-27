@@ -1138,8 +1138,6 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 
     /**
      * Condenses consecutive spaces into one.
-     * @param str
-     * @return
      */
     protected String normalizeSpace(String str) {
 		int length = str.length();
@@ -1163,7 +1161,6 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 
 	/**
      * Gets the current time formatted for HTTP headers
-     * @return
      */
     protected String getDateHeader() {
         TimeZone tz = TimeZone.getTimeZone("GMT");
@@ -1280,8 +1277,6 @@ public abstract class AbstractEsuRestApi implements EsuApi {
     
     /**
      * Converts an ObjectResult list to an Identifier list.
-     * @param list
-     * @return
      */
     private List<Identifier> filterIdList(List<ObjectResult> list) {
 		List<Identifier> result = new ArrayList<Identifier>( list.size() );
@@ -1341,7 +1336,6 @@ public abstract class AbstractEsuRestApi implements EsuApi {
 
 	/**
 	 * Set to true to enable Unicode metadata processing.  
-	 * @param unicodeEnabled
 	 */
 	public void setUnicodeEnabled(boolean unicodeEnabled) {
 		this.unicodeEnabled = unicodeEnabled;

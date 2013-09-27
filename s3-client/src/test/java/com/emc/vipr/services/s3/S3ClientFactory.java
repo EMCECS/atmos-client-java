@@ -91,9 +91,8 @@ public class S3ClientFactory {
             String endpoint = getPropertyNotEmpty(props, PROP_ENDPOINT);
             
             BasicAWSCredentials creds = new BasicAWSCredentials(accessKey, secretKey);
-            ViPRS3Client client = new ViPRS3Client(creds);
-            client.setEndpoint(endpoint);
-                        
+            ViPRS3Client client = new ViPRS3Client(endpoint, creds);
+
             String namespace = props.getProperty(PROP_NAMESPACE);
             if(namespace != null && setNamespace) {
                client.setNamespace(namespace);

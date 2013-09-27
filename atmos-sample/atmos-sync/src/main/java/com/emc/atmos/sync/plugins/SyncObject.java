@@ -95,8 +95,6 @@ public abstract class SyncObject {
 	/**
 	 * Similar to getAnnotations but it expects only one instance of the class.
 	 * If not found, it returns null.
-	 * @param clazz
-	 * @return
 	 */
 	public ObjectAnnotation getAnnotation(Class<? extends ObjectAnnotation> clazz) {
 		Set<ObjectAnnotation> subset = getAnnotations(clazz);

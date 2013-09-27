@@ -3,7 +3,6 @@ package com.emc.vipr.sample;
 import com.amazonaws.util.StringInputStream;
 import com.emc.vipr.services.s3.ViPRS3Client;
 import com.emc.vipr.services.s3.model.*;
-import com.emc.vipr.services.s3.model.FileAccessObject;
 
 import java.util.*;
 import java.util.concurrent.TimeoutException;
@@ -17,18 +16,17 @@ import java.util.concurrent.TimeoutException;
  * objects are available over NFS, they are inaccessible via REST and vice versa.
  * <p/>
  * The set of objects to be exported is defined by a start-token and an end-token, which
- * represent specific points in time for the bucket (bucket versions). These
- * tokens are returned from any call ("get" or "set"). Only one token may be used in
- * "set" calls with the following outcome:
+ * represent specific points in time for the bucket. These tokens are returned from any
+ * call ("get" or "set"). Only one token may be used in "set" calls with the following outcome:
  * <p/>
  * when setting mode to readOnly or readWrite and a token is included,
- * only enable access for objects *newer* than the token.
+ * only enable access for objects *newer* than (created since) the specified token.
  * <p/>
  * when setting mode to disabled and a token is included, only disable
- * access for objects *older* than the token.
+ * access for objects *older* than (created before) the specified token.
  * <p/>
- * note that the tokens (bucket versions) are inclusive, so it is possible that start-token = end-token (this will
- * likely include only one object).
+ * note that the tokens are inclusive, so it is possible that start-token = end-token (this will
+ * be true for the first time you enable file access).
  * <p/>
  * Leaving out the token in a request signifies that all objects in the bucket should be
  * affected by the operation.
@@ -45,7 +43,7 @@ public class BucketFileAccess {
     }
 
     public void runSample() throws Exception {
-        String bucketName = "temp.vipr-fileaccess2";
+        String bucketName = "temp.vipr-fileaccess";
         String key1 = "test1.txt";
         String key2 = "test2.txt";
         String key3 = "test3.txt";
@@ -55,7 +53,7 @@ public class BucketFileAccess {
         String content = "Hello World!";
         String clientHost = "10.10.10.10"; // change to a real client to test
         String clientUid = "501"; // change to your client uid to test
-        long fileAccessDuration = 20; // seconds
+        long fileAccessDuration = 60 * 60; // seconds (1 hour)
 
         try {
             // create some objects
@@ -138,7 +136,7 @@ public class BucketFileAccess {
             // NOTE: setting mode to disabled *without* specifying a token will disable NFS access for *all* objects in
             // the bucket.
             SampleUtils.log("Work complete on second set of objects, disabling file access for version %s..", tokenB);
-            disableOldObjects(bucketName, tokenA);
+            disableOldObjects(bucketName, tokenB);
 
         } finally {
             SampleUtils.cleanBucket(s3, bucketName);
@@ -169,7 +167,7 @@ public class BucketFileAccess {
         String endToken = result.getEndToken();
 
         // wait until change is complete (call is asynchronous)
-        waitForTransition(bucketName, ViPRConstants.FileAccessMode.readWrite, 30);
+        waitForTransition(bucketName, ViPRConstants.FileAccessMode.readWrite, 60); // max 1 minute
 
         return endToken;
     }
@@ -186,7 +184,7 @@ public class BucketFileAccess {
         s3.setBucketFileAccessMode(request);
 
         // wait until change is complete (call is asynchronous)
-        waitForTransition(bucketName, ViPRConstants.FileAccessMode.disabled, 30);
+        waitForTransition(bucketName, null, 60); // max 1 minute
     }
 
     protected Map<String, List<FileAccessObject>> getNfsObjectMap(String bucketName) {
@@ -216,30 +214,39 @@ public class BucketFileAccess {
      * waits until the target access mode is completely transitioned on the specified bucket.
      *
      * @param bucketName bucket name
-     * @param targetMode target access mode to wait for (readOnly, readWrite, or disabled)
+     * @param targetMode target access mode to wait for (readOnly, readWrite, or disabled). Can be null if target mode
+     *                   is unknown (if you're disabling a portion of the bucket and don't know if there
+     *                   are still exported objects)
      * @param timeout    after the specified number of seconds, this method will throw a TimeoutException
      * @throws InterruptedException if interrupted while sleeping between GET intervals
      * @throws TimeoutException     if the specified timeout is reached before transition is complete
      */
     protected void waitForTransition(String bucketName, ViPRConstants.FileAccessMode targetMode, int timeout)
             throws InterruptedException, TimeoutException {
+        if (targetMode != null && targetMode.isTransitionState())
+            throw new IllegalArgumentException("Invalid target mode: " + targetMode);
         SampleUtils.log("Waiting for bucket mode to change...");
         long start = System.currentTimeMillis(), interval = 500;
         timeout *= 1000;
         while (true) {
             // GET the current access mode
             BucketFileAccessModeResult result = s3.getBucketFileAccessMode(bucketName);
-            if (targetMode == result.getAccessMode()) {
-                SampleUtils.log("Change complete; bucket is now in NFS %s mode", targetMode);
-                return; // transition is complete
+
+            if (targetMode == null) {
+                if (!result.getAccessMode().isTransitionState()) {
+                    SampleUtils.log("Change complete; bucket is now in NFS %s mode", result.getAccessMode());
+                    return; // must be complete since the bucket is not in a transition state
+                }
+            } else {
+                if (targetMode == result.getAccessMode()) {
+                    SampleUtils.log("Change complete; bucket is now in NFS %s mode", targetMode);
+                    return; // transition is complete
+                }
+
+                if (!result.getAccessMode().isTransitionState() || !result.getAccessMode().transitionsToTarget(targetMode))
+                    throw new RuntimeException(String.format("Bucket %s in mode %s will never get to mode %s",
+                            bucketName, result.getAccessMode(), targetMode));
             }
-
-            if (targetMode.isTransitionState())
-                throw new IllegalArgumentException("Invalid target mode: " + targetMode);
-
-            if (!result.getAccessMode().isTransitionState() || !result.getAccessMode().transitionsToTarget(targetMode))
-                throw new RuntimeException(String.format("Bucket %s in mode %s will never get to mode %s",
-                        bucketName, result.getAccessMode(), targetMode));
 
             // if we've reached our timeout
             long runTime = System.currentTimeMillis() - start;

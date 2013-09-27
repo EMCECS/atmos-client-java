@@ -30,6 +30,7 @@ import java.io.*;
 import java.lang.Object;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.Map.Entry;
@@ -57,9 +58,11 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 	protected String namespace;
 
     /**
-     * Constructs a new ViPR S3 client using the specified AWS credentials to
+     * Constructs a new ViPR S3 client using the specified endpoint, AWS credentials to
      * access the EMC ViPR S3 protocol.
      *
+     * @param endpoint
+     *            The ViPR S3 endpoint (i.e. "https://vipr-data.emc.com:9021")
      * @param awsCredentials
      *            The AWS credentials to use when making requests
      *            with this client.
@@ -67,16 +70,19 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
      * @see AmazonS3Client#AmazonS3Client()
      * @see AmazonS3Client#AmazonS3Client(AWSCredentials)
      */
-	public ViPRS3Client(AWSCredentials awsCredentials) {
+	public ViPRS3Client(String endpoint, AWSCredentials awsCredentials) {
 		super(awsCredentials);
+        setEndpoint(endpoint);
 
 		this.awsCredentialsProvider = new StaticCredentialsProvider(awsCredentials);
 	}
 
     /**
-     * Constructs a new ViPR S3 client using the specified AWS credentials and
+     * Constructs a new ViPR S3 client using the specified endpoint, AWS credentials and
      * client configuration to access the EMC ViPR S3 protocol.
      *
+     * @param endpoint
+     *            The ViPR S3 endpoint (i.e. "https://vipr-data.emc.com:9021")
      * @param awsCredentials
      *            The AWS credentials to use when making requests
      *            with this client.
@@ -87,31 +93,37 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
      * @see AmazonS3Client#AmazonS3Client()
      * @see AmazonS3Client#AmazonS3Client(AWSCredentials, ClientConfiguration)
      */
-	public ViPRS3Client(AWSCredentials awsCredentials, ClientConfiguration clientConfiguration) {
+	public ViPRS3Client(String endpoint, AWSCredentials awsCredentials, ClientConfiguration clientConfiguration) {
 		super(awsCredentials, clientConfiguration);
+        setEndpoint(endpoint);
 
 		this.awsCredentialsProvider = new StaticCredentialsProvider(awsCredentials);
 	}
 
     /**
-     * Constructs a new ViPR S3 client using the specified AWS credentials
+     * Constructs a new ViPR S3 client using the specified endpoint, AWS credentials
      * provider to access the EMC ViPR S3 protocol.
      *
+     * @param endpoint
+     *            The ViPR S3 endpoint (i.e. "https://vipr-data.emc.com:9021")
      * @param credentialsProvider
      *            The AWS credentials provider which will provide credentials
      *            to authenticate requests.
      * @see AmazonS3Client#AmazonS3Client(AWSCredentialsProvider)
      */
-	public ViPRS3Client(AWSCredentialsProvider credentialsProvider) {
+	public ViPRS3Client(String endpoint, AWSCredentialsProvider credentialsProvider) {
 		super(credentialsProvider);
+        setEndpoint(endpoint);
 
 		this.awsCredentialsProvider = credentialsProvider;
 	}
 
     /**
-     * Constructs a new ViPR S3 client using the specified AWS credentials and
+     * Constructs a new ViPR S3 client using the specified endpoint, AWS credentials and
      * client configuration to access the EMC ViPR S3 protocol.
      *
+     * @param endpoint
+     *            The ViPR S3 endpoint (i.e. "https://vipr-data.emc.com:9021")
      * @param credentialsProvider
      *            The AWS credentials provider which will provide credentials
      *            to authenticate requests.
@@ -119,8 +131,9 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
      *            The client configuration options controlling how this client
      *            connects (e.g. proxy settings, retry counts, etc).
      */
-	public ViPRS3Client(AWSCredentialsProvider credentialsProvider, ClientConfiguration clientConfiguration) {
+	public ViPRS3Client(String endpoint, AWSCredentialsProvider credentialsProvider, ClientConfiguration clientConfiguration) {
 		super(credentialsProvider, clientConfiguration);
+        setEndpoint(endpoint);
 
 		this.awsCredentialsProvider = credentialsProvider;
 	}
@@ -133,6 +146,104 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     public void setS3ClientOptions(S3ClientOptions clientOptions) {
         super.setS3ClientOptions(clientOptions);
         this.clientOptions = new S3ClientOptions(clientOptions);
+    }
+
+    /**
+     * Copied from AmazonS3Client to override the S3ObjectResponseHandler for v1. ViPR should return a hyphen in the
+     * ETag when reading multipart uploads, but in v1 it does not. This hyphen signals that the object is a multipart
+     * upload and the ETag should be ignored. Here we use our own response handler to detect multipart uploads from
+     * ViPR and insert a hyphen in the ETag.
+     * TODO: remove post v1 when ViPR will return a hyphen in the ETag for multipart uploads
+     */
+    @Override
+    public S3Object getObject(GetObjectRequest getObjectRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(getObjectRequest,
+                "The GetObjectRequest parameter must be specified when requesting an object");
+        assertParameterNotNull(getObjectRequest.getBucketName(),
+                "The bucket name parameter must be specified when requesting an object");
+        assertParameterNotNull(getObjectRequest.getKey(),
+                "The key parameter must be specified when requesting an object");
+
+        Request<GetObjectRequest> request = createRequest(getObjectRequest.getBucketName(), getObjectRequest.getKey(), getObjectRequest, HttpMethodName.GET);
+
+        if (getObjectRequest.getVersionId() != null) {
+            request.addParameter("versionId", getObjectRequest.getVersionId());
+        }
+
+        // Range
+        if (getObjectRequest.getRange() != null) {
+            long[] range = getObjectRequest.getRange();
+            request.addHeader(Headers.RANGE, "bytes=" + Long.toString(range[0]) + "-" + Long.toString(range[1]));
+        }
+
+        addResponseHeaderParameters(request, getObjectRequest.getResponseHeaders());
+
+        addDateHeader(request, Headers.GET_OBJECT_IF_MODIFIED_SINCE,
+                getObjectRequest.getModifiedSinceConstraint());
+        addDateHeader(request, Headers.GET_OBJECT_IF_UNMODIFIED_SINCE,
+                getObjectRequest.getUnmodifiedSinceConstraint());
+        addStringListHeader(request, Headers.GET_OBJECT_IF_MATCH,
+                getObjectRequest.getMatchingETagConstraints());
+        addStringListHeader(request, Headers.GET_OBJECT_IF_NONE_MATCH,
+                getObjectRequest.getNonmatchingETagConstraints());
+
+        ProgressListener progressListener = getObjectRequest.getProgressListener();
+        try {
+            S3Object s3Object = invoke(request, new ViPRS3ObjectResponseHandler(), getObjectRequest.getBucketName(), getObjectRequest.getKey());
+
+            /*
+             * TODO: For now, it's easiest to set there here in the client, but
+             *       we could push this back into the response handler with a
+             *       little more work.
+             */
+            s3Object.setBucketName(getObjectRequest.getBucketName());
+            s3Object.setKey(getObjectRequest.getKey());
+
+            S3ObjectInputStream input = s3Object.getObjectContent();
+            if (progressListener != null) {
+                ProgressReportingInputStream progressReportingInputStream = new ProgressReportingInputStream(input, progressListener);
+                progressReportingInputStream.setFireCompletedEvent(true);
+                input = new S3ObjectInputStream(progressReportingInputStream, input.getHttpRequest());
+                fireProgressEvent(progressListener, ProgressEvent.STARTED_EVENT_CODE);
+            }
+
+            if (getObjectRequest.getRange() == null && System.getProperty("com.amazonaws.services.s3.disableGetObjectMD5Validation") == null) {
+                byte[] serverSideHash = null;
+                String etag = s3Object.getObjectMetadata().getETag();
+                if (etag != null && ServiceUtils.isMultipartUploadETag(etag) == false) {
+                    serverSideHash = BinaryUtils.fromHex(s3Object.getObjectMetadata().getETag());
+                    DigestValidationInputStream inputStreamWithMD5DigestValidation;
+                    try {
+                        MessageDigest digest = MessageDigest.getInstance("MD5");
+                        inputStreamWithMD5DigestValidation = new DigestValidationInputStream(input, digest, serverSideHash);
+                        input = new S3ObjectInputStream(inputStreamWithMD5DigestValidation, input.getHttpRequest());
+                    } catch (NoSuchAlgorithmException e) {
+                        log.warn("No MD5 digest algorithm available.  Unable to calculate "
+                                + "checksum and verify data integrity.", e);
+                    }
+                }
+            }
+
+            s3Object.setObjectContent(input);
+
+            return s3Object;
+        } catch (AmazonS3Exception ase) {
+            /*
+             * If the request failed because one of the specified constraints
+             * was not met (ex: matching ETag, modified since date, etc.), then
+             * return null, so that users don't have to wrap their code in
+             * try/catch blocks and check for this status code if they want to
+             * use constraints.
+             */
+            if (ase.getStatusCode() == 412 || ase.getStatusCode() == 304) {
+                fireProgressEvent(progressListener, ProgressEvent.CANCELED_EVENT_CODE);
+                return null;
+            }
+
+            fireProgressEvent(progressListener, ProgressEvent.FAILED_EVENT_CODE);
+            throw ase;
+        }
     }
 
     public UpdateObjectResult updateObject(String bucketName, String key,
@@ -354,7 +465,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         return new ViPRS3Signer(request.getHttpMethod().toString(), resourcePath);
     }
 
-    private boolean vHostRequest(Request<?> request, String bucketName) {
+    protected boolean vHostRequest(Request<?> request, String bucketName) {
         return request.getResourcePath() == null || !request.getResourcePath().startsWith(bucketName + "/");
     }
 
@@ -375,7 +486,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
      * @return A new URI, creating from the current service endpoint URI and the
      *         specified namespace and bucket.
      */
-    private URI convertToVirtualHostEndpoint(String namespace, String bucketName) {
+    protected URI convertToVirtualHostEndpoint(String namespace, String bucketName) {
         try {
             return new URI(endpoint.getScheme() + "://" + bucketName + "." + namespace + "." + endpoint.getAuthority());
         } catch (URISyntaxException e) {
@@ -391,7 +502,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
      * @param putObjectRequest the request to execute
      * @return an ObjectMetadata containing the response headers.
      */
-    private ObjectMetadata doPut(PutObjectRequest putObjectRequest) {
+    protected ObjectMetadata doPut(PutObjectRequest putObjectRequest) {
         assertParameterNotNull(putObjectRequest, "The PutObjectRequest parameter must be specified when uploading an object");
 
         String bucketName = putObjectRequest.getBucketName();
@@ -560,9 +671,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
 
 	/**
-	 * Gets the current ViPR namespace for this client.  If null, the
-	 * namespace will be automatically selected from the endpoint
-	 * hostname.
+	 * Gets the current ViPR namespace for this client.
 	 * @return the ViPR namespace associated with this client
 	 */
 	public String getNamespace() {
@@ -570,10 +679,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 	}
 
     /**
-     * Sets the ViPR namespace to use for this client. Generally, this will be automatically
-     * determined by the endpoint of the underlying S3 client in the form of
-     * {namespace}.company.com, but if this is not possible, it can be
-     * overridden by setting this property.
+     * Sets the ViPR namespace to use for this client.
      *
      * @param namespace the namespace to set
      */
@@ -582,25 +688,16 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     }
 
     /**
-     * <p>
-     * Asserts that the specified parameter value is not <code>null</code> and if it is,
-     * throws an <code>IllegalArgumentException</code> with the specified error message.
-     * </p>
-     *
-     * @param parameterValue
-     *            The parameter value being checked.
-     * @param errorMessage
-     *            The error message to include in the IllegalArgumentException
-     *            if the specified parameter is null.
+     * Copied verbatim from AmazonS3Client only because it is private and we call it from our extension methods for consistency.
      */
-    private void assertParameterNotNull(Object parameterValue, String errorMessage) {
+    protected void assertParameterNotNull(Object parameterValue, String errorMessage) {
         if (parameterValue == null) throw new IllegalArgumentException(errorMessage);
     }
 
     /**
-     * Sets the acccess control headers for the request given.
+     * Copied verbatim from AmazonS3Client only because it is private and we call it from our extension methods for consistency.
      */
-    private static void addAclHeaders(Request<? extends AmazonWebServiceRequest> request, AccessControlList acl) {
+    protected static void addAclHeaders(Request<? extends AmazonWebServiceRequest> request, AccessControlList acl) {
         Set<Grant> grants = acl.getGrants();
         Map<Permission, Collection<Grantee>> grantsByPermission = new HashMap<Permission, Collection<Grantee>>();
         for ( Grant grant : grants ) {
@@ -628,22 +725,19 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     }
 
     /**
-     * Fires a progress event with the specified event type to the specified
-     * listener.
-     *
-     * @param listener
-     *            The listener to receive the event.
-     * @param eventType
-     *            The type of event to fire.
+     * Copied verbatim from AmazonS3Client only because it is private and we call it from our extension methods for consistency.
      */
-    private void fireProgressEvent(ProgressListener listener, int eventType) {
+    protected void fireProgressEvent(ProgressListener listener, int eventType) {
         if (listener == null) return;
         ProgressEvent event = new ProgressEvent(0);
         event.setEventCode(eventType);
         listener.progressChanged(event);
     }
 
-    private <X, Y extends AmazonWebServiceRequest> X invoke(Request<Y> request, HttpResponseHandler<AmazonWebServiceResponse<X>> responseHandler, String bucket, String key) {
+    /**
+     * Copied verbatim from AmazonS3Client only because it is private and we call it from our extension methods for consistency.
+     */
+    protected <X, Y extends AmazonWebServiceRequest> X invoke(Request<Y> request, HttpResponseHandler<AmazonWebServiceResponse<X>> responseHandler, String bucket, String key) {
         for (Entry<String, String> entry : request.getOriginalRequest().copyPrivateRequestParameters().entrySet()) {
             request.addParameter(entry.getKey(), entry.getValue());
         }
@@ -748,11 +842,61 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     }
 
 
-    private String join(String delimiter, List<?> values) {
+    /**
+     * Copied verbatim from AmazonS3Client only because it is private and we call it from our overridden getObject().
+     * TODO: remove post v1 when ViPR will return a hyphen in the ETag for multipart uploads
+     */
+    protected static void addResponseHeaderParameters(Request<?> request, ResponseHeaderOverrides responseHeaders) {
+        if ( responseHeaders != null ) {
+            if ( responseHeaders.getCacheControl() != null ) {
+                request.addParameter(ResponseHeaderOverrides.RESPONSE_HEADER_CACHE_CONTROL, responseHeaders.getCacheControl());
+            }
+            if ( responseHeaders.getContentDisposition() != null ) {
+                request.addParameter(ResponseHeaderOverrides.RESPONSE_HEADER_CONTENT_DISPOSITION,
+                        responseHeaders.getContentDisposition());
+            }
+            if ( responseHeaders.getContentEncoding() != null ) {
+                request.addParameter(ResponseHeaderOverrides.RESPONSE_HEADER_CONTENT_ENCODING,
+                        responseHeaders.getContentEncoding());
+            }
+            if ( responseHeaders.getContentLanguage() != null ) {
+                request.addParameter(ResponseHeaderOverrides.RESPONSE_HEADER_CONTENT_LANGUAGE,
+                        responseHeaders.getContentLanguage());
+            }
+            if ( responseHeaders.getContentType() != null ) {
+                request.addParameter(ResponseHeaderOverrides.RESPONSE_HEADER_CONTENT_TYPE, responseHeaders.getContentType());
+            }
+            if ( responseHeaders.getExpires() != null ) {
+                request.addParameter(ResponseHeaderOverrides.RESPONSE_HEADER_EXPIRES, responseHeaders.getExpires());
+            }
+        }
+    }
+
+    /**
+     * Copied verbatim from AmazonS3Client only because it is private and we call it from our overridden getObject().
+     * TODO: remove post v1 when ViPR will return a hyphen in the ETag for multipart uploads
+     */
+    protected static void addDateHeader(Request<?> request, String header, Date value) {
+        if (value != null) {
+            request.addHeader(header, ServiceUtils.formatRfc822Date(value));
+        }
+    }
+
+    /**
+     * Copied verbatim from AmazonS3Client only because it is private and we call it from our overridden getObject().
+     * TODO: remove post v1 when ViPR will return a hyphen in the ETag for multipart uploads
+     */
+    protected static void addStringListHeader(Request<?> request, String header, List<String> values) {
+        if (values != null && !values.isEmpty()) {
+            request.addHeader(header, ServiceUtils.join(values));
+        }
+    }
+
+    protected String join(String delimiter, List<?> values) {
         return join(delimiter, values.toArray());
     }
 
-    private String join(String delimiter, Object... values) {
+    protected String join(String delimiter, Object... values) {
         StringBuilder joined = new StringBuilder();
         for (Object value : values) {
             joined.append(value).append(delimiter);

@@ -59,7 +59,7 @@ public class ViPRCreateBucketRequest extends CreateBucketRequest {
     /**
      * Sets the ViPR Object Virtual Pool ID for the new namespace.  If null, the default
      * object virtual pool for the current tenant's namespace will be used.
-     * @param objectVirtualPoolId the ID (a URN) of the Object Virtual Pool for the new 
+     * @param vpoolId the ID (a URN) of the Object Virtual Pool for the new
      * subtenant.
      */
     public void setVpoolId(String vpoolId) {

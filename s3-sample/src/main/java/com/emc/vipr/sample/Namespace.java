@@ -30,8 +30,7 @@ public class Namespace {
 	// This is how you instantiate the ViPRS3Client.
 	BasicAWSCredentials creds = new BasicAWSCredentials(accessKey,
 		secretKey);
-	ViPRS3Client client = new ViPRS3Client(creds);
-	client.setEndpoint(endpoint);
+	ViPRS3Client client = new ViPRS3Client(endpoint, creds);
 	client.setNamespace(namespace);
 
     // If you aren't going to use DNS-style namespaces and buckets (they are currently tied

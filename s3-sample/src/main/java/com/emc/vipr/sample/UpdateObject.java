@@ -20,6 +20,7 @@ public class UpdateObject {
             // first create an object
             SampleUtils.log("creating object %s/%s with content: %s",
                     bucketName, key, content);
+            s3.createBucket(bucketName);
             s3.putObject(bucketName, key, new StringInputStream(content), null);
 
             // now let's update the object in the middle
