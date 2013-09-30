@@ -450,15 +450,13 @@ public class AtmosApiClientTest {
     @Test
     public void testResponseProperties() throws Exception {
         // Subtract a second since the HTTP dates only have 1s precision.
-        Date now = new Date( System.currentTimeMillis() + api.calculateServerClockSkew() - 1000 );
+        Date now = new Date();
         CreateObjectRequest request = new CreateObjectRequest().content( "hello".getBytes( "UTF-8" ) )
                                                                .contentType( "text/plain" );
         CreateObjectResponse response = this.api.createObject( request );
         Assert.assertNotNull( "null ID returned", response.getObjectId() );
         Assert.assertEquals( "location wrong", "/rest/objects/" + response.getObjectId(), response.getLocation() );
         cleanup.add( response.getObjectId() );
-
-        Thread.sleep( 1000 ); // make sure our response date will be after our create request
 
         // Read back the content
         ReadObjectResponse<String> readResponse = api.readObject( new ReadObjectRequest().identifier( response.getObjectId() ),
@@ -470,7 +468,7 @@ public class AtmosApiClientTest {
         Assert.assertTrue( "HTTP content-type wrong",
                            readResponse.getContentType().matches( "text/plain(; charset=UTF-8)?" ) );
         Assert.assertEquals( "HTTP content-length wrong", 5, readResponse.getContentLength() );
-        Assert.assertTrue( "HTTP response date wrong", readResponse.getDate().after( now ) );
+        Assert.assertTrue( "HTTP response date wrong", Math.abs( response.getDate().getTime() - now.getTime() ) < (1000 * 60 * 5) );
         // apparently last-modified isn't included in GET requests
         // Assert.assertTrue( "HTTP last modified date wrong", readResponse.getLastModified().after( now ) );
     }
@@ -1970,11 +1968,11 @@ public class AtmosApiClientTest {
         // Read back the content
         String content = new String( this.api.readObject( id, null, byte[].class ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
-        
+
         // Check policyname
         Map<String,Metadata> sysmeta = this.api.getSystemMetadata(id, "policyname");
         Assume.assumeTrue("policyname != retaindelete", "retaindelete".equals(sysmeta.get("policyname")));
-        
+
         // Get the object info
         ObjectInfo oi = this.api.getObjectInfo( id );
         Assert.assertNotNull( "ObjectInfo null", oi );
@@ -2599,24 +2597,16 @@ public class AtmosApiClientTest {
     public void testExpect100Continue() throws Exception {
         config.setEnableExpect100Continue( true );
 
+        InputStream is = new RandomInputStream( 5 );
+        CreateObjectRequest request = new CreateObjectRequest().content( is ).contentLength( 5 );
+
+        // test success first since some load-balancers screw up the next request after an E: 100-C failure
+        cleanup.add( api.createObject( request ).getObjectId() );
+
+        // now test failure
         String tokenId = config.getTokenId();
         config.setTokenId( "bogustokenid" );
-
-        InputStream is = new InputStream() {
-            private int count = 5;
-
-            @Override
-            public int read() throws IOException {
-                return --count;
-            }
-
-            @Override
-            public int available() throws IOException {
-                return count;
-            }
-        };
-
-        CreateObjectRequest request = new CreateObjectRequest().content( is ).contentLength( 5 );
+        is = new RandomInputStream( 5 );
         try {
             api.createObject( request );
         } catch ( AtmosException e ) {
@@ -2625,8 +2615,6 @@ public class AtmosApiClientTest {
         } finally {
             config.setTokenId( tokenId );
         }
-
-        cleanup.add( api.createObject( request ).getObjectId() );
     }
 
     @Test
