@@ -16,12 +16,6 @@
   </description>
   <url>http://emcvipr.github.io/dataservices-sdk-java/</url>
 
-  <modules>
-    <module>s3-client</module>
-    <module>jersey-apache-httpclient4</module>
-    <module>atmos-client</module>
-  </modules>
-
   <distributionManagement>
     <site>
       <id>maven-site</id>
@@ -32,6 +26,7 @@
   <modules>
     <module>s3-client</module>
     <module>s3-sample</module>
+    <module>jersey-apache-httpclient4</module>
     <module>vipr-object-transformations</module>
   </modules>
 
