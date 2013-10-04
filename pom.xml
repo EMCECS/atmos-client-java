@@ -18,9 +18,11 @@
 
   <modules>
     <module>s3-client</module>
+    <module>s3-sample</module>
     <module>jersey-apache-httpclient4</module>
     <module>atmos-client</module>
     <module>dataservices-common</module>
+    <module>atmos-sample</module>
   </modules>
 
   <distributionManagement>

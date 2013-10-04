@@ -26,4 +26,15 @@
   </dependencies>
   <name>Custom jersey-apache-httpclient4</name>
   <description>This is a custom build of the httpclient4 provider for jersey that supports preemptive proxy authorization.</description>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
