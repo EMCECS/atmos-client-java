@@ -1,5 +1,5 @@
-/target
-/bin
+target
+bin
 *.class
 # Package Files #
 *.jar
@@ -7,3 +7,9 @@
 *.ear
 # Local files
 .DS_Store
+.classpath
+.project
+.settings
+.idea
+*.iml
+dependency-reduced-pom.xml

@@ -1,3 +1,17 @@
+/*
+ * Copyright 2013 EMC Corporation. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
 package com.emc.vipr.services.s3.model;
 
 import java.util.List;
@@ -5,7 +19,7 @@ import java.util.List;
 public class GetFileAccessResult {
     private List<String> mountPoints;
     private boolean isTruncated;
-    private List<Object> objects;
+    private List<FileAccessObject> objects;
 
     private String lastKey;
 
@@ -38,11 +52,11 @@ public class GetFileAccessResult {
     /**
      * @return NFS details for all the objects accessible via NFS.
      */
-    public List<Object> getObjects() {
+    public List<FileAccessObject> getObjects() {
         return objects;
     }
 
-    public void setObjects(List<Object> objects) {
+    public void setObjects(List<FileAccessObject> objects) {
         this.objects = objects;
     }
 
