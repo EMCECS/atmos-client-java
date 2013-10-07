@@ -19,8 +19,10 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.util.StringInputStream;
 import com.emc.vipr.services.s3.model.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -43,6 +45,7 @@ public class FileAccessTest {
     @Before
     public void setUp() throws Exception {
         s3 = S3ClientFactory.getS3Client();
+        Assume.assumeTrue("Could not configure S3 connection", s3 != null);
     }
 
     protected void createBucket(String bucketName) {
