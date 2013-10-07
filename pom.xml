@@ -20,6 +20,7 @@
     <module>s3-client</module>
     <module>jersey-apache-httpclient4</module>
     <module>atmos-client</module>
+    <module>dataservices-common</module>
   </modules>
 
   <distributionManagement>

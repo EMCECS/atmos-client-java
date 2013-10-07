@@ -63,6 +63,7 @@ public class AtmosApiClientTest {
 
     public AtmosApiClientTest() throws Exception {
         config = AtmosClientFactory.getAtmosConfig();
+        Assume.assumeTrue("Could not load Atmos configuration", config != null);
         config.setDisableSslValidation( false );
         config.setEnableExpect100Continue( false );
         config.setEnableRetry( false );
@@ -2614,6 +2615,7 @@ public class AtmosApiClientTest {
             Assert.assertEquals( "input stream was read", 5, is.available() );
         } finally {
             config.setTokenId( tokenId );
+            is.close();
         }
     }
 

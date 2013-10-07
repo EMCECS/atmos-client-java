@@ -19,6 +19,7 @@ import static org.junit.Assert.*;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,6 +36,7 @@ public class UpdateTest {
     @Before
     public void setUp() throws Exception {
         vipr = S3ClientFactory.getS3Client();
+        Assume.assumeTrue("Could not configure S3 connection", vipr != null);
         try {
             vipr.createBucket(TEST_BUCKET);
         } catch(AmazonS3Exception e) {

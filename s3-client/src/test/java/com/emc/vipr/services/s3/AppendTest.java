@@ -28,6 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,6 +52,7 @@ public class AppendTest {
     @Before
     public void setUp() throws Exception {
         vipr = S3ClientFactory.getS3Client();
+        Assume.assumeTrue("Could not configure S3 connection", vipr != null);
         try {
             vipr.createBucket(TEST_BUCKET);
         } catch(AmazonS3Exception e) {

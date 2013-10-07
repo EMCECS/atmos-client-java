@@ -20,8 +20,10 @@ import com.emc.atmos.util.AtmosClientFactory;
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.rest.AbstractEsuRestApi;
 import com.emc.esu.test.EsuApiTest;
+
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class EsuApiJerseyAdapterTest extends EsuApiTest {
@@ -29,6 +31,7 @@ public class EsuApiJerseyAdapterTest extends EsuApiTest {
 
     public EsuApiJerseyAdapterTest() throws Exception {
         config = AtmosClientFactory.getAtmosConfig();
+        Assume.assumeTrue("Could not load Atmos configuration", config != null);
         uid = config.getTokenId();
         config.setDisableSslValidation( true );
         config.setEnableExpect100Continue( false );

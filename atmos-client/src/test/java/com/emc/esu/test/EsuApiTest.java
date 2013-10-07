@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
  * Note that this class does not implement TestCase; it is called by the
  * REST and SOAP testcases.
  */
+@SuppressWarnings("deprecation")
 public abstract class EsuApiTest {
     public static Logger l4j = Logger.getLogger( EsuApiTest.class );
 
@@ -1421,7 +1422,17 @@ public abstract class EsuApiTest {
         byte[] content = "Hello World!".getBytes( "UTF-8" );
 
         // isolate this test in the namespace
-        ObjectId parentId = this.esu.createObjectOnPath( new ObjectPath( parentPath ), null, null, null, null );
+        ObjectId parentId = null;
+        try {
+            parentId = this.esu.createObjectOnPath( new ObjectPath( parentPath ), null, null, null, null );
+        } catch(EsuException e) {
+            if(e.getAtmosCode() == 1016) {
+                deleteRecursively(new ObjectPath( parentPath ));
+                parentId = this.esu.createObjectOnPath( new ObjectPath( parentPath ), null, null, null, null );
+            } else {
+                throw e;
+            }
+        }
 
         // test single dot path (./)
         ObjectId fileId = this.esu.createObjectOnPath( new ObjectPath( parentPath + "hidden.txt" ), null, null, content, "text/plain" );

@@ -86,6 +86,11 @@
       <artifactId>jersey-apache-httpclient4</artifactId>
       <version>1.17-CUSTOM-SNAPSHOT</version>
     </dependency>
+    <dependency>
+    	<groupId>com.emc.vipr</groupId>
+    	<artifactId>dataservices-common</artifactId>
+    	<version>1.1-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 
   <build>
