@@ -108,6 +108,14 @@ public class BasicEncryptionOutputTransform extends EncryptionOutputTransform {
             cipher = Cipher.getInstance(encryptionTransform);
         }
 
+        // Per FIPS bulletin 2013-09, make sure we don't use Dual_EC_DRBG
+        SecureRandom rand;
+        if(provider != null) {
+            rand = SecureRandom.getInstance("SHA1PRNG", provider);
+        } else {
+            rand = SecureRandom.getInstance("SHA1PRNG");
+        }
+
         // Generate a secret key
         String[] algParts = encryptionTransform.split("/");
         KeyGenerator keygen = null;
@@ -117,18 +125,10 @@ public class BasicEncryptionOutputTransform extends EncryptionOutputTransform {
             keygen = KeyGenerator.getInstance(algParts[0]);
         }
 
-        keygen.init(keySize);
+        keygen.init(keySize, rand);
         k = keygen.generateKey();
         //System.out.println("Key: " + KeyUtils.toHexPadded(k.getEncoded()));
         
-        // Per FIPS bulletin 2013-09, make sure we don't use Dual_EC_DRBG
-        SecureRandom rand;
-        if(provider != null) {
-            rand = SecureRandom.getInstance("SHA1PRNG", provider);
-        } else {
-            rand = SecureRandom.getInstance("SHA1PRNG");
-        }
-
         cipher.init(Cipher.ENCRYPT_MODE, k, rand);
         iv = cipher.getIV();
         //System.out.println("IV: " + KeyUtils.toHexPadded(iv));

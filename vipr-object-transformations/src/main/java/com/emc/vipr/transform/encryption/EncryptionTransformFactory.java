@@ -89,17 +89,6 @@ public abstract class EncryptionTransformFactory<T extends EncryptionOutputTrans
         return TransformConstants.ENCRYPTION_CLASS;
     }
 
-    protected SecretKey generateSymmetricKey() throws NoSuchAlgorithmException {
-        KeyGenerator kg = null;
-        if (provider != null) {
-            kg = KeyGenerator.getInstance(getEncryptionAlgorithm(), provider);
-        } else {
-            kg = KeyGenerator.getInstance(getEncryptionAlgorithm());
-        }
-
-        return kg.generateKey();
-    }
-
     protected String getEncryptionAlgorithm() {
         return encryptionTransform.split("/")[0];
     }
