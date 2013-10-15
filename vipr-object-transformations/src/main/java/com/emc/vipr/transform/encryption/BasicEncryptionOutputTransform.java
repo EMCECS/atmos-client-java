@@ -25,7 +25,6 @@ import javax.crypto.SecretKey;
 import org.apache.commons.codec.binary.Base64;
 
 import com.emc.vipr.transform.TransformConstants;
-import com.emc.vipr.transform.TransformException;
 
 /**
  * @author cwikj

@@ -6,9 +6,7 @@ import java.security.Provider;
 import java.util.Map;
 
 import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
 
 import com.emc.vipr.transform.TransformConstants;
 import com.emc.vipr.transform.TransformException;

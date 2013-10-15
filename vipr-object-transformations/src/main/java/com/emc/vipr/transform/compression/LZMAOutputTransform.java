@@ -9,8 +9,6 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import SevenZip.Compression.LZMA.Encoder;
-
 import com.emc.vipr.transform.TransformConstants;
 import com.emc.vipr.transform.TransformConstants.CompressionMode;
 
