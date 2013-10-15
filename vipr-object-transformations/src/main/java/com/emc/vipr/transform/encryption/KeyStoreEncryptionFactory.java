@@ -3,6 +3,7 @@ package com.emc.vipr.transform.encryption;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -99,79 +100,65 @@ public class KeyStoreEncryptionFactory extends
 
     @Override
     public Map<String, String> rekey(Map<String, String> metadata) throws TransformException, DoesNotNeedRekeyException{
-        try {
-            String oldKeyId = metadata
-                    .get(TransformConstants.META_ENCRYPTION_KEY_ID);
-            if (oldKeyId == null) {
-                throw new TransformException(
-                        "Metadata does not contain a master key ID");
-            }
-            if (oldKeyId.equals(masterEncryptionKeyFingerprint)) {
-                // This object is already using the current key.
-                logger.info("Object is already using the current master key");
-                throw new DoesNotNeedRekeyException(
-                        "Object is already using the current master key");
-            }
-            // Make sure we have the old key
-            if (!idToAliasMap.containsKey(oldKeyId)) {
-                throw new TransformException("Master key with fingerprint "
-                        + oldKeyId + " not found");
-            }
-            
-            String oldAlias = idToAliasMap.get(oldKeyId);
-            //Certificate oldCert = keyStore.getCertificate(oldAlias);
-            PrivateKey oldKey = (PrivateKey) keyStore.getKey(oldAlias, keyStorePassword);
-            if(oldKey == null) {
-                throw new TransformException("Private key for alias "
-                        + oldAlias + " not found");
-            }
-            String encodedKey = metadata.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY);
-            if(encodedKey == null) {
-                throw new TransformException("Encrypted object key not found");
-            }
-            
-            String algorithm = getEncryptionAlgorithm();
-            
-            SecretKey objectKey = KeyUtils.decryptKey(encodedKey, algorithm, provider, oldKey);
-            
-            // Re-encrypt key with the current master key
-            Certificate newMasterCert = keyStore.getCertificate(masterEncryptionKeyAlias);
-            PrivateKey newMasterKey = (PrivateKey)keyStore.getKey(masterEncryptionKeyAlias, 
-                    keyStorePassword);
-            String newKey = KeyUtils.encryptKey(objectKey, provider, newMasterCert.getPublicKey());
-            
-            Map<String, String> newMetadata = new HashMap<String, String>();
-            newMetadata.putAll(metadata);
-            newMetadata.remove(TransformConstants.META_ENCRYPTION_META_SIG);
-            newMetadata.put(TransformConstants.META_ENCRYPTION_OBJECT_KEY, newKey);
-            newMetadata.put(TransformConstants.META_ENCRYPTION_KEY_ID, 
-                    masterEncryptionKeyFingerprint);
-            
-            // Re-sign
-            String signature = KeyUtils.signMetadata(newMetadata, 
-                    (RSAPrivateKey) newMasterKey, provider);
-            newMetadata.put(TransformConstants.META_ENCRYPTION_META_SIG, signature);
-    
-            return newMetadata;
-        } catch(KeyStoreException e) {
-            throw new TransformException("Could not access keystore", e);
-        } catch(UnrecoverableKeyException e) {
-            throw new TransformException("Error loading private key from keystore", e);
-        } catch(NoSuchAlgorithmException e) {
-            throw new TransformException("Error loading private key from keystore", e);
+        String oldKeyId = metadata
+                .get(TransformConstants.META_ENCRYPTION_KEY_ID);
+        if (oldKeyId == null) {
+            throw new TransformException(
+                    "Metadata does not contain a master key ID");
         }
+        if (oldKeyId.equals(masterEncryptionKeyFingerprint)) {
+            // This object is already using the current key.
+            logger.info("Object is already using the current master key");
+            throw new DoesNotNeedRekeyException(
+                    "Object is already using the current master key");
+        }
+        // Make sure we have the old key
+        if (!idToAliasMap.containsKey(oldKeyId)) {
+            throw new TransformException("Master key with fingerprint "
+                    + oldKeyId + " not found");
+        }
+        
+        String oldAlias = idToAliasMap.get(oldKeyId);
+        KeyPair oldMasterKey = getKeyPair(oldAlias);
+        String encodedKey = metadata.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY);
+        if(encodedKey == null) {
+            throw new TransformException("Encrypted object key not found");
+        }
+        
+        String algorithm = getEncryptionAlgorithm();
+        
+        SecretKey objectKey = KeyUtils.decryptKey(encodedKey, algorithm, provider, oldMasterKey.getPrivate());
+        
+        // Re-encrypt key with the current master key
+        KeyPair newMasterKey = getKeyPair(masterEncryptionKeyAlias);
+        String newKey;
+        try {
+            newKey = KeyUtils.encryptKey(objectKey, provider, newMasterKey.getPublic());
+        } catch (GeneralSecurityException e) {
+            throw new TransformException("Error encrypting key: " + e, e);
+        }
+        
+        Map<String, String> newMetadata = new HashMap<String, String>();
+        newMetadata.putAll(metadata);
+        newMetadata.remove(TransformConstants.META_ENCRYPTION_META_SIG);
+        newMetadata.put(TransformConstants.META_ENCRYPTION_OBJECT_KEY, newKey);
+        newMetadata.put(TransformConstants.META_ENCRYPTION_KEY_ID, 
+                masterEncryptionKeyFingerprint);
+        
+        // Re-sign
+        String signature = KeyUtils.signMetadata(newMetadata, 
+                (RSAPrivateKey) newMasterKey.getPrivate(), provider);
+        newMetadata.put(TransformConstants.META_ENCRYPTION_META_SIG, signature);
+   
+        return newMetadata;
     }
-
-    @Override
-    public BasicEncryptionOutputTransform getOutputTransform(
-            OutputStream streamToEncode, Map<String, String> metadataToEncode)
-            throws IOException, TransformException {
-        // Load the key
+    
+    private KeyPair getKeyPair(String alias) throws TransformException {
         Certificate keyCert;
         PrivateKey privateKey;
         try {
-            keyCert = keyStore.getCertificate(masterEncryptionKeyAlias);
-            privateKey =  (PrivateKey) keyStore.getKey(masterEncryptionKeyAlias, 
+            keyCert = keyStore.getCertificate(alias);
+            privateKey =  (PrivateKey) keyStore.getKey(alias, 
                 keyStorePassword);
             if(keyCert == null) {
                 throw new TransformException("Certificate for alias " + 
@@ -188,7 +175,27 @@ public class KeyStoreEncryptionFactory extends
         } catch(NoSuchAlgorithmException e) {
             throw new TransformException("Error loading private key from keystore", e);
         }
-        KeyPair asymmetricKey = new KeyPair(keyCert.getPublicKey(), privateKey);
+        return new KeyPair(keyCert.getPublicKey(), privateKey);
+    }
+
+    @Override
+    public BasicEncryptionOutputTransform getOutputTransform(
+            OutputStream streamToEncodeTo, Map<String, String> metadataToEncode)
+            throws IOException, TransformException {
+        // Load the key
+        KeyPair asymmetricKey = getKeyPair(masterEncryptionKeyAlias);
+        
+        return new BasicEncryptionOutputTransform(streamToEncodeTo, metadataToEncode, 
+                masterEncryptionKeyFingerprint, asymmetricKey, encryptionTransform, 
+                keySize, provider);
+    }
+    
+    @Override
+    public BasicEncryptionOutputTransform getOutputTransform(
+            InputStream streamToEncode, Map<String, String> metadataToEncode)
+            throws IOException, TransformException {
+        // Load the key
+        KeyPair asymmetricKey = getKeyPair(masterEncryptionKeyAlias);
         
         return new BasicEncryptionOutputTransform(streamToEncode, metadataToEncode, 
                 masterEncryptionKeyFingerprint, asymmetricKey, encryptionTransform, 
@@ -222,29 +229,7 @@ public class KeyStoreEncryptionFactory extends
             throw new TransformException("Could not find master key for ID " + masterKeyId);
         }
         
-        Certificate keyCert;
-        PrivateKey privateKey;
-        try {
-            keyCert = keyStore.getCertificate(masterKeyAlias);
-            privateKey =  (PrivateKey) keyStore.getKey(masterKeyAlias, 
-                keyStorePassword);
-            if(keyCert == null) {
-                throw new TransformException("Certificate for alias " + 
-                        masterKeyAlias + " not found");
-            }
-            if(privateKey == null) {
-                throw new TransformException("Private key for alias " + 
-                        masterKeyAlias + " not found");
-            }
-        } catch (KeyStoreException e) {
-            throw new TransformException("Could not access keystore", e);
-        } catch(UnrecoverableKeyException e) {
-            throw new TransformException("Error loading private key from keystore", e);
-        } catch(NoSuchAlgorithmException e) {
-            throw new TransformException("Error loading private key from keystore", e);
-        }
-        KeyPair asymmetricKey = new KeyPair(keyCert.getPublicKey(), privateKey);
-
+        KeyPair asymmetricKey = getKeyPair(masterKeyAlias);
         
         return new BasicEncryptionInputTransform(transformTuple[1], streamToDecode, 
                 metadata, asymmetricKey, provider);

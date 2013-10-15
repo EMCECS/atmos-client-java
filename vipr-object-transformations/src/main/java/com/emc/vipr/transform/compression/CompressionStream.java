@@ -9,7 +9,7 @@ import java.util.Map;
  * @author cwikj
  *
  */
-public interface CompressionOutputStream {
+public interface CompressionStream {
 
     public abstract Map<String,String> getStreamMetadata();
 

@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import com.emc.vipr.transform.TransformConstants;
 import com.emc.vipr.transform.TransformConstants.CompressionMode;
+import com.emc.vipr.transform.TransformException;
 
 public class CompressionTransformFactoryTest {
 
@@ -125,8 +126,126 @@ public class CompressionTransformFactoryTest {
         }
     }
     
+    // Test getting pull stream in push mode.
+    @Test(expected=IllegalStateException.class) 
+    public void testWrongMode() throws IOException {
+        // Test the factory front-to-back.
+        CompressionTransformFactory factory = new CompressionTransformFactory();
+        factory.setCompressionLevel(4);
+        factory.setCompressMode(CompressionMode.LZMA);
+        
+
+        ByteArrayOutputStream compressedOutput = new ByteArrayOutputStream();
+        CompressionOutputTransform outTransform = factory.getOutputTransform(compressedOutput, null);
+        
+        outTransform.getEncodedInputStream();
+    }
+    
+    // Test getting push stream in pull mode.
+    @Test(expected=IllegalStateException.class) 
+    public void testWrongMode2() throws IOException, TransformException {
+        // Test the factory front-to-back.
+        CompressionTransformFactory factory = new CompressionTransformFactory();
+        factory.setCompressionLevel(4);
+        factory.setCompressMode(CompressionMode.LZMA);
+        
+
+        ByteArrayInputStream compressedInput = new ByteArrayInputStream(new byte[32]);
+        CompressionOutputTransform outTransform = factory.getOutputTransform(compressedInput, null);
+        
+        outTransform.getEncodedOutputStream();
+    }
+
+   
     @Test
-    public void testEncodeDecode() throws Exception {
+    public void testEncodeDecodeLzma() throws Exception {
+        // Test the factory front-to-back.
+        CompressionTransformFactory factory = new CompressionTransformFactory();
+        factory.setCompressionLevel(2);
+        factory.setCompressMode(CompressionMode.LZMA);
+        
+        // Some generic metadata
+        Map<String, String> metadata = new HashMap<String, String>();
+        metadata.put("name1", "value1");
+        metadata.put("name2", "value2");
+        
+        // Get some data to compress.
+        InputStream classin = this.getClass().getClassLoader()
+                .getResourceAsStream("uncompressed.txt");
+        ByteArrayOutputStream classByteStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int c = 0;
+        while ((c = classin.read(buffer)) != -1) {
+            classByteStream.write(buffer, 0, c);
+        }
+        byte[] uncompressedData = classByteStream.toByteArray();
+        classin.close();
+
+        // Compress
+        ByteArrayOutputStream compressedOutput = new ByteArrayOutputStream();
+        CompressionOutputTransform outTransform = factory.getOutputTransform(compressedOutput, metadata);
+        
+        OutputStream outStream = outTransform.getEncodedOutputStream();
+        assertNotNull(outStream);
+        outStream.write(uncompressedData);
+        outStream.close();
+        
+        Map<String, String> objectData = outTransform.getEncodedMetadata();
+        
+        assertEquals("Uncompressed digest incorrect", "027e997e6b1dfc97b93eb28dc9a6804096d85873",
+                objectData.get(TransformConstants.META_COMPRESSION_UNCOMP_SHA1));
+        assertEquals("Uncompressed size incorrect", 2516125, Long.parseLong(objectData
+                .get(TransformConstants.META_COMPRESSION_UNCOMP_SIZE)));
+        assertEquals("Compression ratio incorrect", "95.1%",
+                objectData.get(TransformConstants.META_COMPRESSION_COMP_RATIO));
+        assertEquals("Compressed size incorrect", 124271, Long.parseLong(objectData
+                .get(TransformConstants.META_COMPRESSION_COMP_SIZE)));
+        assertEquals("name1 incorrect", "value1", objectData.get("name1"));
+        assertEquals("name2 incorrect", "value2", objectData.get("name2"));
+
+        
+        String transformConfig = outTransform.getTransformConfig();
+        assertEquals("Transform config string incorrect", "COMP:LZMA/2", transformConfig);
+        
+        // Decompress
+        ByteArrayInputStream compressedInput = new ByteArrayInputStream(compressedOutput.toByteArray());
+        CompressionInputTransform inTransform = factory.getInputTransform(transformConfig, compressedInput, objectData);
+        assertNotNull(inTransform);
+        
+        InputStream decompressedStream = inTransform.getDecodedInputStream();
+        assertNotNull(decompressedStream);
+        byte[] uncompressedData2 = new byte[uncompressedData.length];
+        
+        c = 0;
+        while(c < uncompressedData2.length) {
+            int x = decompressedStream.read(uncompressedData2, c, uncompressedData2.length - c);
+            if(x == -1) {
+                break;
+            }
+            c += x;
+        }
+        
+        assertEquals("stream length incorrect after decompression", uncompressedData.length, c);
+        assertArrayEquals("data incorrect after decompression", uncompressedData, uncompressedData2);
+        
+        Map<String, String> decodedMetadata = inTransform.getDecodedMetadata();
+        
+        // Should be same as above.
+        assertEquals("Uncompressed digest incorrect", "027e997e6b1dfc97b93eb28dc9a6804096d85873",
+                decodedMetadata.get(TransformConstants.META_COMPRESSION_UNCOMP_SHA1));
+        assertEquals("Compression ratio incorrect", "95.1%",
+                decodedMetadata.get(TransformConstants.META_COMPRESSION_COMP_RATIO));
+        assertEquals("Uncompressed size incorrect", 2516125, Long.parseLong(decodedMetadata
+                .get(TransformConstants.META_COMPRESSION_UNCOMP_SIZE)));
+        assertEquals("Compressed size incorrect", 124271, Long.parseLong(decodedMetadata
+                .get(TransformConstants.META_COMPRESSION_COMP_SIZE)));
+        assertEquals("name1 incorrect", "value1", decodedMetadata.get("name1"));
+        assertEquals("name2 incorrect", "value2", decodedMetadata.get("name2"));
+       
+    }
+    
+    @Test
+    public void testEncodeDecodeDeflate() throws Exception {
         // Test the factory front-to-back.
         CompressionTransformFactory factory = new CompressionTransformFactory();
         factory.setCompressionLevel(8);
@@ -154,6 +273,7 @@ public class CompressionTransformFactoryTest {
         CompressionOutputTransform outTransform = factory.getOutputTransform(compressedOutput, metadata);
         
         OutputStream outStream = outTransform.getEncodedOutputStream();
+        assertNotNull(outStream);
         outStream.write(uncompressedData);
         outStream.close();
         
@@ -177,8 +297,10 @@ public class CompressionTransformFactoryTest {
         // Decompress
         ByteArrayInputStream compressedInput = new ByteArrayInputStream(compressedOutput.toByteArray());
         CompressionInputTransform inTransform = factory.getInputTransform(transformConfig, compressedInput, objectData);
+        assertNotNull(inTransform);
         
         InputStream decompressedStream = inTransform.getDecodedInputStream();
+        assertNotNull(decompressedStream);
         byte[] uncompressedData2 = new byte[uncompressedData.length];
         
         c = 0;

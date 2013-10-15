@@ -14,7 +14,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.emc.vipr.transform.TransformConstants;
+import com.emc.vipr.transform.compression.CompressionTransformFactory.LzmaProfile;
 import com.emc.vipr.transform.encryption.KeyUtils;
 import com.emc.vipr.transform.util.CountingOutputStream;
 
@@ -24,7 +28,9 @@ import SevenZip.Compression.LZMA.Encoder;
  * @author cwikj
  *
  */
-public class LZMAOutputStream extends OutputStream implements CompressionOutputStream, Runnable {
+public class LZMAOutputStream extends OutputStream implements CompressionStream, Runnable {
+    private static final Logger log = LoggerFactory.getLogger(LZMAOutputStream.class);
+    
     private CountingOutputStream compressedOutput;
     private Thread compressionThread;
     private InputStream inputPipe;
@@ -35,31 +41,8 @@ public class LZMAOutputStream extends OutputStream implements CompressionOutputS
     private Exception compressionFailure;
     private byte[] uncompressedDigest;
     
-    /**
-     * Map LZMA compression parameters into the standard 0-9 compression levels.
-     */
-    private static LzmaProfile COMPRESSION_PROFILE[] = { 
-        new LzmaProfile(16*1024, 5, Encoder.EMatchFinderTypeBT2), // 0
-        new LzmaProfile(64*1024, 64, Encoder.EMatchFinderTypeBT2), // 1
-        new LzmaProfile(512*1024, 128, Encoder.EMatchFinderTypeBT2), // 2
-        new LzmaProfile(1024*1024, 128, Encoder.EMatchFinderTypeBT2), // 3
-        new LzmaProfile(8*1024*1024, 128, Encoder.EMatchFinderTypeBT2), // 4
-        new LzmaProfile(16*1024*1024, 128, Encoder.EMatchFinderTypeBT2), // 5
-        new LzmaProfile(24*1024*1024, 192, Encoder.EMatchFinderTypeBT2), // 6
-        new LzmaProfile(32*1024*1024, 224, Encoder.EMatchFinderTypeBT4), // 7
-        new LzmaProfile(48*1024*1024, 256, Encoder.EMatchFinderTypeBT4), // 8
-        new LzmaProfile(64*1024*1024, 273, Encoder.EMatchFinderTypeBT4) // 9
-    };
     
-    private static ThreadGroup tg = new ThreadGroup("LZMACompress");
-    
-    public static long memoryRequired(int compressionLevel) {
-        return memoryRequired(COMPRESSION_PROFILE[compressionLevel]);
-    }
-    
-    public static long memoryRequired(LzmaProfile profile) {
-        return (long)(profile.dictionarySize * 11.5);
-    }
+    static ThreadGroup LZ_COMP_TG = new ThreadGroup("LZMACompress");
     
     public LZMAOutputStream(OutputStream out, LzmaProfile compressionProfile) throws IOException {
         compressedOutput = new CountingOutputStream(out);
@@ -85,13 +68,13 @@ public class LZMAOutputStream extends OutputStream implements CompressionOutputS
         
         lzma.WriteCoderProperties(compressedOutput);
         
-        compressionThread = new Thread(tg, this);
+        compressionThread = new Thread(LZ_COMP_TG, this);
         
         compressionThread.start();
     }
 
     public LZMAOutputStream(OutputStream out, int compressionLevel) throws IOException {
-        this(out, COMPRESSION_PROFILE[compressionLevel]);
+        this(out, CompressionTransformFactory.LZMA_COMPRESSION_PROFILE[compressionLevel]);
     }
 
     /*
@@ -175,7 +158,7 @@ public class LZMAOutputStream extends OutputStream implements CompressionOutputS
     
     private synchronized void compressionFailure(Exception e) {
         compressionFailure = e;
-        e.printStackTrace();
+        log.error("Error compressing data", e);
     }
     
     private synchronized void writeCheck() throws IOException {
@@ -187,27 +170,6 @@ public class LZMAOutputStream extends OutputStream implements CompressionOutputS
         }
     }
     
-    public static class LzmaProfile {
-        private int dictionarySize;
-        private int fastBytes;
-        private int matchFinder;
-        private int lc;
-        private int lp;
-        private int pb;
-
-        public LzmaProfile(int dictionarySize, int fastBytes, int matchFinder) {
-            this(dictionarySize, fastBytes, matchFinder, 3, 0, 2);
-        }
-        
-        public LzmaProfile(int dictionarySize, int fastBytes, int matchFinder, int lc, int lp, int pb) {
-            this.dictionarySize = dictionarySize;
-            this.fastBytes = fastBytes;
-            this.matchFinder = matchFinder;
-            this.lc = lc;
-            this.lp = lp;
-            this.pb = pb;
-        }
-    }
     
 
 }

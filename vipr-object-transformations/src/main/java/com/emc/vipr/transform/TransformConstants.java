@@ -28,7 +28,7 @@ public interface TransformConstants {
     ///////////////////////////
     // Compression Constants //
     ///////////////////////////
-    public enum CompressionMode { LZMA, Deflate };
+    public enum CompressionMode { LZMA, Deflate, NONE };
     
     public static final CompressionMode DEFAULT_COMPRESSION_MODE = CompressionMode.Deflate;
     public static final int DEFAULT_COMPRESSION_LEVEL = 5;

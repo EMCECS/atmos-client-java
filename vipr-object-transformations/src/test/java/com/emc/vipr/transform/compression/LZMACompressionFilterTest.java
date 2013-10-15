@@ -1,10 +1,9 @@
-/**
- * 
- */
 package com.emc.vipr.transform.compression;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,11 +18,7 @@ import SevenZip.Compression.LZMA.Encoder;
 import com.emc.vipr.transform.TransformConstants;
 import com.emc.vipr.transform.compression.CompressionTransformFactory.LzmaProfile;
 
-/**
- * @author cwikj
- * 
- */
-public class LZMAOutputStreamTest {
+public class LZMACompressionFilterTest {
     byte[] data;
 
     /**
@@ -43,31 +38,6 @@ public class LZMAOutputStreamTest {
         data = classByteStream.toByteArray();
         
         classin.close();
-    }
-
-    /**
-     * Test method for
-     * {@link com.emc.vipr.transform.compression.LZMAOutputStream#memoryRequired(int)}
-     * .
-     */
-    @Test
-    public void testMemoryRequiredInt() {
-        assertEquals(192937984, CompressionTransformFactory.memoryRequiredForLzma(5));
-        assertEquals(771751936, CompressionTransformFactory.memoryRequiredForLzma(9));
-    }
-
-    /**
-     * Test method for
-     * {@link com.emc.vipr.transform.compression.LZMAOutputStream#memoryRequired(com.emc.vipr.transform.compression.LZMAOutputStream.LzmaProfile)}
-     * .
-     */
-    @Test
-    public void testMemoryRequiredLzmaProfile() {
-        assertEquals(0,
-                CompressionTransformFactory.memoryRequiredForLzma(new LzmaProfile(0, 0, 0)));
-        assertEquals(6174015488L,
-                CompressionTransformFactory.memoryRequiredForLzma(new LzmaProfile(
-                        512 * 1024 * 1024, 0, 0)));
     }
 
     @Test
@@ -130,7 +100,7 @@ public class LZMAOutputStreamTest {
 
     @Test
     public void testCompressionMetadata() throws Exception {
-        LZMAOutputStream lzma = runCompressMode(new LzmaProfile(16 * 1024, 128,
+        LZMACompressionFilter lzma = runCompressMode(new LzmaProfile(16 * 1024, 128,
                 Encoder.EMatchFinderTypeBT2));
         Map<String, String> m = lzma.getStreamMetadata();
         assertEquals("Uncompressed digest incorrect", "027e997e6b1dfc97b93eb28dc9a6804096d85873",
@@ -162,13 +132,20 @@ public class LZMAOutputStreamTest {
 
         long now = System.currentTimeMillis();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        LZMAOutputStream lout = new LZMAOutputStream(out, i);
-        lout.write(data);
+        ByteArrayInputStream in = new ByteArrayInputStream(data);
+        LZMACompressionFilter filter = new LZMACompressionFilter(in, i);
+        byte[] buffer = new byte[4096];
+        int c = 0;
+        while((c = filter.read(buffer)) != -1) {
+            out.write(buffer, 0, c);
+        }
+        out.close();
+        
         long usedMemory = Runtime.getRuntime().totalMemory()
                 - Runtime.getRuntime().freeMemory() - startMemory;
         System.out.println("Memory used: " + (usedMemory / (1024 * 1024))
                 + "MB");
-        lout.close();
+        filter.close();
 
         byte[] compressed = out.toByteArray();
 
@@ -183,7 +160,7 @@ public class LZMAOutputStreamTest {
                 compressed.length < data.length);
     }
 
-    private LZMAOutputStream runCompressMode(LzmaProfile profile)
+    private LZMACompressionFilter runCompressMode(LzmaProfile profile)
             throws IOException {
         System.out.println("Testing custom profile");
 
@@ -203,13 +180,20 @@ public class LZMAOutputStreamTest {
 
         long now = System.currentTimeMillis();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        LZMAOutputStream lout = new LZMAOutputStream(out, profile);
-        lout.write(data);
+        ByteArrayInputStream in = new ByteArrayInputStream(data);
+        LZMACompressionFilter filter = new LZMACompressionFilter(in, profile);
+        byte[] buffer = new byte[4096];
+        int c = 0;
+        while((c = filter.read(buffer)) != -1) {
+            out.write(buffer, 0, c);
+        }
+        out.close();
+        
         long usedMemory = Runtime.getRuntime().totalMemory()
                 - Runtime.getRuntime().freeMemory() - startMemory;
         System.out.println("Memory used: " + (usedMemory / (1024 * 1024))
                 + "MB");
-        lout.close();
+        filter.close();
 
         byte[] compressed = out.toByteArray();
 
@@ -223,7 +207,7 @@ public class LZMAOutputStreamTest {
         assertTrue("compressed data not smaller than original",
                 compressed.length < data.length);
 
-        return lout;
+        return filter;
     }
 
 }

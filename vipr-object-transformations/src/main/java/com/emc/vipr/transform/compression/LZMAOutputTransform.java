@@ -4,9 +4,12 @@
 package com.emc.vipr.transform.compression;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+
+import SevenZip.Compression.LZMA.Encoder;
 
 import com.emc.vipr.transform.TransformConstants;
 import com.emc.vipr.transform.TransformConstants.CompressionMode;
@@ -16,9 +19,22 @@ import com.emc.vipr.transform.TransformConstants.CompressionMode;
  * 
  */
 public class LZMAOutputTransform extends CompressionOutputTransform {
-    private LZMAOutputStream lzmaOutput;
+   
+    public LZMAOutputTransform(OutputStream streamToEncodeTo,
+            Map<String, String> metadataToEncode, int level) throws IOException {
+        super(streamToEncodeTo, metadataToEncode,
+                TransformConstants.COMPRESSION_CLASS + ":"
+                        + CompressionMode.LZMA + "/" + level);
 
-    public LZMAOutputTransform(OutputStream streamToEncode,
+        if (level > 9 || level < 0) {
+            throw new IllegalArgumentException("Invalid compression level "
+                    + level);
+        }
+
+        pushStream = new LZMAOutputStream(streamToEncodeTo, level);
+    }
+    
+    public LZMAOutputTransform(InputStream streamToEncode,
             Map<String, String> metadataToEncode, int level) throws IOException {
         super(streamToEncode, metadataToEncode,
                 TransformConstants.COMPRESSION_CLASS + ":"
@@ -29,18 +45,22 @@ public class LZMAOutputTransform extends CompressionOutputTransform {
                     + level);
         }
 
-        lzmaOutput = new LZMAOutputStream(streamToEncode, level);
+        pullStream = new LZMACompressionFilter(streamToEncode, level);
     }
-
-    @Override
-    public OutputStream getEncodedOutputStream() {
-        return lzmaOutput;
-    }
+    
+    
 
     @Override
     public Map<String, String> getEncodedMetadata() {
         Map<String, String> outputMetadata = new HashMap<String, String>();
-        outputMetadata.putAll(lzmaOutput.getStreamMetadata());
+        switch(getStreamMode()) {
+        case PULL:
+            outputMetadata.putAll(((LZMACompressionFilter)pullStream).getStreamMetadata());
+            break;
+        case PUSH:
+            outputMetadata.putAll(((LZMAOutputStream)pushStream).getStreamMetadata());
+            break;
+        }
 
         // Merge original
         outputMetadata.putAll(metadataToEncode);

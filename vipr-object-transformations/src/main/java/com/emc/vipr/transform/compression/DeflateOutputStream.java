@@ -21,7 +21,7 @@ import com.emc.vipr.transform.util.CountingOutputStream;
  * @author cwikj
  *
  */
-public class DeflateOutputStream extends OutputStream implements CompressionOutputStream  {
+public class DeflateOutputStream extends OutputStream implements CompressionStream  {
     private CountingOutputStream uncompressedCounter;
     private CountingOutputStream compressedCounter;
     private DigestOutputStream digester;

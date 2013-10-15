@@ -23,10 +23,6 @@ import javax.crypto.SecretKey;
 
 public class AESBench {
 
-    public AESBench() {
-        // TODO Auto-generated constructor stub
-    }
-
     public static void main(String[] args) {
         if(args.length != 1) {
             System.out.println("Usage: java -Xmx<heap>M -jar AESBench.jar <test_size_in_mb>");

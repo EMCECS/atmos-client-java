@@ -95,7 +95,7 @@ public class BasicEncryptionTransformFactoryTest {
     }
 
     @Test
-    public void testGetOutputTransform() throws Exception {
+    public void testGetOutputTransformPush() throws Exception {
         BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
         factory.setCryptoProvider(provider);
         factory.setMasterEncryptionKey(masterKey);
@@ -159,6 +159,74 @@ public class BasicEncryptionTransformFactoryTest {
         logger.info("Encoded metadata: " + objectData);
 
     }
+    
+    @Test
+    public void testGetOutputTransformPull() throws Exception {
+        // Get some data to encrypt.
+        InputStream classin = this.getClass().getClassLoader()
+                .getResourceAsStream("uncompressed.txt");
+        ByteArrayOutputStream classByteStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int c = 0;
+        while ((c = classin.read(buffer)) != -1) {
+            classByteStream.write(buffer, 0, c);
+        }
+        byte[] uncompressedData = classByteStream.toByteArray();
+        classin.close();
+        
+        BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
+        factory.setCryptoProvider(provider);
+        factory.setMasterEncryptionKey(masterKey);
+        
+        ByteArrayInputStream in = new ByteArrayInputStream(uncompressedData);
+
+        Map<String, String> metadata = new HashMap<String, String>();
+        metadata.put("name1", "value1");
+        metadata.put("name2", "value2");
+        BasicEncryptionOutputTransform outTransform = factory
+                .getOutputTransform(in, metadata);
+
+        InputStream encryptedStream = outTransform.getEncodedInputStream();
+        while((c = encryptedStream.read(buffer)) != -1) {
+            // discard
+        }
+
+        // Should not allow this yet.
+        try {
+            outTransform.getEncodedMetadata();
+            fail("Should not be able to get encoded metadata until stream is closed");
+        } catch (IllegalStateException e) {
+            // OK.
+        }
+
+        encryptedStream.close();
+
+        Map<String, String> objectData = outTransform.getEncodedMetadata();
+
+        assertEquals("Uncompressed digest incorrect",
+                "027e997e6b1dfc97b93eb28dc9a6804096d85873",
+                objectData.get(TransformConstants.META_ENCRYPTION_UNENC_SHA1));
+        assertEquals("Uncompressed size incorrect", 2516125,
+                Long.parseLong(objectData
+                        .get(TransformConstants.META_ENCRYPTION_UNENC_SIZE)));
+        assertNotNull("Missing IV",
+                objectData.get(TransformConstants.META_ENCRYPTION_IV));
+        assertEquals("Incorrect master encryption key ID",
+                KeyUtils.getRsaPublicKeyFingerprint((RSAPublicKey) masterKey
+                        .getPublic(), provider),
+                objectData.get(TransformConstants.META_ENCRYPTION_KEY_ID));
+        assertNotNull("Missing object key",
+                objectData.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY));
+        assertNotNull("Missing metadata signature",
+                objectData.get(TransformConstants.META_ENCRYPTION_META_SIG));
+        assertEquals("name1 incorrect", "value1", objectData.get("name1"));
+        assertEquals("name2 incorrect", "value2", objectData.get("name2"));
+
+        String transformConfig = outTransform.getTransformConfig();
+        assertEquals("Transform config string incorrect",
+                "ENC:AES/CBC/PKCS5Padding", transformConfig);
+
+        logger.info("Encoded metadata: " + objectData);    }
 
     @Test
     public void testGetInputTransform() throws Exception {

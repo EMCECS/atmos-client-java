@@ -152,8 +152,9 @@ public class KeyUtils {
      * @param publicKey The Base-64 encoded RSA public key in X.509 format.
      * @param privateKey The Base-64 encoded RSA private key in PKCS#8 format.
      * @return the KeyPair object containing both keys.
+     * @throws GeneralSecurityException 
      */
-    public static KeyPair rsaKeyPairFromBase64(String publicKey, String privateKey) {
+    public static KeyPair rsaKeyPairFromBase64(String publicKey, String privateKey) throws GeneralSecurityException {
         try {
             byte[] pubKeyBytes = Base64.decodeBase64(publicKey.getBytes("US-ASCII"));
             byte[] privKeyBytes = Base64.decodeBase64(privateKey.getBytes("US-ASCII"));
@@ -168,9 +169,8 @@ public class KeyUtils {
             privKey = keyFactory.generatePrivate(privKeySpec);
             
             return new KeyPair(pubKey, privKey);
-        } catch (GeneralSecurityException e) {
-            throw new RuntimeException("Could not load key pair: " + e, e);
         } catch (UnsupportedEncodingException e) {
+            // This should never happen for US-ASCII.
             throw new RuntimeException("Could not load key pair: " + e, e);
         }
 
@@ -200,7 +200,7 @@ public class KeyUtils {
 
     }
     
-    public static String encryptKey(SecretKey key, Provider provider, PublicKey publicKey) {
+    public static String encryptKey(SecretKey key, Provider provider, PublicKey publicKey) throws GeneralSecurityException {
         try {
             Cipher cipher = null;
             if(provider != null) {
@@ -214,8 +214,6 @@ public class KeyUtils {
             byte[] encryptedKey = cipher.doFinal(key.getEncoded());
             
             return new String(Base64.encodeBase64(encryptedKey), "US-ASCII");
-        } catch(GeneralSecurityException e) {
-            throw new RuntimeException("Error encrypting object key: " + e, e);
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("Error encrypting object key: " + e, e);
         }
@@ -285,7 +283,6 @@ public class KeyUtils {
             throw new RuntimeException(
                     "Could not initialize signature algorithm: " + e, e);
         } catch (InvalidKeyException e) {
-            // TODO Auto-generated catch block
             throw new RuntimeException(
                     "Could not initialize signature algorithm: " + e, e);
         }

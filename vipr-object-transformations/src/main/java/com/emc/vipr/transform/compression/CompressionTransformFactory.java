@@ -8,7 +8,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import SevenZip.Compression.LZMA.Encoder;
+
 import com.emc.vipr.transform.TransformConstants;
+import com.emc.vipr.transform.TransformException;
 import com.emc.vipr.transform.TransformConstants.CompressionMode;
 import com.emc.vipr.transform.TransformFactory;
 
@@ -49,6 +52,20 @@ public class CompressionTransformFactory extends
             return new DeflateOutputTransform(streamToEncodeTo, metadataToEncode, compressionLevel);
         case LZMA:
             return new LZMAOutputTransform(streamToEncodeTo, metadataToEncode, compressionLevel);
+        default:
+            throw new IllegalArgumentException("Unsupported compression method " + compressMode); 
+        }
+    }
+    
+    @Override
+    public CompressionOutputTransform getOutputTransform(
+            InputStream streamToEncode, Map<String, String> metadataToEncode)
+            throws IOException, TransformException {
+        switch(compressMode) {
+        case Deflate:
+            return new DeflateOutputTransform(streamToEncode, metadataToEncode, compressionLevel);
+        case LZMA:
+            return new LZMAOutputTransform(streamToEncode, metadataToEncode, compressionLevel);
         default:
             throw new IllegalArgumentException("Unsupported compression method " + compressMode); 
         }
@@ -119,6 +136,55 @@ public class CompressionTransformFactory extends
         
         return getTransformClass().equals(transformClass);
     }
+    
+    /**
+     * Map LZMA compression parameters into the standard 0-9 compression levels.
+     */
+    public static LzmaProfile LZMA_COMPRESSION_PROFILE[] = { 
+        new LzmaProfile(16*1024, 5, Encoder.EMatchFinderTypeBT2), // 0
+        new LzmaProfile(64*1024, 64, Encoder.EMatchFinderTypeBT2), // 1
+        new LzmaProfile(512*1024, 128, Encoder.EMatchFinderTypeBT2), // 2
+        new LzmaProfile(1024*1024, 128, Encoder.EMatchFinderTypeBT2), // 3
+        new LzmaProfile(8*1024*1024, 128, Encoder.EMatchFinderTypeBT2), // 4
+        new LzmaProfile(16*1024*1024, 128, Encoder.EMatchFinderTypeBT2), // 5
+        new LzmaProfile(24*1024*1024, 192, Encoder.EMatchFinderTypeBT2), // 6
+        new LzmaProfile(32*1024*1024, 224, Encoder.EMatchFinderTypeBT4), // 7
+        new LzmaProfile(48*1024*1024, 256, Encoder.EMatchFinderTypeBT4), // 8
+        new LzmaProfile(64*1024*1024, 273, Encoder.EMatchFinderTypeBT4) // 9
+    };
+
+
+    public static long memoryRequiredForLzma(int compressionLevel) {
+        return memoryRequiredForLzma(LZMA_COMPRESSION_PROFILE[compressionLevel]);
+    }
+    
+    public static long memoryRequiredForLzma(LzmaProfile profile) {
+        return (long)(profile.dictionarySize * 11.5);
+    }
+
+    
+    public static class LzmaProfile {
+        int dictionarySize;
+        int fastBytes;
+        int matchFinder;
+        int lc;
+        int lp;
+        int pb;
+
+        public LzmaProfile(int dictionarySize, int fastBytes, int matchFinder) {
+            this(dictionarySize, fastBytes, matchFinder, 3, 0, 2);
+        }
+        
+        public LzmaProfile(int dictionarySize, int fastBytes, int matchFinder, int lc, int lp, int pb) {
+            this.dictionarySize = dictionarySize;
+            this.fastBytes = fastBytes;
+            this.matchFinder = matchFinder;
+            this.lc = lc;
+            this.lp = lp;
+            this.pb = pb;
+        }
+    }
+
 
 
 }

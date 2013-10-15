@@ -3,6 +3,7 @@ package com.emc.vipr.transform.encryption;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -11,6 +12,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
@@ -36,11 +38,35 @@ public class BasicEncryptionTransformFactory
         super();
         masterDecryptionKeys = new HashMap<String, KeyPair>();
     }
-
-    public BasicEncryptionTransformFactory(String encryptionTransform,
-            int keySize, Provider provider) throws InvalidKeyException,
+    
+    public BasicEncryptionTransformFactory(KeyPair masterEncryptionKey, 
+            Set<KeyPair> masterDecryptionKeys) throws InvalidKeyException,
             NoSuchAlgorithmException, NoSuchPaddingException {
-        super(encryptionTransform, keySize, provider);
+        
+        setMasterEncryptionKey(masterEncryptionKey);
+        this.masterDecryptionKeys = new HashMap<String, KeyPair>();
+        if(masterDecryptionKeys != null) {
+            for(KeyPair kp : masterDecryptionKeys) {
+                addMasterDecryptionKey(kp);
+            }
+        }
+    }
+
+    public BasicEncryptionTransformFactory(KeyPair masterEncryptionKey, 
+            Set<KeyPair> masterDecryptionKeys, Provider provider) 
+                    throws InvalidKeyException, NoSuchAlgorithmException, 
+                    NoSuchPaddingException {
+        
+        super(TransformConstants.DEFAULT_ENCRYPTION_TRANSFORM,
+                TransformConstants.DEFAULT_ENCRYPTION_KEY_SIZE, provider);
+
+        setMasterEncryptionKey(masterEncryptionKey);
+        this.masterDecryptionKeys = new HashMap<String, KeyPair>();
+        if(masterDecryptionKeys != null) {
+            for(KeyPair kp : masterDecryptionKeys) {
+                addMasterDecryptionKey(kp);
+            }
+        }       
     }
 
     public void setMasterEncryptionKey(KeyPair pair) {
@@ -104,8 +130,13 @@ public class BasicEncryptionTransformFactory
                 oldKey.getPrivate());
         
         // Re-encrypt key with the current master key
-        String newKey = KeyUtils.encryptKey(objectKey, provider, 
-                masterEncryptionKey.getPublic());
+        String newKey;
+        try {
+            newKey = KeyUtils.encryptKey(objectKey, provider, 
+                    masterEncryptionKey.getPublic());
+        } catch (GeneralSecurityException e) {
+            throw new TransformException("Could not re-encrypt key: " + e, e);
+        }
         
         Map<String, String> newMetadata = new HashMap<String, String>();
         newMetadata.putAll(metadata);
@@ -124,8 +155,17 @@ public class BasicEncryptionTransformFactory
     
     @Override
     public BasicEncryptionOutputTransform getOutputTransform(
-            OutputStream streamToEncode, Map<String, String> metadataToEncode)
+            OutputStream streamToEncodeTo, Map<String, String> metadataToEncode)
             throws IOException {
+        return new BasicEncryptionOutputTransform(streamToEncodeTo,
+                metadataToEncode, masterEncryptionKeyFingerprint,
+                masterEncryptionKey, encryptionTransform, keySize, provider);
+    }
+    
+    @Override
+    public BasicEncryptionOutputTransform getOutputTransform(
+            InputStream streamToEncode, Map<String, String> metadataToEncode)
+            throws IOException, TransformException {
         return new BasicEncryptionOutputTransform(streamToEncode,
                 metadataToEncode, masterEncryptionKeyFingerprint,
                 masterEncryptionKey, encryptionTransform, keySize, provider);

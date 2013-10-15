@@ -17,7 +17,6 @@ public class DoesNotNeedRekeyException extends TransformException {
      */
     public DoesNotNeedRekeyException(String message) {
         super(message);
-        // TODO Auto-generated constructor stub
     }
 
     /**
@@ -25,7 +24,6 @@ public class DoesNotNeedRekeyException extends TransformException {
      */
     public DoesNotNeedRekeyException(Throwable cause) {
         super(cause);
-        // TODO Auto-generated constructor stub
     }
 
     /**
@@ -34,7 +32,6 @@ public class DoesNotNeedRekeyException extends TransformException {
      */
     public DoesNotNeedRekeyException(String message, Throwable cause) {
         super(message, cause);
-        // TODO Auto-generated constructor stub
     }
 
 }

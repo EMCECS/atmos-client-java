@@ -12,12 +12,10 @@ public class TransformException extends Exception {
 
     public TransformException(String message) {
         super(message);
-        // TODO Auto-generated constructor stub
     }
 
     public TransformException(Throwable cause) {
         super(cause);
-        // TODO Auto-generated constructor stub
     }
 
     public TransformException(String message, Throwable cause) {

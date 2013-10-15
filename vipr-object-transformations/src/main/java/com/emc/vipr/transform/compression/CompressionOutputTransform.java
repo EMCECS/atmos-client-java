@@ -3,6 +3,7 @@
  */
 package com.emc.vipr.transform.compression;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
@@ -19,6 +20,11 @@ public abstract class CompressionOutputTransform extends OutputTransform {
      * @param metadataToEncode
      */
     public CompressionOutputTransform(OutputStream streamToEncode,
+            Map<String, String> metadataToEncode, String transformConfig) {
+        super(streamToEncode, metadataToEncode, transformConfig);
+    }
+    
+    public CompressionOutputTransform(InputStream streamToEncode,
             Map<String, String> metadataToEncode, String transformConfig) {
         super(streamToEncode, metadataToEncode, transformConfig);
     }

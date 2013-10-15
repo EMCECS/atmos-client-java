@@ -11,7 +11,9 @@ import java.util.Map;
  *
  * @param <T> the class of transform that this class produces.
  */
-public abstract class TransformFactory<T extends OutputTransform, U extends InputTransform> {
+public abstract class TransformFactory<T extends OutputTransform, 
+    U extends InputTransform> 
+    implements Comparable<TransformFactory<OutputTransform, InputTransform>> {
     
     private int priority;
 
@@ -22,6 +24,17 @@ public abstract class TransformFactory<T extends OutputTransform, U extends Inpu
      * @throws IOException 
      */
     public abstract T getOutputTransform(OutputStream streamToEncode, Map<String,String> metadataToEncode) throws IOException, TransformException;
+
+    /** 
+     * Gets an "output" transform for the factory in its current
+     * state.  This will be used to transform raw data on its way "out" to the server.
+     * This version gets an output transform in "pull" mode that uses an input stream 
+     * to filter the data.  This is useful for situations where you need to pump data
+     * to an output stream like when using an HTTP output stream.
+     * @return a transform that can encode the outbound object stream.
+     * @throws IOException 
+     */
+    public abstract T getOutputTransform(InputStream streamToEncode, Map<String,String> metadataToEncode) throws IOException, TransformException;
 
     /**
      * Gets the "input" transform for the given class and metadata.
@@ -86,6 +99,11 @@ public abstract class TransformFactory<T extends OutputTransform, U extends Inpu
      */
     public void setPriority(int priority) {
         this.priority = priority;
+    }
+    
+    @Override
+    public int compareTo(TransformFactory<OutputTransform, InputTransform> other) {
+        return this.getPriority() - other.getPriority();
     }
 
 

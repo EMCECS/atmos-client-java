@@ -4,6 +4,7 @@
 package com.emc.vipr.transform.compression;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,8 +17,6 @@ import com.emc.vipr.transform.TransformConstants.CompressionMode;
  * 
  */
 public class DeflateOutputTransform extends CompressionOutputTransform {
-
-    private DeflateOutputStream deflater;
 
     /**
      * @param streamToEncode
@@ -36,17 +35,22 @@ public class DeflateOutputTransform extends CompressionOutputTransform {
                     "Invalid Deflate compression level: " + compressionLevel);
         }
 
-        deflater = new DeflateOutputStream(streamToEncode, compressionLevel);
+        pushStream = new DeflateOutputStream(streamToEncode, compressionLevel);
     }
+    
+    public DeflateOutputTransform(InputStream streamToEncode,
+            Map<String, String> metadataToEncode, int compressionLevel) throws IOException {
+        super(streamToEncode, metadataToEncode,
+                TransformConstants.COMPRESSION_CLASS + ":"
+                        + CompressionMode.Deflate + "/" + compressionLevel);
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.emc.vipr.transform.OutputTransform#getEncodedOutputStream()
-     */
-    @Override
-    public OutputStream getEncodedOutputStream() {
-        return deflater;
+        if (compressionLevel > 9 || compressionLevel < 0) {
+            throw new IllegalArgumentException(
+                    "Invalid Deflate compression level: " + compressionLevel);
+        }
+
+        pullStream = new DeflateInputFilter(streamToEncode, compressionLevel);
+        
     }
 
     /*
@@ -59,12 +63,20 @@ public class DeflateOutputTransform extends CompressionOutputTransform {
         Map<String, String> metadata = new HashMap<String, String>();
 
         // Merge stream metadata
-        metadata.putAll(deflater.getStreamMetadata());
+        switch(getStreamMode()) {
+        case PULL:
+            metadata.putAll(((CompressionStream) pullStream).getStreamMetadata());
+            break;
+        case PUSH:
+            metadata.putAll(((CompressionStream) pushStream).getStreamMetadata());
+            break;
+        }
 
         // Merge original metadata
         metadata.putAll(metadataToEncode);
 
         return metadata;
     }
+    
 
 }

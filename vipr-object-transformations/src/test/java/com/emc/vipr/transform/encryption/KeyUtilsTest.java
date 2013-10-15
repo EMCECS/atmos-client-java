@@ -2,7 +2,9 @@ package com.emc.vipr.transform.encryption;
 
 import static org.junit.Assert.*;
 
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.interfaces.RSAPublicKey;
@@ -60,7 +62,7 @@ public class KeyUtilsTest {
     }
 
     @Test
-    public void testEncryptDecryptKey() throws NoSuchAlgorithmException {
+    public void testEncryptDecryptKey() throws GeneralSecurityException {
         // Make an AES secret key
         KeyGenerator kg;
         if(provider != null) {
@@ -79,6 +81,52 @@ public class KeyUtilsTest {
         
         assertArrayEquals("Key data not equal", sk.getEncoded(), sk2.getEncoded());
         
+    }
+    
+    // Test exception handling for computing SKI of non-key
+    @Test(expected=RuntimeException.class)
+    public void testBadSki() {
+        KeyUtils.extractSubjectKeyIdentifier(new byte[5]);
+    }
+    
+    // Test exception handling for decrypting a bad key
+    @Test(expected=GeneralSecurityException.class)
+    public void testDecodeBadKey() throws Exception {
+        KeyUtils.rsaKeyPairFromBase64("aaaAAAaa", "bbBBBBbbb");
+    }
+    
+    // Test exception handling if you try to encrypt with an invalid key.
+    @Test(expected=GeneralSecurityException.class)
+    public void testEncryptBadKey() throws GeneralSecurityException {
+        // Generate an AES key to encrypt
+        KeyGenerator kg;
+        try {
+            if(provider != null) {
+                kg = KeyGenerator.getInstance("AES", provider);
+            } else {
+                kg = KeyGenerator.getInstance("AES");
+            }
+        } catch(NoSuchAlgorithmException e) {
+            // Don't want to test this exception
+            throw new RuntimeException(e);
+        }
+        kg.init(128);
+        SecretKey sk = kg.generateKey();
+        
+        // Generate a DSA key pair.  Since we use the RSA algorithm, this should not work.
+        KeyPairGenerator kpg;
+        try {
+            if(provider != null) {
+                kpg = KeyPairGenerator.getInstance("DSA", provider);
+            } else {
+                kpg = KeyPairGenerator.getInstance("DSA");
+            }
+        } catch(NoSuchAlgorithmException e) {
+            // don't want to test this exception
+            throw new RuntimeException(e);
+        }
+        KeyPair dsa = kpg.generateKeyPair();
+        KeyUtils.encryptKey(sk, null, dsa.getPublic());
     }
 
 
