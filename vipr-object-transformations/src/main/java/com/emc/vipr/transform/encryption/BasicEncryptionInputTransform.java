@@ -4,7 +4,6 @@
 package com.emc.vipr.transform.encryption;
 
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.Provider;
@@ -16,8 +15,6 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.xml.transform.TransformerException;
-
-import org.apache.commons.codec.binary.Base64;
 
 import com.emc.vipr.transform.TransformConstants;
 import com.emc.vipr.transform.TransformException;
@@ -59,12 +56,7 @@ public class BasicEncryptionInputTransform extends EncryptionInputTransform {
         if(encodedIv == null) {
             throw new TransformException("Initialization Vector (IV) not found in object metadata");
         }
-        byte[] ivData;
-        try {
-            ivData = Base64.decodeBase64(encodedIv.getBytes("US-ASCII"));
-        } catch (UnsupportedEncodingException e) {
-            throw new TransformException("Could not decode IV", e);
-        }
+        byte[] ivData = KeyUtils.urlSafeDecodeBase64(encodedIv);
         
         // Init the cipher
         try {

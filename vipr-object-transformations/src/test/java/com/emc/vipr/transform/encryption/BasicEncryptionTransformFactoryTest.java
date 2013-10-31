@@ -99,6 +99,7 @@ public class BasicEncryptionTransformFactoryTest {
         BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
         factory.setCryptoProvider(provider);
         factory.setMasterEncryptionKey(masterKey);
+        factory.addMasterDecryptionKey(oldKey);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Map<String, String> metadata = new HashMap<String, String>();
         metadata.put("name1", "value1");
@@ -177,6 +178,7 @@ public class BasicEncryptionTransformFactoryTest {
         BasicEncryptionTransformFactory factory = new BasicEncryptionTransformFactory();
         factory.setCryptoProvider(provider);
         factory.setMasterEncryptionKey(masterKey);
+        factory.addMasterDecryptionKey(oldKey);
         
         ByteArrayInputStream in = new ByteArrayInputStream(uncompressedData);
 

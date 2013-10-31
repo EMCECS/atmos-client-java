@@ -187,38 +187,74 @@ public class KeyUtils {
             
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
             
-            byte[] keyData = Base64.decodeBase64(encodedKey.getBytes("US-ASCII"));
+            byte[] keyData = urlSafeDecodeBase64(encodedKey);
             
             byte[] decryptedKey = cipher.doFinal(keyData);
             
             return new SecretKeySpec(decryptedKey, algorithm);
         } catch(GeneralSecurityException e) {
-            throw new RuntimeException("Error encrypting object key: " + e, e);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Error encrypting object key: " + e, e);
+            throw new RuntimeException("Error decrypting object key: " + e, e);
         }
 
+    }
+        
+    public static String encryptKey(SecretKey key, Provider provider, PublicKey publicKey) throws GeneralSecurityException {
+        Cipher cipher = null;
+        if(provider != null) {
+            cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM, provider);
+        } else {
+            cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM);
+        }
+        
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        
+        byte[] encryptedKey = cipher.doFinal(key.getEncoded());
+        
+        return urlSafeEncodeBase64(encryptedKey);
     }
     
-    public static String encryptKey(SecretKey key, Provider provider, PublicKey publicKey) throws GeneralSecurityException {
+    /**
+     * Uses the 'base64url' encoding from RFC4648 to encode a byte array to a string.
+     * @param data the byte array to encode
+     * @return the Base-64 encoded string.
+     */
+    public static String urlSafeEncodeBase64(byte[] data) {
+        String b64Data;
         try {
-            Cipher cipher = null;
-            if(provider != null) {
-                cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM, provider);
-            } else {
-                cipher = Cipher.getInstance(TransformConstants.KEY_ENCRYPTION_TRANSFORM);
-            }
-            
-            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-            
-            byte[] encryptedKey = cipher.doFinal(key.getEncoded());
-            
-            return new String(Base64.encodeBase64(encryptedKey), "US-ASCII");
+            b64Data = new String(Base64.encodeBase64(data), "US-ASCII");
         } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Error encrypting object key: " + e, e);
+            // Should never happen...
+            throw new RuntimeException("US-ASCII encoding not supported", e);
         }
-
+        
+        // Replacements
+        b64Data = b64Data.replace('+', '-');
+        b64Data = b64Data.replace('/', '_');
+        
+        return b64Data;
     }
+    
+    /**
+     * Uses the 'base64url' encoding from RFC4648 to decode a string to a byte array.  It
+     * is assumed that the characters are encoded as 7-bit US-ASCII.
+     * @param b64Data the Base-64 encoded string to decode
+     * @return the decoded bytes.
+     */
+    public static byte[] urlSafeDecodeBase64(String b64Data) {
+        // Replacements
+        b64Data = b64Data.replace('-', '+');
+        b64Data = b64Data.replace('_', '/');
+        
+        byte[] data;
+        try {
+            data = Base64.decodeBase64(b64Data.getBytes("US-ASCII"));
+        } catch (UnsupportedEncodingException e) {
+            // Should never happen...
+            throw new RuntimeException("US-ASCII encoding not supported", e);
+        }
+        return data;
+    }
+
 
 
     /**
@@ -292,14 +328,9 @@ public class KeyUtils {
             sig.update(bytes);
             byte[] signature = sig.sign();
             
-            // Base-64
-            byte[] b64sig = Base64.encodeBase64(signature);
-            
-            return new String(b64sig, "US-ASCII");
+            return urlSafeEncodeBase64(signature);
         } catch (SignatureException e) {
             throw new RuntimeException("Could not compute metadata signature: " + e);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Could not encode metadata signature: " + e);
         }
 
     }

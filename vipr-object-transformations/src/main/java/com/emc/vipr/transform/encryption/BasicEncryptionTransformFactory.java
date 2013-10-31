@@ -43,8 +43,8 @@ public class BasicEncryptionTransformFactory
             Set<KeyPair> masterDecryptionKeys) throws InvalidKeyException,
             NoSuchAlgorithmException, NoSuchPaddingException {
         
-        setMasterEncryptionKey(masterEncryptionKey);
         this.masterDecryptionKeys = new HashMap<String, KeyPair>();
+        setMasterEncryptionKey(masterEncryptionKey);
         if(masterDecryptionKeys != null) {
             for(KeyPair kp : masterDecryptionKeys) {
                 addMasterDecryptionKey(kp);
@@ -60,8 +60,8 @@ public class BasicEncryptionTransformFactory
         super(TransformConstants.DEFAULT_ENCRYPTION_TRANSFORM,
                 TransformConstants.DEFAULT_ENCRYPTION_KEY_SIZE, provider);
 
-        setMasterEncryptionKey(masterEncryptionKey);
         this.masterDecryptionKeys = new HashMap<String, KeyPair>();
+        setMasterEncryptionKey(masterEncryptionKey);
         if(masterDecryptionKeys != null) {
             for(KeyPair kp : masterDecryptionKeys) {
                 addMasterDecryptionKey(kp);
@@ -91,7 +91,6 @@ public class BasicEncryptionTransformFactory
             String fingerprint = KeyUtils
                     .getRsaPublicKeyFingerprint((RSAPublicKey) pair.getPublic(), provider);
             masterDecryptionKeys.put(fingerprint, pair);
-            masterEncryptionKeyFingerprint = fingerprint;
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Error adding master key", e);
         }

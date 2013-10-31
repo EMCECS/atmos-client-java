@@ -37,6 +37,7 @@ public abstract class EncryptionTransformFactory<T extends EncryptionOutputTrans
             Provider provider) throws InvalidKeyException,
             NoSuchAlgorithmException, NoSuchPaddingException {
         setEncryptionSettings(encryptionTransform, keySize, provider);
+        setPriority(500);
     }
 
     public void setEncryptionSettings(String transform, int keySize,

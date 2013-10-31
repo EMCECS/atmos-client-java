@@ -5,7 +5,6 @@ package com.emc.vipr.transform.encryption;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -21,8 +20,6 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
-
-import org.apache.commons.codec.binary.Base64;
 
 import com.emc.vipr.transform.TransformConstants;
 
@@ -148,12 +145,7 @@ public class BasicEncryptionOutputTransform extends EncryptionOutputTransform {
         encodedMetadata.putAll(metadataToEncode);
         
         // Add x-emc fields
-        String encodedIv;
-        try {
-            encodedIv = new String(Base64.encodeBase64(iv), "US-ASCII");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Could not encode IV", e);
-        }
+        String encodedIv = KeyUtils.urlSafeEncodeBase64(iv);
         encodedMetadata.put(TransformConstants.META_ENCRYPTION_IV, encodedIv);
         encodedMetadata.put(TransformConstants.META_ENCRYPTION_KEY_ID, 
                 masterEncryptionKeyFingerprint);

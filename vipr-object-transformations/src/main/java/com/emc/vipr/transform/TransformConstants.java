@@ -10,6 +10,8 @@ public interface TransformConstants {
     
     public static final String METADATA_PREFIX = "x-emc-";
     
+    public static final String META_TRANSFORM_MODE = METADATA_PREFIX + "transform-mode";
+    
     //////////////////////////
     // Encryption Constants //
     //////////////////////////
