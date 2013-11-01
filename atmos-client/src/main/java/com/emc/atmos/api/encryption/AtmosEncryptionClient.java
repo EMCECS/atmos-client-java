@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -397,7 +398,9 @@ public class AtmosEncryptionClient implements AtmosApi {
         
         // Apply updates and adds
         for(String key : meta.keySet()) {
-            updatedMetadata.put(key, new Metadata(key, meta.get(key), false));
+            Metadata m = updatedMetadata.get(key);
+            updatedMetadata.put(key, new Metadata(key, meta.get(key), 
+                    m == null?false:m.isListable()));
         }
         
         return updatedMetadata.values();
@@ -418,9 +421,6 @@ public class AtmosEncryptionClient implements AtmosApi {
     @Override
     public <T> T readObject(ObjectIdentifier identifier, Range range,
             Class<T> objectType) throws IOException {
-        if(range != null) {
-            throw new UnsupportedOperationException(PARTIAL_READ_MSG);
-        }
         return readObject( new ReadObjectRequest().identifier( identifier ).ranges( range ), objectType ).getObject();
     }
 
@@ -570,8 +570,10 @@ public class AtmosEncryptionClient implements AtmosApi {
      */
     @Override
     public void updateObject(ObjectIdentifier identifier, Object content) {
-        // TODO Auto-generated method stub
-
+        UpdateObjectRequest uor = new UpdateObjectRequest().identifier(identifier)
+                .content(content);
+        
+        updateObject(uor);
     }
 
     /* (non-Javadoc)
@@ -580,12 +582,10 @@ public class AtmosEncryptionClient implements AtmosApi {
     @Override
     public void updateObject(ObjectIdentifier identifier, Object content,
             Range range) {
-        if(range != null) {
-            throw new UnsupportedOperationException(PARTIAL_UPDATE_MSG);
-        }
-
-        // TODO Auto-generated method stub
-
+        UpdateObjectRequest uor = new UpdateObjectRequest().identifier(identifier)
+                .content(content).range(range);
+        
+        updateObject(uor);
     }
 
     /*
@@ -597,7 +597,155 @@ public class AtmosEncryptionClient implements AtmosApi {
             throw new UnsupportedOperationException(PARTIAL_UPDATE_MSG);
         }
         
-        return null;
+        // We can only handle input streams since we need to transform
+        InputStream in = null;
+        if(request.getContent() != null) {
+            Object content = request.getContent();
+            if(content instanceof InputStream) {
+                in = (InputStream)content;
+            } else if(content instanceof String) {
+                in = new ByteArrayInputStream(((String)content).getBytes());
+            } else if(content instanceof byte[]) {
+                in = new ByteArrayInputStream((byte[])content);
+            } else {
+                throw new IllegalArgumentException(UNSUPPORTED_TYPE_MSG);
+            }
+        } else {
+            // If there was no content, create an empty InputStream
+            in = new ByteArrayInputStream(new byte[0]);
+        }
+
+        // Get the original list of metadata names.  This is used later to delete tags
+        // in case the transform mode changed and some tags are no longer relevant.
+        Map<String,Boolean> metaNameMap = delegate.getUserMetadataNames(
+                request.getIdentifier());
+        Set<String> metaNames = new HashSet<String>();
+        metaNames.addAll(metaNameMap.keySet());
+        for(Iterator<String> i = metaNames.iterator(); i.hasNext();) {
+            String s = i.next();
+            if(!s.startsWith(TransformConstants.METADATA_PREFIX)) {
+                i.remove();
+            }
+        }
+        
+        // Make metadata into a Map.
+        Map<String, String> mMeta = null;
+        if(request.getUserMetadata() != null) {
+            mMeta = metaToMap(request.getUserMetadata());
+        } else {
+            // Empty
+            mMeta = new HashMap<String, String>();
+        }        
+        
+        // Apply transforms
+        List<OutputTransform> appliedTransforms = new ArrayList<OutputTransform>();
+        
+        // The TreeSet will store the objects in ascending order (priority).  Reverse it 
+        // so highest priority comes first.
+        List<TransformFactory<?, ?>> revFactories = new ArrayList<TransformFactory<?,?>>();
+        revFactories.addAll(factories);
+        Collections.reverse(revFactories);
+        
+        try {
+            for(TransformFactory<?, ?> t : revFactories) {
+                OutputTransform ot = t.getOutputTransform(in, mMeta);
+                appliedTransforms.add(ot);
+                in = ot.getEncodedInputStream();
+            }
+        } catch(TransformException e) {
+            throw new AtmosException("Could not transform data: " + e, e);
+        } catch (IOException e) {
+            throw new AtmosException("Error transforming data: " + e, e);
+        }
+
+        // Overwrite the object
+        int c = 0;
+        int pos = 0;
+        byte[] buffer = new byte[bufferSize];
+        
+        // Read the first chunk and send it with the create request.
+        try {
+            c = fillBuffer(buffer, in);
+        } catch (IOException e) {
+            throw new AtmosException("Error reading input data: " + e, e);
+        }
+        if(c == -1) {
+            // EOF already
+            request.setContent(null);
+            
+            // Optmization -- send metadata now with create request and return
+            try {
+                in.close();
+            } catch (IOException e) {
+                throw new AtmosException("Error closing input: " + e, e);
+            }
+            for(OutputTransform ot : appliedTransforms) {
+                mMeta.putAll(ot.getEncodedMetadata());
+            }
+            Set<Metadata> metadata = request.getUserMetadata();
+            if(metadata == null) {
+                metadata = new HashSet<Metadata>();
+            }
+            updateMetadata(mMeta, metadata);
+            request.setUserMetadata(metadata);
+            
+            return delegate.updateObject(request);
+        } else {
+            request.setContent(new BufferSegment(buffer, 0, c));
+        }
+        BasicResponse resp = delegate.updateObject(request);
+        
+        pos = c;
+        
+        // Append until EOF.
+        try {
+            while((c = fillBuffer(buffer, in)) != -1) {
+                UpdateObjectRequest uor = new UpdateObjectRequest();
+                uor.setIdentifier(request.getIdentifier());
+                uor.setContentType(request.getContentType());
+                uor.setRange(new Range(pos, pos+c-1));
+                uor.setContent(new BufferSegment(buffer, 0, c));
+                pos += c;
+                delegate.updateObject(uor);
+            }
+        } catch (IOException e) {
+            throw new AtmosException("Error reading input data: " + e, e);
+        }
+        
+        try {
+            in.close();
+        } catch (IOException e) {
+            throw new AtmosException("Error closing stream: " + e, e);
+        }
+        
+        String transformConfig = "";
+        // Update the object with the transformed metadata.
+        for(OutputTransform ot : appliedTransforms) {
+            mMeta.putAll(ot.getEncodedMetadata());
+            if(transformConfig.length() != 0) {
+                transformConfig += "|";
+            }
+            transformConfig += ot.getTransformConfig();
+        }
+        mMeta.put(TransformConstants.META_TRANSFORM_MODE, transformConfig);
+        
+        Set<Metadata> metadata = request.getUserMetadata();
+        if(metadata == null) {
+            metadata = new HashSet<Metadata>();
+        }
+        Collection<Metadata> updatedMetadata = updateMetadata(mMeta, metadata);
+        delegate.setUserMetadata(request.getIdentifier(), 
+                updatedMetadata.toArray(new Metadata[updatedMetadata.size()]));
+        
+        metaNames.removeAll(mMeta.keySet());
+        
+        // Delete any unused tags
+        if(metaNames.size() > 0) {
+            delegate.deleteUserMetadata(request.getIdentifier(), 
+                    metaNames.toArray(new String[metaNames.size()]));
+        }
+        
+        return resp;
     }
 
     /* (non-Javadoc)

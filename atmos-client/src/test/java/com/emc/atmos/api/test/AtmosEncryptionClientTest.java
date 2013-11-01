@@ -14,6 +14,7 @@ import java.security.Provider;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -34,13 +35,17 @@ import com.emc.atmos.api.AtmosConfig;
 import com.emc.atmos.api.ObjectId;
 import com.emc.atmos.api.ObjectIdentifier;
 import com.emc.atmos.api.ObjectPath;
+import com.emc.atmos.api.Range;
+import com.emc.atmos.api.bean.CreateObjectResponse;
 import com.emc.atmos.api.bean.Metadata;
 import com.emc.atmos.api.bean.ReadObjectResponse;
 import com.emc.atmos.api.encryption.AtmosEncryptionClient;
 import com.emc.atmos.api.encryption.CompressionConfig;
 import com.emc.atmos.api.encryption.EncryptionConfig;
 import com.emc.atmos.api.jersey.AtmosApiClient;
+import com.emc.atmos.api.request.CreateObjectRequest;
 import com.emc.atmos.api.request.ReadObjectRequest;
+import com.emc.atmos.api.request.UpdateObjectRequest;
 import com.emc.atmos.util.AtmosClientFactory;
 import com.emc.atmos.util.RandomInputStream;
 import com.emc.vipr.transform.TransformConstants;
@@ -497,6 +502,172 @@ public class AtmosEncryptionClientTest {
         
         // Rekey -- should throw an exception that no rekey is needed.
         eclient.rekey(id);
+    }
+    
+    // Test partial read (should fail)
+    @Test(expected=UnsupportedOperationException.class)
+    public void testPartialRead() throws Exception {
+        AtmosEncryptionClient eclient = getKeystoreEncryptionClient(oldKeyAlias);
+        
+        String content = "Hello World!";
+        
+        ObjectId id = eclient.createObject(content, "text/plain");
+        cleanup.add(id);
+        
+        // Partial read
+        eclient.readObject(id, new Range(1, 1), byte[].class);
+    }
+    
+    // Test partial read (should fail)
+    @Test(expected=UnsupportedOperationException.class)
+    public void testPartialRead2() throws Exception {
+        AtmosEncryptionClient eclient = getKeystoreEncryptionClient(oldKeyAlias);
+        
+        String content = "Hello World!";
+        
+        ObjectId id = eclient.createObject(content, "text/plain");
+        cleanup.add(id);
+        
+        // Partial read
+        ReadObjectRequest req = new ReadObjectRequest().identifier(id).ranges(new Range(1,1), new Range(2,2));
+        eclient.readObject(req, byte[].class);
+    }
+    
+    // Test object overwrite
+    @Test
+    public void testOverwriteObject() throws Exception {
+        AtmosEncryptionClient eclient = getBasicEncryptionClient();
+        
+        String content = "Hello World!";
+        
+        ObjectId id = eclient.createObject(content, "text/plain");
+        cleanup.add(id);
+        
+        // Overwrite
+        content = "Hello Again";
+        eclient.updateObject(id, content);
+        
+        // Read back and check.        
+        ReadObjectRequest ror = new ReadObjectRequest();
+        ror.setIdentifier(id);
+        ReadObjectResponse<String> resp = eclient.readObject(ror, String.class);
+        
+        assertEquals("Content differs", content, resp.getObject());
+        assertEquals("unencrypted size incorrect", "11",
+                resp.getMetadata().getMetadata().get(TransformConstants.META_ENCRYPTION_UNENC_SIZE).getValue());
+        assertEquals("encrypted size incorrect", "16", resp.getMetadata().getMetadata().get("size").getValue());
+        assertEquals("unencrypted sha1 incorrect", "f18fd13626d3c9c76dc1386bb6d5b4d6a9f6d365", 
+                resp.getMetadata().getMetadata().get(TransformConstants.META_ENCRYPTION_UNENC_SHA1).getValue());
+        assertEquals("master key ID incorrect", 
+                KeyUtils.getRsaPublicKeyFingerprint((RSAPublicKey) masterKey.getPublic(), provider), 
+                resp.getMetadata().getMetadata().get(TransformConstants.META_ENCRYPTION_KEY_ID).getValue());
+        assertNotNull("IV null", resp.getMetadata().getMetadata().get(TransformConstants.META_ENCRYPTION_IV).getValue());
+        assertNotNull("Object key", resp.getMetadata().getMetadata().get(TransformConstants.META_ENCRYPTION_OBJECT_KEY).getValue());
+    }
+    
+    // Test object overwrite and change from encrypted to compressed.
+    @Test
+    public void testOverwriteObjectCompressed() throws Exception {
+        AtmosEncryptionClient eclient = getBasicEncryptionClient();
+        
+        String content = "Hello World!";
+        Metadata[] meta = new Metadata[] { new Metadata("myname", "my value", false),
+                new Metadata("listable", "", true)};
+        CreateObjectRequest req = new CreateObjectRequest().content(content).contentType("text/plain").userMetadata(meta);
+        
+        CreateObjectResponse resp1 = eclient.createObject(req);
+        ObjectId id = resp1.getObjectId();
+        cleanup.add(id);
+        
+        // Overwrite
+        eclient = getCompressionClient();
+        
+        // Get some data to encrypt.
+        InputStream classin = this.getClass().getClassLoader()
+                .getResourceAsStream("uncompressed.txt");
+        CountingInputStream incount = new CountingInputStream(classin);
+
+        eclient.updateObject(id, incount);
+        cleanup.add(id);
+        
+        classin.close();
+        
+        long bytesSent = incount.getByteCount();
+        assertEquals("Incorrect number of bytes sent", 2516125, bytesSent);
+        
+        // Read back and test
+        ReadObjectRequest ror = new ReadObjectRequest();
+        ror.setIdentifier(id);
+        ReadObjectResponse<byte[]> resp2 = eclient.readObject(ror, byte[].class);
+        Map<String, Metadata> objectData = resp2.getMetadata().getMetadata();
+
+        assertEquals("Uncompressed digest incorrect",
+                "027e997e6b1dfc97b93eb28dc9a6804096d85873",
+                objectData.get(TransformConstants.META_COMPRESSION_UNCOMP_SHA1).getValue());
+        assertEquals("Uncompressed size incorrect", 2516125,
+                Long.parseLong(objectData
+                        .get(TransformConstants.META_COMPRESSION_UNCOMP_SIZE).getValue()));
+        assertTrue("Object not compressed", 
+                bytesSent > Long.parseLong(objectData.get("size").getValue()));
+        
+        // Encryption meta should not be present.
+        assertNull("Should not have IV",
+                objectData.get(TransformConstants.META_ENCRYPTION_IV));
+        assertNull("Should not have key",
+                objectData.get(TransformConstants.META_ENCRYPTION_OBJECT_KEY));
+        assertNull("Should not have signature",
+                objectData.get(TransformConstants.META_ENCRYPTION_META_SIG));
+        
+        // Make sure our metadata tags are still there.
+        for(Metadata m : meta) {
+            Metadata mm = null;
+            assertTrue("Missing metadata tag: " + m.getName(), 
+                    (mm = objectData.get(m.getName())) != null);
+            assertEquals("Metadata incorrect", m, mm);
+            assertEquals("Metadata listable flag incorrect for " + m.getName(), 
+                    m.isListable(), mm.isListable());
+        }
+        
+        // Check stream
+        byte[] data = resp2.getObject();
+        assertEquals("Stream size incorrect", 2516125, data.length);
+        MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
+        byte[] digest = sha1.digest(data);
+        assertEquals("Stream digest incorrect", 
+                "027e997e6b1dfc97b93eb28dc9a6804096d85873", KeyUtils.toHexPadded(digest));
+
+    }
+    
+    // Test partial update (should fail)
+    @Test(expected=UnsupportedOperationException.class)
+    public void testObjectPartialOverwrite() throws Exception {
+        AtmosEncryptionClient eclient = getBasicEncryptionClient();
+        
+        String content = "Hello World!";
+        
+        ObjectId id = eclient.createObject(content, "text/plain");
+        cleanup.add(id);
+        
+        // Overwrite
+        content = "Hello Again";
+        eclient.updateObject(id, content, new Range(5,15));
+    }
+    
+    // Test object append (should fail)
+    @Test(expected=UnsupportedOperationException.class)
+    public void testObjectAppend() throws Exception {
+        AtmosEncryptionClient eclient = getBasicEncryptionClient();
+        
+        String content = "Hello World!";
+        
+        ObjectId id = eclient.createObject(content, "text/plain");
+        cleanup.add(id);
+        
+        // Append
+        content = "Hello Again";
+        UpdateObjectRequest uor = new UpdateObjectRequest().identifier(id)
+                .range(new Range(12,22)).content(content);
+        eclient.updateObject(uor);
     }
     
     public static String rand8char() {
