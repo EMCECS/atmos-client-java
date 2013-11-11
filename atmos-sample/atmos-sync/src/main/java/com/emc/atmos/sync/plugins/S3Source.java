@@ -23,10 +23,13 @@ import com.amazonaws.services.s3.model.*;
 import com.emc.atmos.api.bean.Metadata;
 import com.emc.atmos.sync.util.AtmosMetadata;
 import com.emc.atmos.sync.util.CountingInputStream;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.log4j.Logger;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -38,24 +41,33 @@ import java.util.Map;
  * 
  * @author cwikj
  */
-public class S3Source extends MultithreadedCrawlSource {
+public class S3Source extends MultithreadedCrawlSource implements InitializingBean {
 	private static final Logger l4j = Logger.getLogger(S3Source.class);
 
-	public static final String ACCESS_KEY_OPTION = "s3-access-key";
+	public static final String ACCESS_KEY_OPTION = "s3-source-access-key";
 	public static final String ACCESS_KEY_DESC = "The Amazon S3 access key, e.g. 0PN5J17HBGZHT7JJ3X82";
 	public static final String ACCESS_KEY_ARG_NAME = "access-key";
 
-	public static final String SECRET_KEY_OPTION = "s3-secret-key";
+	public static final String SECRET_KEY_OPTION = "s3-source-secret-key";
 	public static final String SECRET_KEY_DESC = "The Amazon S3 secret key, e.g. uV3F3YluFJax1cknvbcGwgjvx4QpvB+leU8dUj2o";
 	public static final String SECRET_KEY_ARG_NAME = "secret-key";
 
-	public static final String ROOT_KEY_OPTION = "s3-root-key";
+	public static final String ROOT_KEY_OPTION = "s3-source-root-key";
 	public static final String ROOT_KEY_DESC = "The key to start enumerating within the bucket, e.g. dir1/.  Optional, if omitted the root of the bucket will be enumerated.";
 	public static final String ROOT_KEY_ARG_NAME = "root-key";
+	
+	public static final String ENDPOINT_OPTION = "s3-source-endpoint";
+	public static final String ENDPOINT_DESC = "Specifies a different endpoint. If not set, s3.amazonaws.com is assumed.";
+	public static final String ENDPOINT_ARG_NAME = "endpoint";
 
 	private AmazonS3 amz;
 	private String bucketName;
 	private String rootKey;
+	private String endpoint;
+
+    private String accessKey;
+
+    private String secretKey;
 
 	/**
 	 * @see com.emc.atmos.sync.plugins.SourcePlugin#run()
@@ -99,6 +111,10 @@ public class S3Source extends MultithreadedCrawlSource {
 		opts.addOption(OptionBuilder.withLongOpt(ROOT_KEY_OPTION)
 				.withDescription(ROOT_KEY_DESC).hasArg()
 				.withArgName(ROOT_KEY_ARG_NAME).create());
+		
+		opts.addOption(OptionBuilder.withLongOpt(ENDPOINT_OPTION)
+		        .withDescription(ENDPOINT_DESC).hasArg()
+		        .withArgName(ENDPOINT_ARG_NAME).create());
 
 		return opts;
 	}
@@ -124,12 +140,18 @@ public class S3Source extends MultithreadedCrawlSource {
 						+ " is required.");
 			}
 
-			String accessKey = line.getOptionValue(ACCESS_KEY_OPTION);
-			String secretKey = line.getOptionValue(SECRET_KEY_OPTION);
+			accessKey = line.getOptionValue(ACCESS_KEY_OPTION);
+			secretKey = line.getOptionValue(SECRET_KEY_OPTION);
 
 			AWSCredentials creds = new BasicAWSCredentials(accessKey, secretKey);
 			amz = new AmazonS3Client(creds);
-			if (!amz.doesBucketExist(bucketName)) {
+            if(line.hasOption(ENDPOINT_OPTION)) {
+                endpoint = line.getOptionValue(ENDPOINT_OPTION);
+                amz.setEndpoint(endpoint);
+            }
+            
+
+            if (!amz.doesBucketExist(bucketName)) {
 				throw new RuntimeException("The bucket " + bucketName
 						+ " does not exist.");
 			}
@@ -207,7 +229,13 @@ public class S3Source extends MultithreadedCrawlSource {
 			this.key = key;
 			
 			try {
-				setSourceURI(new URI("http", bucketName+".s3.amazonaws.com", "/" + key, null));
+			    if(endpoint == null) {
+			        setSourceURI(new URI("http", bucketName+".s3.amazonaws.com", "/" + key, null));
+			    } else {
+			        URI u = new URI(endpoint + "/" + key);
+			        u = new URI(u.getScheme(), bucketName + "." + u.getHost(), u.getPath());
+			        setSourceURI(u);
+			    }
 			} catch (URISyntaxException e) {
 				throw new RuntimeException("Could not build URI for key " + key + ": " + e.getMessage(), e);
 			}
@@ -367,5 +395,92 @@ public class S3Source extends MultithreadedCrawlSource {
 		}
 		
 	}
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        Assert.hasText(accessKey, "accessKey is required");
+        Assert.hasText(secretKey, "secretKey is required");
+        Assert.hasText(bucketName, "bucketName is required");
+        AWSCredentials creds = new BasicAWSCredentials(accessKey, secretKey);
+        amz = new AmazonS3Client(creds);
+        if(endpoint != null) {
+            amz.setEndpoint(endpoint);
+        }
+
+        if (!amz.doesBucketExist(bucketName)) {
+            throw new RuntimeException("The bucket " + bucketName
+                    + " does not exist.");
+        }
+    }
+
+    /**
+     * @return the bucketName
+     */
+    public String getBucketName() {
+        return bucketName;
+    }
+
+    /**
+     * @param bucketName the bucketName to set
+     */
+    public void setBucketName(String bucketName) {
+        this.bucketName = bucketName;
+    }
+
+    /**
+     * @return the rootKey
+     */
+    public String getRootKey() {
+        return rootKey;
+    }
+
+    /**
+     * @param rootKey the rootKey to set
+     */
+    public void setRootKey(String rootKey) {
+        this.rootKey = rootKey;
+    }
+
+    /**
+     * @return the endpoint
+     */
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    /**
+     * @param endpoint the endpoint to set
+     */
+    public void setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
+    }
+
+    /**
+     * @return the accessKey
+     */
+    public String getAccessKey() {
+        return accessKey;
+    }
+
+    /**
+     * @param accessKey the accessKey to set
+     */
+    public void setAccessKey(String accessKey) {
+        this.accessKey = accessKey;
+    }
+
+    /**
+     * @return the secretKey
+     */
+    public String getSecretKey() {
+        return secretKey;
+    }
+
+    /**
+     * @param secretKey the secretKey to set
+     */
+    public void setSecretKey(String secretKey) {
+        this.secretKey = secretKey;
+    }
 
 }
