@@ -298,7 +298,7 @@ public class S3Destination extends DestinationPlugin implements InitializingBean
 
     @Override
     public String getName() {
-        return "Atmos Destination";
+        return "S3 Destination";
     }
 
     @Override
