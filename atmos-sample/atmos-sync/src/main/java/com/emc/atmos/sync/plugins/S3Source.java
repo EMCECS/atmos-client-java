@@ -19,10 +19,12 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.*;
 import com.emc.atmos.api.bean.Metadata;
 import com.emc.atmos.sync.util.AtmosMetadata;
 import com.emc.atmos.sync.util.CountingInputStream;
+import com.emc.atmos.sync.util.S3Utils;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
@@ -32,8 +34,10 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.util.Map;
 
 /**
@@ -59,6 +63,12 @@ public class S3Source extends MultithreadedCrawlSource implements InitializingBe
 	public static final String ENDPOINT_OPTION = "s3-source-endpoint";
 	public static final String ENDPOINT_DESC = "Specifies a different endpoint. If not set, s3.amazonaws.com is assumed.";
 	public static final String ENDPOINT_ARG_NAME = "endpoint";
+	
+	public static final String DECODE_KEYS_OPTION = "s3-source-decode-keys";
+	public static final String DECODE_KEYS_DESC = "If specified, keys will be URL-decoded after listing them.  This can fix problems if you see file or directory names with characters like %2f in them.";
+	
+	public static final String DISABLE_VHOSTS_OPTION = "s3-source-disable-vhost";
+	public static final String DISABLE_VHOSTS_DESC = "If specified, virtual hosted buckets will be disabled and path-style buckets will be used.";
 
 	private AmazonS3 amz;
 	private String bucketName;
@@ -68,6 +78,8 @@ public class S3Source extends MultithreadedCrawlSource implements InitializingBe
     private String accessKey;
 
     private String secretKey;
+    
+    private boolean decodeKeys;
 
 	/**
 	 * @see com.emc.atmos.sync.plugins.SourcePlugin#run()
@@ -115,6 +127,12 @@ public class S3Source extends MultithreadedCrawlSource implements InitializingBe
 		opts.addOption(OptionBuilder.withLongOpt(ENDPOINT_OPTION)
 		        .withDescription(ENDPOINT_DESC).hasArg()
 		        .withArgName(ENDPOINT_ARG_NAME).create());
+		
+		opts.addOption(OptionBuilder.withLongOpt(DECODE_KEYS_OPTION)
+		        .withDescription(DECODE_KEYS_DESC).create());
+		
+		opts.addOption(OptionBuilder.withLongOpt(DISABLE_VHOSTS_OPTION)
+		        .withDescription(DISABLE_VHOSTS_DESC).create());
 
 		return opts;
 	}
@@ -150,8 +168,14 @@ public class S3Source extends MultithreadedCrawlSource implements InitializingBe
                 amz.setEndpoint(endpoint);
             }
             
+            if(line.hasOption(DISABLE_VHOSTS_OPTION)) {
+                l4j.info("The use of virtual hosted buckets on the s3 source has been DISABLED.  Path style buckets will be used.");
+                S3ClientOptions opts = new S3ClientOptions();
+                opts.setPathStyleAccess(true);
+                amz.setS3ClientOptions(opts);
+            }
 
-            if (!amz.doesBucketExist(bucketName)) {
+            if (!S3Utils.doesBucketExist(amz, bucketName)) {
 				throw new RuntimeException("The bucket " + bucketName
 						+ " does not exist.");
 			}
@@ -168,6 +192,10 @@ public class S3Source extends MultithreadedCrawlSource implements InitializingBe
 				}
 			} else {
 				rootKey = "";
+			}
+			
+			if(line.hasOption(DECODE_KEYS_OPTION)) {
+			    decodeKeys = true;
 			}
 			
 			// Parse threading options
@@ -226,11 +254,22 @@ public class S3Source extends MultithreadedCrawlSource implements InitializingBe
 			} else {
 				relativePath = key;
 			}
+			
+			if(decodeKeys) {
+			    try {
+                    new URLDecoder();
+                    relativePath = URLDecoder.decode(relativePath, "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    // Should never happen
+                    throw new RuntimeException("Error decoding path: "+ e, e);
+                }
+			}
+			
 			this.key = key;
 			
 			try {
 			    if(endpoint == null) {
-			        setSourceURI(new URI("http", bucketName+".s3.amazonaws.com", "/" + key, null));
+			        setSourceURI(new URI("http", "s3.amazonaws.com", "/" + bucketName + "/" + key, null));
 			    } else {
 			        URI u = new URI(endpoint + "/" + key);
 			        u = new URI(u.getScheme(), bucketName + "." + u.getHost(), u.getPath());
@@ -335,6 +374,11 @@ public class S3Source extends MultithreadedCrawlSource implements InitializingBe
 			}
 		}
 		
+		@Override
+		public String toString() {
+		    return "S3SyncObject: " + key;
+		}
+		
 	}
 	
 	class S3TaskNode implements Runnable {
@@ -392,6 +436,12 @@ public class S3Source extends MultithreadedCrawlSource implements InitializingBe
 					req.setMarker(listing.getNextMarker());
 				} while(listing.isTruncated());
 			}
+		}
+		
+		
+		@Override
+		public String toString() {
+		    return "S3TaskNode for " + obj;
 		}
 		
 	}
@@ -481,6 +531,20 @@ public class S3Source extends MultithreadedCrawlSource implements InitializingBe
      */
     public void setSecretKey(String secretKey) {
         this.secretKey = secretKey;
+    }
+
+    /**
+     * @return the decodeKeys
+     */
+    public boolean isDecodeKeys() {
+        return decodeKeys;
+    }
+
+    /**
+     * @param decodeKeys the decodeKeys to set
+     */
+    public void setDecodeKeys(boolean decodeKeys) {
+        this.decodeKeys = decodeKeys;
     }
 
 }

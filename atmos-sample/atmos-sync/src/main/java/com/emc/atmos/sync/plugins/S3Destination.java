@@ -17,11 +17,13 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.emc.atmos.api.bean.Metadata;
+import com.emc.atmos.sync.util.S3Utils;
 
 public class S3Destination extends DestinationPlugin implements InitializingBean {
     private static final Logger l4j = Logger.getLogger(S3Destination.class);
@@ -46,6 +48,9 @@ public class S3Destination extends DestinationPlugin implements InitializingBean
     public static final String ENDPOINT_OPTION = "s3-dest-endpoint";
     public static final String ENDPOINT_DESC = "Specifies a different endpoint. If not set, s3.amazonaws.com is assumed.";
     public static final String ENDPOINT_ARG_NAME = "endpoint";
+    
+    public static final String DISABLE_VHOSTS_OPTION = "s3-dest-disable-vhost";
+    public static final String DISABLE_VHOSTS_DESC = "If specified, virtual hosted buckets will be disabled and path-style buckets will be used.";
 
     private AmazonS3 amz;
     private String bucketName;
@@ -235,6 +240,9 @@ public class S3Destination extends DestinationPlugin implements InitializingBean
         opts.addOption(OptionBuilder.withLongOpt(ENDPOINT_OPTION)
                 .withDescription(ENDPOINT_DESC).hasArg()
                 .withArgName(ENDPOINT_ARG_NAME).create());
+        
+        opts.addOption(OptionBuilder.withLongOpt(DISABLE_VHOSTS_OPTION)
+                .withDescription(DISABLE_VHOSTS_DESC).create());
 
         return opts;
     }
@@ -266,9 +274,15 @@ public class S3Destination extends DestinationPlugin implements InitializingBean
                 endpoint = line.getOptionValue(ENDPOINT_OPTION);
                 amz.setEndpoint(endpoint);
             }
+            
+            if(line.hasOption(DISABLE_VHOSTS_OPTION)) {
+                l4j.info("The use of virtual hosted buckets on the s3 source has been DISABLED.  Path style buckets will be used.");
+                S3ClientOptions opts = new S3ClientOptions();
+                opts.setPathStyleAccess(true);
+                amz.setS3ClientOptions(opts);
+            }
 
-
-            if (!amz.doesBucketExist(bucketName)) {
+            if (!S3Utils.doesBucketExist(amz, bucketName)) {
                 throw new RuntimeException("The bucket " + bucketName
                         + " does not exist.");
             }
