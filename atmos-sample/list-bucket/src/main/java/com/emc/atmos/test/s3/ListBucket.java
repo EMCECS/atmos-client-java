@@ -25,7 +25,12 @@ public class ListBucket {
 
     public static void main(String[] args) {
         ListBucket listBucket = fromCli(args);
-        listBucket.test();
+        
+        if(listBucket.autoIterate) {
+            listBucket.testAuto();
+        } else {
+            listBucket.test();
+        }
     }
 
     public static ListBucket fromCli(String[] args) {
@@ -57,7 +62,8 @@ public class ListBucket {
         if (line.hasOption("m")) listBucket.setMarker(line.getOptionValue("m"));
         if (line.hasOption("d")) listBucket.setDelimiter(line.getOptionValue("d"));
         if (line.hasOption("k")) listBucket.setMaxKeys(Integer.parseInt(line.getOptionValue("k")));
-
+        if (line.hasOption('i')) listBucket.setAutoIterate(true);
+        
         return listBucket;
     }
 
@@ -69,6 +75,7 @@ public class ListBucket {
         options.addOption(OptionBuilder.withDescription("S3 bucket delimiter").hasArg().withArgName("delimiter").create("d"));
         options.addOption(OptionBuilder.withDescription("S3 bucket max keys").hasArg().withArgName("max-keys").create("k"));
         options.addOption(OptionBuilder.withDescription("Show this help text").create("h"));
+        options.addOption(OptionBuilder.withDescription("Automatically iterate through markers").create('i'));
         return options;
     }
 
@@ -82,9 +89,27 @@ public class ListBucket {
     private String marker;
     private String delimiter;
     private int maxKeys = DEFAULT_MAX_KEYS;
+    private boolean autoIterate;
+    private ObjectListing listing;
+    private long duration;
+    private int resultCount;
 
     public ListBucket(String bucket) {
         this.bucket = bucket;
+    }
+    
+    public void testAuto() {
+        long totalResults = 0;
+        long totalTime = 0;
+        
+        do {
+            test();
+            totalResults += resultCount;
+            totalTime += duration;
+            System.out.printf("\n**Total Results So Far: %d\n", totalResults);
+            System.out.printf("**Total Time So Far: %d\n", totalTime);
+            setMarker(listing.getNextMarker());
+        } while(listing.isTruncated());
     }
 
     public void test() {
@@ -92,8 +117,10 @@ public class ListBucket {
 
         long start = System.currentTimeMillis();
         ListObjectsRequest listRequest = new ListObjectsRequest(bucket, prefix, marker, delimiter, maxKeys);
-        ObjectListing listing = s3.listObjects(listRequest);
+        listing = s3.listObjects(listRequest);
         long end = System.currentTimeMillis();
+        duration = end-start;
+        resultCount = listing.getObjectSummaries().size();
 
         System.out.printf("Bucket: %s\t", listing.getBucketName());
         System.out.printf("Prefix: %s\n", listing.getPrefix());
@@ -102,7 +129,7 @@ public class ListBucket {
         System.out.printf("Max-Keys: %d\n\n", listing.getMaxKeys());
         System.out.printf("Truncated: %b\t", listing.isTruncated());
         System.out.printf("Next Marker: %s\n", listing.getNextMarker());
-        System.out.printf("Call Duration: %dms\tResults: %d\n", (end - start), listing.getObjectSummaries().size());
+        System.out.printf("Call Duration: %dms\tResults: %d\n", duration, resultCount);
         System.out.println("----------------------------");
 
         for (S3ObjectSummary summary : listing.getObjectSummaries()) {
@@ -149,5 +176,27 @@ public class ListBucket {
 
     public void setMaxKeys(int maxKeys) {
         this.maxKeys = maxKeys;
+    }
+    
+    public void setAutoIterate(boolean auto) {
+        this.autoIterate = auto;
+    }
+    
+    public boolean isAutoIterate() {
+        return this.autoIterate;
+    }
+
+    /**
+     * @return the listing
+     */
+    public ObjectListing getListing() {
+        return listing;
+    }
+
+    /**
+     * @param listing the listing to set
+     */
+    public void setListing(ObjectListing listing) {
+        this.listing = listing;
     }
 }
