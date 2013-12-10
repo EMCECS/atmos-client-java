@@ -76,8 +76,75 @@ import com.emc.vipr.transform.encryption.DoesNotNeedRekeyException;
 import com.emc.vipr.transform.encryption.EncryptionTransformFactory;
 
 /**
- * @author cwikj
- *
+ * Implements client-side "Envelope Encryption" on top of the Atmos API.  With envelope
+ * encryption, a master asymmetric (RSA) key is used to encrypt and decrypt a per-object
+ * symmetric (AES) key.  This means that every object is encrypted using a unique key
+ * so breaking any one object's key does not compromise the encryption on other objects.
+ * Key rotation can also be accomplished by creating a new asymmetric key and
+ * re-encrypting the object keys without re-encrypting the actual object content.
+ * <br>
+ * To use this class, you will first need to create a keystore, set a password, and 
+ * then create an RSA key to use as your master encryption key.  This can be accomplished
+ * using the 'keytool' application that comes with Java In this example, we create a 
+ * 2048-bit RSA key and call it "masterkey".  If the keystore does not already exist, it
+ * will be created an you will be prompted for a keystore password.
+ * <br>
+ * <pre>
+ * $ keytool -genkeypair -keystore keystore.jks -alias masterkey -keyalg RSA \ 
+ *   -keysize 2048 -dname "CN=My Name, OU=My Division, O=My Company, L=My Location, ST=MA, C=US"
+ * Enter keystore password: changeit
+ * Re-enter new password: changeit
+ * Enter key password for <masterkey>
+ *   (RETURN if same as keystore password):  
+ * </pre>
+ * Inside your application, you can then construct and load a Keystore object, 
+ * {@link java.security.KeyStore#load(InputStream, char[])}  Once the keystore has been loaded, you then
+ * construct a EncryptionConfig object with the keystore:
+ * <br>
+ * <pre>
+ * EncryptionConfig ec = new EncryptionConfig(keystore, 
+ *             keystorePassword.toCharArray(), "masterkey", provider, 128);
+ * </pre>
+ * The "provider" argument is used to specify the security provider to be used for
+ * cryptographic operations.  You can set it to null to use the default provider(s) as
+ * specified in your jre/lib/security/java.security file.  The final argument is the AES
+ * encryption key size.  Note that most JDKs only support 128-bit AES encryption by
+ * default and required the "unlimited strength jurisdiction policy files" to be 
+ * installed to achieve 256-bit support.  See your JRE/JDK download page for details.
+ * <br>
+ * Next, if you want to compress your data, you can create a CompressionConfig object
+ * to select the compression algorithm and level:
+ * <br>
+ * <pre>
+ * CompressionConfig cc = new CompressionConfig(CompressionMode.Deflate, 5);
+ * </pre>
+ * In this instance, you can see that we created a CompressionConfig specifying the
+ * Deflate algorithm, and level 5 (medium) compression.  LZMA compression is also
+ * available but note that while it provides superior compression it also has high
+ * memory requirements and can cause OutOfMemoryErrors if you select a level that will
+ * not fit in your Java heap.
+ * <br>
+ * Once you have your EncryptionConfig and/or CompressionConfig objects, you will 
+ * construct an implmentation of AtmosApi to handle the "transport", e.g. 
+ * {@link com.emc.atmos.api.jersey.AtmosApiClient}.  You will then create an instance of the 
+ * AtmosEncryptionClient that "wraps" the AtmosApi instance to perform encryption 
+ * operations:
+ * <br>
+ * <pre>
+ * AtmosApi api = new AtmosApiClient(atmosConfig);
+ * AtmosEncryptionClient eclient = new AtmosEncryptionClient(api, ec, cc);
+ * </pre>
+ * You may pass null to the encryption or compression arguments to use only one or the 
+ * other.
+ * <br>
+ * After you have your AtmosEncryptionClient constructed, you may use it like any other
+ * AtmosApi instance with the following limitations:
+ * <ul>
+ * <li>Byte range (partial) reads are not supported
+ * <li>Byte range (partial) updates including appends are not supported.
+ * <li>Shareable URLs and access tokens are not supported because there is no way to
+ * decompress and/or decrypt the content for the receiver.
+ * </ul>
  */
 public class AtmosEncryptionClient implements AtmosApi {
     private static final String UNSUPPORTED_MSG = "This operation is not supported by "
@@ -96,9 +163,16 @@ public class AtmosEncryptionClient implements AtmosApi {
     private int bufferSize = DEFAULT_BUFFER_SIZE;
 
     /**
-     * 
+     * Creates a new AtmosEncryptionClient.
+     * @param delegate This is the AtmosApi instance that will be used for communicating
+     * with the server.
+     * @param encryptionConfig The encryption configuration for the client.  If null, no
+     * encryption will be performed.
+     * @param compressionConfig The compression configuration for the client.  If null,
+     * no compression will be performed.
      */
-    public AtmosEncryptionClient(AtmosApi delegate, EncryptionConfig encryptionConfig, CompressionConfig compressionConfig) {
+    public AtmosEncryptionClient(AtmosApi delegate, EncryptionConfig encryptionConfig, 
+            CompressionConfig compressionConfig) {
         this.delegate = delegate;
         
         factories = new TreeSet<TransformFactory<?,?>>();
@@ -110,7 +184,19 @@ public class AtmosEncryptionClient implements AtmosApi {
         }
     }
     
-    public AtmosEncryptionClient(AtmosApi delegate, Collection<TransformFactory<OutputTransform, InputTransform>> transformations) {
+    /**
+     * Creates a new AtmosEncryptionClient.  This version allows you to fine-tune the 
+     * collection of TransformFactories that will be applied to objects (and allow you to
+     * use custom TransformFactories if required).
+     * @param delegate This is the AtmosApi instance that will be used for communicating
+     * with the server.
+     * @param transformations the collection of TransformFactory instances that will be 
+     * applied to objects.  Note that order of transforms will be determined by the
+     * factory's priority.
+     * @see TransformFactory#getPriority()
+     */
+    public AtmosEncryptionClient(AtmosApi delegate, 
+            Collection<TransformFactory<OutputTransform, InputTransform>> transformations) {
         this.delegate = delegate;
         
         factories = new TreeSet<TransformFactory<?,?>>();
@@ -119,6 +205,16 @@ public class AtmosEncryptionClient implements AtmosApi {
         }
     }
     
+    /**
+     * "Rekeys" an object.  This operation re-encrypts the object's key with the most
+     * current master key and is used to implement key rotation.  Note that when you
+     * create a new master key, your EncryptionConfig should keep all of the old master
+     * key(s) until you have rekeyed all of the objects so you can decrypt the old
+     * objects.
+     * @param identifier the object to be rekeyed.
+     * @throws DoesNotNeedRekeyException if the object is already using the current master
+     * encryption key.
+     */
     public void rekey(ObjectIdentifier identifier) throws DoesNotNeedRekeyException {
         Map<String,Metadata> umeta = delegate.getUserMetadata(identifier, (String[])null);
         Map<String,String> rawMeta = metaToMap(umeta.values());
@@ -379,6 +475,12 @@ public class AtmosEncryptionClient implements AtmosApi {
         return read;
     }
 
+    /**
+     * Transforms a collection of Atmos Metadata objects into a Map object used by the
+     * transformation APIs.
+     * @param userMetadata the Atmos metadata objects.
+     * @return a Map containing the metadata name-value pairs.
+     */
     private Map<String, String> metaToMap(Collection<Metadata> userMetadata) {
         Map<String, String> meta = new HashMap<String, String>();
         for(Metadata m : userMetadata) {
@@ -388,7 +490,15 @@ public class AtmosEncryptionClient implements AtmosApi {
         return meta;
     }
     
-    private Collection<Metadata> updateMetadata(Map<String,String> meta, Collection<Metadata> collection) {
+    /**
+     * Merges the updated metadata from the transformations with the existing object 
+     * metadata.
+     * @param meta the updated metadata map.
+     * @param collection the existing Atmos metadata collection.
+     * @return a new collection with the updated metadata.
+     */
+    private Collection<Metadata> updateMetadata(Map<String,String> meta, 
+            Collection<Metadata> collection) {
         Map<String,Metadata> updatedMetadata = new HashMap<String, Metadata>();
         
         // First, add all the old metadata.
@@ -502,6 +612,15 @@ public class AtmosEncryptionClient implements AtmosApi {
 
     }
 
+    /**
+     * The transformation APIs require the use of InputStream objects.  If the user
+     * requests a different objectType, transform the InputStream into the desired format.
+     * @param rawResponse the InputStream response from Atmos.
+     * @param objectType the desired response format.
+     * @return the translated response object.
+     * @throws IOException if there is an error translating the response into the desired
+     * format.
+     */
     @SuppressWarnings("unchecked")
     private <T> ReadObjectResponse<T> rewrap(ReadObjectResponse<InputStream> rawResponse,
             Class<T> objectType) throws IOException {
@@ -837,7 +956,6 @@ public class AtmosEncryptionClient implements AtmosApi {
      */
     @Override
     public void deleteUserMetadata(ObjectIdentifier identifier, String... names) {
-        // TODO: Filter reserved names for transforms.
         delegate.deleteUserMetadata(identifier, names);
     }
 
@@ -878,7 +996,6 @@ public class AtmosEncryptionClient implements AtmosApi {
      */
     @Override
     public ObjectInfo getObjectInfo(ObjectIdentifier identifier) {
-        // TODO: enhance with transform info ?
         return delegate.getObjectInfo(identifier);
     }
 
