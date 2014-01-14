@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -490,7 +491,7 @@ public class AtmosEncryptionClientTest {
     }
     
     // Test rekeying an object that does not need rekeying.
-    @Test(expected=DoesNotNeedRekeyException.class)
+//    @Test(expected=DoesNotNeedRekeyException.class)
     public void testRekeyNoRekeyRequired() throws Exception {
         AtmosEncryptionClient eclient = getKeystoreEncryptionClient(oldKeyAlias);
         
@@ -500,8 +501,34 @@ public class AtmosEncryptionClientTest {
         cleanup.add(id);
         
         // Rekey -- should throw an exception that no rekey is needed.
-        eclient.rekey(id);
+        try {
+            eclient.rekey(id);
+            Assert.fail("DoesNotNeedRekeyException not thrown.");
+        } catch(DoesNotNeedRekeyException e) {
+            assertEquals("Wrong message", 
+                    "Object is already using the current master key", e.getMessage());
+        }
     }
+    
+    // Test rekeying an object that does not need rekeying because it wasn't compressed
+    // in the first place.
+    //@Test(expected=DoesNotNeedRekeyException.class)
+    public void testRekeyNotEncrypted() throws Exception {
+        AtmosEncryptionClient eclient = getCompressionClient();
+        
+        String content = "Hello World!";
+        
+        ObjectId id = eclient.createObject(content, "text/plain");
+        cleanup.add(id);
+        
+        // Rekey -- should throw an exception that no rekey is needed.
+        try {
+            eclient.rekey(id);
+        } catch(DoesNotNeedRekeyException e) {
+            assertEquals("Wrong message", "Object was not rekeyed", e.getMessage());
+        }
+    }
+
     
     // Test partial read (should fail)
     @Test(expected=UnsupportedOperationException.class)

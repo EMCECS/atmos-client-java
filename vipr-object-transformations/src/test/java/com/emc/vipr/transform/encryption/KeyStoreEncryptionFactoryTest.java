@@ -12,15 +12,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.crypto.NoSuchPaddingException;
-
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import com.emc.vipr.transform.InputTransform;
 import com.emc.vipr.transform.TransformConstants;
-import com.emc.vipr.transform.TransformException;
 
 
 public class KeyStoreEncryptionFactoryTest {
