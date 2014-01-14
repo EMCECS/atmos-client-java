@@ -86,6 +86,11 @@ public class KeyStoreEncryptionFactory extends
         if(cert instanceof X509Certificate) {
             // Get SKI
             byte[] ski = ((X509Certificate)cert).getExtensionValue("2.5.29.14");
+            if(ski == null) {
+                logger.debug("Certificate does not have SKI.  Computing fingerprint.");
+                return KeyUtils.getRsaPublicKeyFingerprint((RSAPublicKey) cert.getPublicKey(),
+                        provider);
+            }
             String fingerprint = KeyUtils.toHexPadded(KeyUtils.extractSubjectKeyIdentifier(ski));
             logger.debug("Alias %s Subject Key Identifier: %s",
                     alias, fingerprint);

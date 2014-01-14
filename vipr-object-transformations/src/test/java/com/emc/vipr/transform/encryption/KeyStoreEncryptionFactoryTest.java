@@ -12,11 +12,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.crypto.NoSuchPaddingException;
+
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import com.emc.vipr.transform.InputTransform;
 import com.emc.vipr.transform.TransformConstants;
+import com.emc.vipr.transform.TransformException;
 
 
 public class KeyStoreEncryptionFactoryTest {
@@ -292,6 +297,20 @@ public class KeyStoreEncryptionFactoryTest {
         originalStream.close();
         
         assertArrayEquals("Decrypted data incorrect", originalData, decryptedData.toByteArray());
+    }
+    
+    /**
+     * Test using a certificate that lacks the Subject Key Identifier.  We should have
+     * to compute it manually.
+     */
+    @Test
+    public void testGetInputTransformNoCertSKI() throws Exception {
+        KeyStoreEncryptionFactory factory = new KeyStoreEncryptionFactory(keystore, 
+                "masterkey2", keystorePassword.toCharArray(), provider);
+
+        assertEquals("Wrong master key",  "masterkey2", 
+                factory.getMasterEncryptionKeyAlias());
+        
     }
 
 }
