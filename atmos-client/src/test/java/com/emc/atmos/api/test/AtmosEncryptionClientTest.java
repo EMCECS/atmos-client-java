@@ -524,6 +524,7 @@ public class AtmosEncryptionClientTest {
         // Rekey -- should throw an exception that no rekey is needed.
         try {
             eclient.rekey(id);
+            Assert.fail("DoesNotNeedRekeyException not thrown.");
         } catch(DoesNotNeedRekeyException e) {
             assertEquals("Wrong message", "Object was not rekeyed", e.getMessage());
         }
