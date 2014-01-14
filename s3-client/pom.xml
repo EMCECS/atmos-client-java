@@ -12,7 +12,7 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk</artifactId>
-      <version>1.4.5</version>
+      <version>1.6.11</version>
     </dependency>
     <dependency>
     	<groupId>com.emc.vipr</groupId>

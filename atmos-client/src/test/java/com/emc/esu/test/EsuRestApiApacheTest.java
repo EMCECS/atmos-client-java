@@ -20,6 +20,8 @@ package com.emc.esu.test;
 import java.net.URI;
 import java.util.Properties;
 
+import com.emc.test.util.Concurrent;
+import com.emc.test.util.ConcurrentJunitRunner;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -29,12 +31,15 @@ import com.emc.esu.api.EsuApi;
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.rest.EsuRestApiApache;
 import com.emc.vipr.services.lib.ViprConfig;
+import org.junit.runner.RunWith;
 
 /**
  * @author jason
  *
  */
 @SuppressWarnings("deprecation")
+@RunWith(ConcurrentJunitRunner.class)
+@Concurrent
 public class EsuRestApiApacheTest extends EsuApiTest {
     /**
      * UID to run tests with.  Set in properties file or -Datmos.uid.

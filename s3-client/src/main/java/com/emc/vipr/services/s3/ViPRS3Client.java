@@ -22,11 +22,13 @@ import com.amazonaws.*;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.Signer;
+import com.amazonaws.event.ProgressListenerCallbackExecutor;
 import com.amazonaws.http.ExecutionContext;
 import com.amazonaws.http.HttpMethodName;
 import com.amazonaws.http.HttpResponse;
 import com.amazonaws.http.HttpResponseHandler;
 import com.amazonaws.internal.StaticCredentialsProvider;
+import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.Headers;
@@ -34,15 +36,12 @@ import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.internal.*;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.transform.Unmarshaller;
-import com.amazonaws.util.BinaryUtils;
-import com.amazonaws.util.Md5Utils;
+import com.amazonaws.util.*;
 import com.emc.vipr.services.s3.model.*;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.io.*;
-import java.lang.Object;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.MessageDigest;
@@ -63,9 +62,6 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     /** Shared response handler for operations with no response.  */
     private S3XmlResponseHandler<Void> voidResponseHandler = new S3XmlResponseHandler<Void>(null);
     
-    /** Utilities for validating bucket names */
-    private final BucketNameUtils bucketNameUtils = new BucketNameUtils();
-
     protected AWSCredentialsProvider awsCredentialsProvider;
 
     protected S3ClientOptions clientOptions = new S3ClientOptions();
@@ -168,7 +164,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
      * ETag when reading multipart uploads, but in v1 it does not. This hyphen signals that the object is a multipart
      * upload and the ETag should be ignored. Here we use our own response handler to detect multipart uploads from
      * ViPR and insert a hyphen in the ETag.
-     * TODO: remove post v1 when ViPR will return a hyphen in the ETag for multipart uploads
+     * TODO: remove post v1 when ViPR will return a hyphen in the ETag for multipart uploads (CQ-609158)
      */
     @Override
     public S3Object getObject(GetObjectRequest getObjectRequest)
@@ -203,7 +199,15 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         addStringListHeader(request, Headers.GET_OBJECT_IF_NONE_MATCH,
                 getObjectRequest.getNonmatchingETagConstraints());
 
-        ProgressListener progressListener = getObjectRequest.getProgressListener();
+        /*
+         * This is compatible with progress listener set by either the legacy
+         * method GetObjectRequest#setProgressListener or the new method
+         * GetObjectRequest#setGeneralProgressListener.
+         */
+        com.amazonaws.event.ProgressListener progressListener = getObjectRequest.getGeneralProgressListener();
+        ProgressListenerCallbackExecutor progressListenerCallbackExecutor = ProgressListenerCallbackExecutor
+                .wrapListener(progressListener);
+
         try {
             S3Object s3Object = invoke(request, new ViPRS3ObjectResponseHandler(), getObjectRequest.getBucketName(), getObjectRequest.getKey());
 
@@ -216,11 +220,11 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
             s3Object.setKey(getObjectRequest.getKey());
 
             S3ObjectInputStream input = s3Object.getObjectContent();
-            if (progressListener != null) {
-                ProgressReportingInputStream progressReportingInputStream = new ProgressReportingInputStream(input, progressListener);
+            if (progressListenerCallbackExecutor != null) {
+                com.amazonaws.event.ProgressReportingInputStream progressReportingInputStream = new com.amazonaws.event.ProgressReportingInputStream(input, progressListenerCallbackExecutor);
                 progressReportingInputStream.setFireCompletedEvent(true);
                 input = new S3ObjectInputStream(progressReportingInputStream, input.getHttpRequest());
-                fireProgressEvent(progressListener, ProgressEvent.STARTED_EVENT_CODE);
+                fireProgressEvent(progressListenerCallbackExecutor, com.amazonaws.event.ProgressEvent.STARTED_EVENT_CODE);
             }
 
             if (getObjectRequest.getRange() == null && System.getProperty("com.amazonaws.services.s3.disableGetObjectMD5Validation") == null) {
@@ -238,6 +242,10 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
                                 + "checksum and verify data integrity.", e);
                     }
                 }
+            } else {
+                input = new S3ObjectInputStream(
+                        new ContentLengthValidationInputStream(input, s3Object.getObjectMetadata().getContentLength()),
+                        input.getHttpRequest());
             }
 
             s3Object.setObjectContent(input);
@@ -252,11 +260,12 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
              * use constraints.
              */
             if (ase.getStatusCode() == 412 || ase.getStatusCode() == 304) {
-                fireProgressEvent(progressListener, ProgressEvent.CANCELED_EVENT_CODE);
+                fireProgressEvent(progressListenerCallbackExecutor, com.amazonaws.event.ProgressEvent.CANCELED_EVENT_CODE);
                 return null;
             }
 
-            fireProgressEvent(progressListener, ProgressEvent.FAILED_EVENT_CODE);
+            fireProgressEvent(progressListenerCallbackExecutor, com.amazonaws.event.ProgressEvent.FAILED_EVENT_CODE);
+
             throw ase;
         }
     }
@@ -340,7 +349,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         if (putAccessModeRequest.getAccessMode() != null) {
             request.addHeader(ViPRConstants.FILE_ACCESS_MODE_HEADER, putAccessModeRequest.getAccessMode().toString());
         }
-        if (putAccessModeRequest.getDuration() > 0) { // TODO: is this an appropriate indicator?
+        if (putAccessModeRequest.getDuration() != 0) {
             request.addHeader(ViPRConstants.FILE_ACCESS_DURATION_HEADER, Long.toString(putAccessModeRequest.getDuration()));
         }
         if (putAccessModeRequest.getHostList() != null) {
@@ -351,6 +360,9 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         }
         if (putAccessModeRequest.getToken() != null) {
             request.addHeader(ViPRConstants.FILE_ACCESS_TOKEN_HEADER, putAccessModeRequest.getToken());
+        }
+        if (putAccessModeRequest.isPreserveIngestPaths()) {
+            request.addHeader(ViPRConstants.FILE_ACCESS_PRESERVE_INGEST_PATHS, "true");
         }
 
         return invoke(request, new AbstractS3ResponseHandler<BucketFileAccessModeResult>() {
@@ -370,6 +382,8 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
                     result.setStartToken(headers.get(ViPRConstants.FILE_ACCESS_START_TOKEN_HEADER));
                 if (headers.containsKey(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER))
                     result.setEndToken(headers.get(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_PRESERVE_INGEST_PATHS))
+                    result.setPreserveIngestPaths(Boolean.parseBoolean(headers.get(ViPRConstants.FILE_ACCESS_PRESERVE_INGEST_PATHS)));
 
                 AmazonWebServiceResponse<BucketFileAccessModeResult> awsResponse = parseResponseMetadata(response);
                 awsResponse.setResult(result);
@@ -401,7 +415,9 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
                 if (headers.containsKey(ViPRConstants.FILE_ACCESS_START_TOKEN_HEADER))
                     result.setStartToken(headers.get(ViPRConstants.FILE_ACCESS_START_TOKEN_HEADER));
                 if (headers.containsKey(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER))
-                    result.setEndToken(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER);
+                    result.setEndToken(headers.get(ViPRConstants.FILE_ACCESS_END_TOKEN_HEADER));
+                if (headers.containsKey(ViPRConstants.FILE_ACCESS_PRESERVE_INGEST_PATHS))
+                    result.setPreserveIngestPaths(Boolean.parseBoolean(headers.get(ViPRConstants.FILE_ACCESS_PRESERVE_INGEST_PATHS)));
 
                 AmazonWebServiceResponse<BucketFileAccessModeResult> awsResponse = parseResponseMetadata(response);
                 awsResponse.setResult(result);
@@ -470,7 +486,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     @Override
     protected Signer createSigner(Request<?> request, String bucketName, String key) {
         String resourcePath = "/" + ((bucketName != null) ? bucketName + "/" : "")
-                + ((key != null) ? ServiceUtils.urlEncode(key) : "");
+                + ((key != null) ? HttpUtils.urlEncode(key, false) : "");
 
         // if we're using a vHost request, the namespace must be prepended to the resource path when signing
         if (namespace != null && vHostRequest(request, bucketName)) {
@@ -524,11 +540,19 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         String key = putObjectRequest.getKey();
         ObjectMetadata metadata = putObjectRequest.getMetadata();
         InputStream input = putObjectRequest.getInputStream();
-        ProgressListener progressListener = putObjectRequest.getProgressListener();
         if (metadata == null) metadata = new ObjectMetadata();
 
         assertParameterNotNull(bucketName, "The bucket name parameter must be specified when uploading an object");
         assertParameterNotNull(key, "The key parameter must be specified when uploading an object");
+
+        /*
+         * This is compatible with progress listener set by either the legacy
+         * method GetObjectRequest#setProgressListener or the new method
+         * GetObjectRequest#setGeneralProgressListener.
+         */
+        com.amazonaws.event.ProgressListener progressListener = putObjectRequest.getGeneralProgressListener();
+        ProgressListenerCallbackExecutor progressListenerCallbackExecutor = ProgressListenerCallbackExecutor
+                .wrapListener(progressListener);
 
         // If a file is specified for upload, we need to pull some additional
         // information from it to auto-configure a few options
@@ -595,9 +619,9 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
                      "out of memory errors.");
         }
 
-        if (progressListener != null) {
-            input = new ProgressReportingInputStream(input, progressListener);
-            fireProgressEvent(progressListener, ProgressEvent.STARTED_EVENT_CODE);
+        if (progressListenerCallbackExecutor != null) {
+            com.amazonaws.event.ProgressReportingInputStream progressReportingInputStream = new com.amazonaws.event.ProgressReportingInputStream(input, progressListenerCallbackExecutor);
+            fireProgressEvent(progressListenerCallbackExecutor, com.amazonaws.event.ProgressEvent.STARTED_EVENT_CODE);
         }
 
         if (!input.markSupported()) {
@@ -651,7 +675,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         try {
             returnedMetadata = invoke(request, new S3MetadataResponseHandler(), bucketName, key);
         } catch (AmazonClientException ace) {
-            fireProgressEvent(progressListener, ProgressEvent.FAILED_EVENT_CODE);
+            fireProgressEvent(progressListenerCallbackExecutor, com.amazonaws.event.ProgressEvent.FAILED_EVENT_CODE);
             throw ace;
         } finally {
             try {input.close();} catch (Exception e) {
@@ -671,7 +695,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
                 byte[] serverSideHash = BinaryUtils.fromHex(returnedMetadata.getETag());
 
                 if (!Arrays.equals(clientSideHash, serverSideHash)) {
-                    fireProgressEvent(progressListener, ProgressEvent.FAILED_EVENT_CODE);
+                    fireProgressEvent(progressListenerCallbackExecutor, com.amazonaws.event.ProgressEvent.FAILED_EVENT_CODE);
                     throw new AmazonClientException("Unable to verify integrity of data upload.  " +
                             "Client calculated content hash didn't match hash calculated by Amazon S3.  " +
                             "You may need to delete the data stored in Amazon S3.");
@@ -679,7 +703,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
             }
         }
 
-        fireProgressEvent(progressListener, ProgressEvent.COMPLETED_EVENT_CODE);
+        fireProgressEvent(progressListenerCallbackExecutor, com.amazonaws.event.ProgressEvent.COMPLETED_EVENT_CODE);
 
         return returnedMetadata;
 	}
@@ -742,43 +766,61 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     /**
      * Copied verbatim from AmazonS3Client only because it is private and we call it from our extension methods for consistency.
      */
-    protected void fireProgressEvent(ProgressListener listener, int eventType) {
-        if (listener == null) return;
-        ProgressEvent event = new ProgressEvent(0);
+    private void fireProgressEvent(final ProgressListenerCallbackExecutor progressListenerCallbackExecutor, final int eventType) {
+        if (progressListenerCallbackExecutor == null) return;
+        com.amazonaws.event.ProgressEvent event = new com.amazonaws.event.ProgressEvent(0);
         event.setEventCode(eventType);
-        listener.progressChanged(event);
+        progressListenerCallbackExecutor.progressChanged(event);
     }
 
     /**
      * Copied verbatim from AmazonS3Client only because it is private and we call it from our extension methods for consistency.
      */
-    protected <X, Y extends AmazonWebServiceRequest> X invoke(Request<Y> request, HttpResponseHandler<AmazonWebServiceResponse<X>> responseHandler, String bucket, String key) {
-        for (Entry<String, String> entry : request.getOriginalRequest().copyPrivateRequestParameters().entrySet()) {
-            request.addParameter(entry.getKey(), entry.getValue());
-        }
-        request.setTimeOffset(timeOffset);
-
-        /*
-         * The string we sign needs to include the exact headers that we
-         * send with the request, but the client runtime layer adds the
-         * Content-Type header before the request is sent if one isn't set, so
-         * we have to set something here otherwise the request will fail.
-         */
-        if (request.getHeaders().get("Content-Type") == null) {
-            request.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
-        }
-
-        AWSCredentials credentials = awsCredentialsProvider.getCredentials();
+    private <X, Y extends AmazonWebServiceRequest> X invoke(Request<Y> request,
+                                                            HttpResponseHandler<AmazonWebServiceResponse<X>> responseHandler,
+                                                            String bucket, String key) {
         AmazonWebServiceRequest originalRequest = request.getOriginalRequest();
-        if (originalRequest != null && originalRequest.getRequestCredentials() != null) {
-            credentials = originalRequest.getRequestCredentials();
+        ExecutionContext executionContext = createExecutionContext(originalRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        // Binds the request metrics to the current request.
+        request.setAWSRequestMetrics(awsRequestMetrics);
+        // Having the ClientExecuteTime defined here is not ideal (for the
+        // timing measurement should start as close to the top of the call
+        // stack of the service client method as possible)
+        // but definitely a safe compromise for S3 at least for now.
+        // We can incrementally make it more elaborate should the need arise
+        // for individual method.
+        awsRequestMetrics.startEvent(AWSRequestMetrics.Field.ClientExecuteTime);
+        Response<X> response = null;
+        try {
+            for (Entry<String, String> entry : request.getOriginalRequest()
+                    .copyPrivateRequestParameters().entrySet()) {
+                request.addParameter(entry.getKey(), entry.getValue());
+            }
+            request.setTimeOffset(timeOffset);
+            /*
+             * The string we sign needs to include the exact headers that we
+             * send with the request, but the client runtime layer adds the
+             * Content-Type header before the request is sent if one isn't set,
+             * so we have to set something here otherwise the request will fail.
+             */
+            if (request.getHeaders().get("Content-Type") == null) {
+                request.addHeader("Content-Type",
+                        "application/x-www-form-urlencoded; charset=utf-8");
+            }
+            AWSCredentials credentials = awsCredentialsProvider
+                    .getCredentials();
+            if (originalRequest.getRequestCredentials() != null) {
+                credentials = originalRequest.getRequestCredentials();
+            }
+            executionContext.setSigner(createSigner(request, bucket, key));
+            executionContext.setCredentials(credentials);
+            response = client.execute(request, responseHandler,
+                    errorResponseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
         }
-
-        ExecutionContext executionContext = createExecutionContext();
-        executionContext.setSigner(createSigner(request, bucket, key));
-        executionContext.setCredentials(credentials);
-
-        return client.execute(request, responseHandler, errorResponseHandler, executionContext);
     }
     
     /**
@@ -798,7 +840,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
                 "The bucket name parameter must be specified when creating a bucket");
 
         if (bucketName != null) bucketName = bucketName.trim();
-        bucketNameUtils.validateBucketName(bucketName);
+        BucketNameUtils.validateBucketName(bucketName);
 
         Request<ViPRCreateBucketRequest> request = createRequest(bucketName, null, createBucketRequest, HttpMethodName.PUT);
 
@@ -808,12 +850,15 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
             request.addHeader(Headers.S3_CANNED_ACL, createBucketRequest.getCannedAcl().toString());
         }
         
-        // ViPR specific: projectId and vpoolId.
+        // ViPR specific: projectId,  vpoolId and fsAccessEnabled.
         if(createBucketRequest.getProjectId() != null) {
             request.addHeader(ViPRConstants.PROJECT_HEADER, createBucketRequest.getProjectId());
         }
         if(createBucketRequest.getVpoolId() != null) {
             request.addHeader(ViPRConstants.VPOOL_HEADER, createBucketRequest.getVpoolId());
+        }
+        if(createBucketRequest.isFsAccessEnabled()) {
+            request.addHeader(ViPRConstants.FS_ACCESS_ENABLED, "true");
         }
 
         /*
@@ -821,21 +866,18 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
          * *must* specify a location constraint. Try to derive the region from
          * the endpoint.
          */
-        if ( region == null ) {
-            String endpoint = this.endpoint.getHost();
-            if ( endpoint.contains("us-west-1") ) {
-                region = Region.US_West.toString();
-            } else if ( endpoint.contains("us-west-2") ) {
-                region = Region.US_West_2.toString();
-            } else if ( endpoint.contains("eu-west-1") ) {
-                region = Region.EU_Ireland.toString();
-            } else if ( endpoint.contains("ap-southeast-1") ) {
-                region = Region.AP_Singapore.toString();
-            } else if ( endpoint.contains("ap-northeast-1") ) {
-                region = Region.AP_Tokyo.toString();
-            } else if ( endpoint.contains("sa-east-1") ) {
-                region = Region.SA_SaoPaulo.toString();
+        if (!(this.endpoint.getHost().equals(Constants.S3_HOSTNAME))
+                && (region == null || region.isEmpty())) {
+
+            try {
+                region = RegionUtils
+                        .getRegionByEndpoint(this.endpoint.getHost())
+                        .getName();
+            } catch (IllegalArgumentException exception) {
+                // Endpoint does not correspond to a known region; send the
+                // request with no location constraint and hope for the best.
             }
+
         }
 
         /*

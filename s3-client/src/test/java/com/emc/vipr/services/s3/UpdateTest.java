@@ -19,6 +19,8 @@ import static org.junit.Assert.*;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+import com.emc.test.util.Concurrent;
+import com.emc.test.util.ConcurrentJunitRunner;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,7 +29,10 @@ import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.emc.vipr.services.s3.model.UpdateObjectRequest;
+import org.junit.runner.RunWith;
 
+@RunWith(ConcurrentJunitRunner.class)
+@Concurrent
 public class UpdateTest {
     ViPRS3Client vipr;
     

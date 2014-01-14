@@ -39,17 +39,17 @@
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-core</artifactId>
-      <version>1.16</version>
+      <version>1.18</version>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>1.16</version>
+      <version>1.18</version>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey.contribs</groupId>
       <artifactId>jersey-multipart</artifactId>
-      <version>1.16</version>
+      <version>1.18</version>
     </dependency>
     <dependency>
       <groupId>org.jdom</groupId>
@@ -84,7 +84,7 @@
     <dependency>
       <groupId>com.emc.vipr</groupId>
       <artifactId>jersey-apache-httpclient4</artifactId>
-      <version>1.17-CUSTOM-SNAPSHOT</version>
+      <version>1.18-CUSTOM-SNAPSHOT</version>
     </dependency>
     <dependency>
     	<groupId>com.emc.vipr</groupId>
