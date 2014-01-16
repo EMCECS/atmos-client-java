@@ -38,7 +38,6 @@ import com.amazonaws.services.s3.model.*;
 import com.amazonaws.transform.Unmarshaller;
 import com.amazonaws.util.*;
 import com.emc.vipr.services.s3.model.*;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
