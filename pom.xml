@@ -35,7 +35,7 @@
   <scm>
     <url>https://github.com/emcvipr/dataservices-sdk-java</url>
     <connection>scm:git:ssh://git@github.com/emcvipr/dataservices-sdk-java.git</connection>
-    <developerConnection>scm:git:ssh://git@lcige250.lss.emc.com/vipr-data-services-sdk-java.git</developerConnection>
+    <developerConnection>scm:git:https://asdgit.isus.emc.com/git/vipr-data-services-sdk-java.git</developerConnection>
     <tag>release</tag>
   </scm>
 
@@ -50,8 +50,8 @@
   <developers>
     <developer>
       <id>emc</id>
-      <organization>EMC - ViPR Data Services</organization>
-      <organizationUrl>https://community.emc.com/community/edn/vipr-data-services</organizationUrl>
+      <organization>EMC - ViPR</organization>
+      <organizationUrl>https://community.emc.com/community/vipr</organizationUrl>
       <roles>
         <role>developer</role>
       </roles>
