@@ -8,6 +8,11 @@
   <artifactId>s3-client</artifactId>
   <packaging>jar</packaging>
 
+  <properties>
+    <main.stage>${project.basedir}/../target/staging</main.stage>
+    <main.version>${project.parent.version}</main.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>com.amazonaws</groupId>

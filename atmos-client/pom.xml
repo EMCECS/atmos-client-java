@@ -11,6 +11,11 @@
   <name>ViPR Atmos Client for Java</name>
   <description>This project implements the EMC Atmos Client</description>
 
+  <properties>
+    <main.stage>${project.basedir}/../target/staging</main.stage>
+    <main.version>${project.parent.version}</main.version>
+  </properties>
+
   <repositories>
     <!-- This creates a local repository to include JARs that are not normally
          in Maven anywhere. -->
