@@ -39,7 +39,7 @@
 
   <scm>
     <url>https://github.com/emcvipr/dataservices-sdk-java</url>
-    <connection>scm:git:ssh://git@github.com/emcvipr/dataservices-sdk-java.git</connection>
+    <connection>scm:git:https://github.com/emcvipr/dataservices-sdk-java.git</connection>
     <developerConnection>scm:git:https://asdgit.isus.emc.com/git/vipr-data-services-sdk-java.git</developerConnection>
     <tag>release</tag>
   </scm>
@@ -135,7 +135,7 @@
               <ignorePathToDelete>dataservices-*.*</ignorePathToDelete>
             </ignorePathsToDelete>
             <!-- svn location for publication -->
-            <pubScmUrl>scm:git:ssh://git@github.com/emcvipr/dataservices-sdk-java.git</pubScmUrl>
+            <pubScmUrl>scm:git:https://github.com/emcvipr/dataservices-sdk-java.git</pubScmUrl>
             <scmBranch>gh-pages</scmBranch>
           </configuration>
         </plugin>
