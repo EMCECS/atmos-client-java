@@ -40,6 +40,7 @@ public class ViprConfig {
     public static final String PROP_ATMOS_UID = "vipr.atmos.uid";
     public static final String PROP_ATMOS_SECRET = "vipr.atmos.secret_key";
     public static final String PROP_ATMOS_ENDPOINTS = "vipr.atmos.endpoints";
+    public static final String PROP_ATMOS_IS_VIPR = "vipr.atmos.is_vipr";
     
     public static final String PROP_ACDP_ADMIN_ENDPOINT = "acdp.admin.endpoint";
     public static final String PROP_ACDP_ADMIN_USERNAME =  "acdp.admin.username";
