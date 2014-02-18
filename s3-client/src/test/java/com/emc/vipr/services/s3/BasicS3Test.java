@@ -26,6 +26,8 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 
+import com.emc.test.util.Concurrent;
+import com.emc.test.util.ConcurrentJunitRunner;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,12 +35,15 @@ import org.junit.Test;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
+import org.junit.runner.RunWith;
 
 /**
  * This class tests basic S3 functionality through the ViPRS3Client class.  This class
  * will look for a viprs3.properties file on the classpath and use it to configure the
  * connection to ViPR.
  */
+@RunWith(ConcurrentJunitRunner.class)
+@Concurrent
 public class BasicS3Test {
     protected ViPRS3Client vipr;
 
@@ -67,7 +72,7 @@ public class BasicS3Test {
 
     @Test
     public void testPutDeleteObject() throws Exception {
-        String key = "testkey";
+        String key = "testkey1";
         String testString = "Hello World!";
         byte[] data = testString.getBytes();
         ObjectMetadata om = new ObjectMetadata();
@@ -90,7 +95,7 @@ public class BasicS3Test {
 
     @Test
     public void testPutObjectMetadata() throws Exception {
-        String key = "testkey";
+        String key = "testkey2";
         String testString = "Hello World!";
         byte[] data = testString.getBytes();
         ObjectMetadata om = new ObjectMetadata();

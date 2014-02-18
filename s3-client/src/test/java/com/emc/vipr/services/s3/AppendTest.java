@@ -28,6 +28,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.emc.test.util.Concurrent;
+import com.emc.test.util.ConcurrentJunitRunner;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,12 +40,15 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.emc.vipr.services.s3.model.AppendObjectResult;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.*;
 
 /**
  * Tests appending to objects using the ViPR S3 Extension methods.
  */
+@RunWith(ConcurrentJunitRunner.class)
+@Concurrent
 public class AppendTest {
     ViPRS3Client vipr;
     
@@ -69,7 +74,7 @@ public class AppendTest {
      */
     @Test
     public void testAppend() throws Exception {
-        String key = "testkey";
+        String key = "testkey1";
         String testString = "Hello";
         String testString2 = " World!";
         byte[] data = testString.getBytes();
@@ -110,7 +115,7 @@ public class AppendTest {
      */
     @Test
     public void testAppendEmptyObject() throws Exception {
-        String key = "testkey";
+        String key = "testkey2";
         String testString = "Hello World!";
         
         byte[] empty = new byte[0];

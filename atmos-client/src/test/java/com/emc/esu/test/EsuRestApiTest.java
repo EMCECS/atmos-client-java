@@ -20,11 +20,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import com.emc.test.util.Concurrent;
+import com.emc.test.util.ConcurrentJunitRunner;
+
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.emc.atmos.util.AtmosClientFactory;
 import com.emc.esu.api.EsuApi;
 import com.emc.esu.api.EsuException;
 import com.emc.esu.api.rest.EsuRestApi;
@@ -32,7 +36,11 @@ import com.emc.esu.api.rest.LBEsuRestApi;
 import com.emc.esu.sysmgmt.SysMgmtApi;
 import com.emc.vipr.services.lib.ViprConfig;
 
+import org.junit.runner.RunWith;
+
 @SuppressWarnings("deprecation")
+@RunWith(ConcurrentJunitRunner.class)
+@Concurrent
 public class EsuRestApiTest extends EsuApiTest {
     /**
      * UID to run tests with.  Set in properties file or -Datmos.uid.
@@ -76,11 +84,13 @@ public class EsuRestApiTest extends EsuApiTest {
                     port = 443;
                 }
             }
+            isVipr = AtmosClientFactory.atmosIsVipr();
             
             // See if there's more than one:
             String[] endpoints = ViprConfig.getPropertyNotEmpty(p, ViprConfig.PROP_ATMOS_ENDPOINTS).split(",");
             if(endpoints.length>1) {
                 boolean first = true;
+                hosts = "";
                 for(String s : endpoints) {
                     u = new URI(s);
                     if(!first) {

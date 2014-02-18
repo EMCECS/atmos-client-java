@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 EMC Corporation. All Rights Reserved.
+ * Copyright 2014 EMC Corporation. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -51,12 +52,15 @@ public abstract class EsuApiTest {
      * Use this as a prefix for namespace object paths and you won't have to clean up after yourself.
      * This also keeps all test objects under one folder, which is easy to delete should something go awry.
      */
-    protected static final String TESTDIR = "/test_" + EsuApiTest.class.getSimpleName() + "/";
+    protected static final String TEST_DIR_PREFIX = "/test_" + EsuApiTest.class.getSimpleName();
 
     protected EsuApi esu;
     protected String uid;
 
     protected List<Identifier> cleanup = Collections.synchronizedList( new ArrayList<Identifier>() );
+    protected List<ObjectPath> cleanupDirs = Collections.synchronizedList( new ArrayList<ObjectPath>() );
+    
+    protected boolean isVipr;
 
     /**
      * Tear down after a test is run.  Cleans up objects that were created
@@ -64,17 +68,17 @@ public abstract class EsuApiTest {
      */
     @After
     public void tearDown() {
-        for ( Iterator<Identifier> i = cleanup.iterator(); i.hasNext(); ) {
-            Identifier cleanItem = i.next();
+        for (Identifier cleanItem : cleanup) {
             try {
-                this.esu.deleteObject( cleanItem );
-            } catch ( Exception e ) {
-                System.out.println( "Failed to delete " + cleanItem + ": " + e.getMessage() );
+                this.esu.deleteObject(cleanItem);
+            } catch (Exception e) {
+                System.out.println("Failed to delete " + cleanItem + ": " + e.getMessage());
             }
         }
-        try { // if the test directory exists, recursively delete it
-            this.esu.getSystemMetadata( new ObjectPath( TESTDIR ), null );
-            deleteRecursively( new ObjectPath( TESTDIR ) );
+        try { // if test directories exists, recursively delete them
+            for ( ObjectPath testDir : cleanupDirs ) {
+                deleteRecursively( testDir );
+            }
         } catch ( EsuException e ) {
             if ( e.getHttpCode() != 404 ) {
                 l4j.warn( "Could not delete test dir: ", e );
@@ -89,6 +93,14 @@ public abstract class EsuApiTest {
             }
         }
         this.esu.deleteObject( path );
+    }
+
+    protected ObjectPath createTestDir( String name ) {
+        if (!name.endsWith("/")) name = name + "/";
+        ObjectPath path = new ObjectPath( TEST_DIR_PREFIX + "_" + name );
+        this.esu.createObjectOnPath( path, null, null, null, null );
+        cleanupDirs.add( path );
+        return path;
     }
 
     //
@@ -191,7 +203,8 @@ public abstract class EsuApiTest {
         String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
         String crazyName = oneByteCharacters + twoByteCharacters + fourByteCharacters;
         byte[] content = "Crazy name creation test.".getBytes( "UTF-8" );
-        ObjectPath path = new ObjectPath( TESTDIR + crazyName );
+        ObjectPath parentDir = createTestDir("Utf8Path");
+        ObjectPath path = new ObjectPath( parentDir + crazyName );
 
         // create crazy-name object
         this.esu.createObjectOnPath( path, null, null, content, "text/plain" );
@@ -200,7 +213,7 @@ public abstract class EsuApiTest {
 
         // verify name in directory list
         boolean found = false;
-        for ( DirectoryEntry entry : this.esu.listDirectory( new ObjectPath( TESTDIR ), null ) ) {
+        for ( DirectoryEntry entry : this.esu.listDirectory( parentDir, null ) ) {
             if ( entry.getPath().toString().equals( path.toString() ) ) {
                 found = true;
                 break;
@@ -218,7 +231,8 @@ public abstract class EsuApiTest {
         String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
         String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
         byte[] content = (oneByteCharacters + twoByteCharacters + fourByteCharacters).getBytes( "UTF-8" );
-        ObjectPath path = new ObjectPath( TESTDIR + "utf8Content.txt" );
+        ObjectPath parentDir = createTestDir("Utf8Content");
+        ObjectPath path = new ObjectPath( parentDir.getName() + "/" + "utf8Content.txt" );
 
         // create object with multi-byte UTF-8 content
         this.esu.createObjectOnPath( path, null, null, content, "text/plain" );
@@ -533,6 +547,7 @@ public abstract class EsuApiTest {
      */
     @Test
     public void testVersionObject() {
+        Assume.assumeFalse(isVipr);
         // Create an object
         MetadataList mlist = new MetadataList();
         Metadata listable = new Metadata( "listable", "foo", true );
@@ -568,6 +583,7 @@ public abstract class EsuApiTest {
      */
     @Test
     public void testListVersions() {
+        Assume.assumeFalse(isVipr);
         // Create an object
         MetadataList mlist = new MetadataList();
         Metadata listable = new Metadata( "listable", "foo", true );
@@ -600,6 +616,7 @@ public abstract class EsuApiTest {
      */
     @Test
     public void testListVersionsLong() {
+        Assume.assumeFalse(isVipr);
         // Create an object
         MetadataList mlist = new MetadataList();
         Metadata listable = new Metadata( "listable", "foo", true );
@@ -644,6 +661,7 @@ public abstract class EsuApiTest {
      */
     @Test
     public void testDeleteVersion() {
+        Assume.assumeFalse(isVipr);
         // Create an object
         MetadataList mlist = new MetadataList();
         Metadata listable = new Metadata( "listable", "foo", true );
@@ -681,6 +699,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testRestoreVersion() throws UnsupportedEncodingException {
+        Assume.assumeFalse(isVipr);
         ObjectId id = this.esu.createObject( null, null, "Base Version Content".getBytes( "UTF-8" ), "text/plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -1620,6 +1639,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testGetShareableUrl() throws Exception {
+        Assume.assumeFalse(isVipr);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectId id = this.esu.createObject( null, null, str.getBytes( "UTF-8" ), "text/plain" );
@@ -1643,6 +1663,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testGetShareableUrlWithPath() throws Exception {
+        Assume.assumeFalse(isVipr);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectPath op = new ObjectPath( "/" + rand8char() + ".txt" );
@@ -1667,6 +1688,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testExpiredSharableUrl() throws Exception {
+        Assume.assumeFalse(isVipr);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectId id = this.esu.createObject( null, null,
@@ -1986,8 +2008,9 @@ public abstract class EsuApiTest {
         String oneByteCharacters = "Hello! ,";
         String twoByteCharacters = "\u0410\u0411\u0412\u0413"; // Cyrillic letters
         String fourByteCharacters = "\ud841\udf0e\ud841\udf31\ud841\udf79\ud843\udc53"; // Chinese symbols
-        String normalName = TESTDIR + rand8char() + ".tmp";
-        String crazyName = TESTDIR + oneByteCharacters + twoByteCharacters + fourByteCharacters;
+        ObjectPath parentDir = createTestDir("Utf8Rename");
+        String normalName = parentDir + rand8char() + ".tmp";
+        String crazyName = parentDir + oneByteCharacters + twoByteCharacters + fourByteCharacters;
         byte[] content = "This is a really crazy name.".getBytes( "UTF-8" );
 
         // normal name
@@ -2001,7 +2024,7 @@ public abstract class EsuApiTest {
 
         // verify name in directory list
         boolean found = false;
-        for ( DirectoryEntry entry : this.esu.listDirectory( new ObjectPath( TESTDIR ), null ) ) {
+        for ( DirectoryEntry entry : this.esu.listDirectory( parentDir, null ) ) {
             if ( entry.getPath().toString().equals( crazyName ) ) {
                 found = true;
                 break;
@@ -2167,6 +2190,7 @@ public abstract class EsuApiTest {
     @Ignore("Turned off by default.")
     @Test
     public void testHardLink() throws Exception {
+        Assume.assumeFalse(isVipr);
         ObjectPath op1 = new ObjectPath("/" + rand8char() + ".tmp");
         ObjectPath op2 = new ObjectPath("/" + rand8char() + ".tmp");
 
@@ -2196,6 +2220,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testGetShareableUrlAndDisposition() throws Exception {
+        Assume.assumeFalse(isVipr);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectId id = this.esu.createObject( null, null, str.getBytes( "UTF-8" ), "text/plain" );
@@ -2221,6 +2246,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testGetShareableUrlWithPathAndDisposition() throws Exception {
+        Assume.assumeFalse(isVipr);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectPath op = new ObjectPath( "/" + rand8char() + ".txt" );
@@ -2247,6 +2273,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testGetShareableUrlWithPathAndUTF8Disposition() throws Exception {
+        Assume.assumeFalse(isVipr);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectPath op = new ObjectPath( "/" + rand8char() + ".txt" );
@@ -2306,6 +2333,7 @@ public abstract class EsuApiTest {
 
     @Test
     public void testCrudKeys() throws Exception {
+        Assume.assumeFalse(isVipr);
         String keyPool = "Test_key-pool#@!$%^..";
         String key = "KEY_TEST";
         String content = "Hello World!";
