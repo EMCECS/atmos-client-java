@@ -43,7 +43,8 @@ public class EncryptionConfig {
      * object.
      * @param keystore the Keystore containing the master encryption key and any
      * additional decryption key(s).
-     * @param keystorePassword password for the keystore
+     * @param masterKeyPassword password for the master keys.  Note that this
+     * implementation assumes that all master keys use the same password.
      * @param masterKeyAlias name of the master encryption key in the Keystore object.
      * @param provider (optional) if not-null, the Provider object to use for all 
      * encryption operations.  If null, the default provider(s) will be used from your
@@ -56,14 +57,14 @@ public class EncryptionConfig {
      * @throws NoSuchPaddingException if PKCS5Padding is not available.
      * @throws TransformException if some other error occurred initializing the encryption.
      */
-    public EncryptionConfig(KeyStore keystore, char[] keystorePassword, 
+    public EncryptionConfig(KeyStore keystore, char[] masterKeyPassword, 
             String masterKeyAlias, Provider provider, int keySize) 
                     throws InvalidKeyException, NoSuchAlgorithmException, 
                     NoSuchPaddingException, TransformException {
         if(provider == null) {
-            factory = new KeyStoreEncryptionFactory(keystore, masterKeyAlias, keystorePassword);
+            factory = new KeyStoreEncryptionFactory(keystore, masterKeyAlias, masterKeyPassword);
         } else {
-            factory = new KeyStoreEncryptionFactory(keystore, masterKeyAlias, keystorePassword, provider);
+            factory = new KeyStoreEncryptionFactory(keystore, masterKeyAlias, masterKeyPassword, provider);
         }
         factory.setEncryptionSettings(TransformConstants.DEFAULT_ENCRYPTION_TRANSFORM, keySize, provider);
     }

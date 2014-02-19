@@ -37,7 +37,7 @@ public class KeyStoreEncryptionFactory extends
     private KeyStore keyStore;
     private String masterEncryptionKeyAlias;
     private String masterEncryptionKeyFingerprint;
-    private char[] keyStorePassword;
+    private char[] masterKeyPassword;
     private Map<String, String> idToAliasMap;
 
     public KeyStoreEncryptionFactory(KeyStore keyStore,
@@ -48,11 +48,11 @@ public class KeyStoreEncryptionFactory extends
     }
 
     public KeyStoreEncryptionFactory(KeyStore keyStore,
-            String masterEncryptionKeyAlias, char[] keyStorePassword, Provider provider) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, TransformException {
+            String masterEncryptionKeyAlias, char[] masterKeyPassword, Provider provider) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, TransformException {
         super();
         this.keyStore = keyStore;
         this.masterEncryptionKeyAlias = masterEncryptionKeyAlias;
-        this.keyStorePassword = keyStorePassword;
+        this.masterKeyPassword = masterKeyPassword;
         this.idToAliasMap = new HashMap<String, String>();
         this.provider = provider;
         
@@ -164,7 +164,7 @@ public class KeyStoreEncryptionFactory extends
         try {
             keyCert = keyStore.getCertificate(alias);
             privateKey =  (PrivateKey) keyStore.getKey(alias, 
-                keyStorePassword);
+                masterKeyPassword);
             if(keyCert == null) {
                 throw new TransformException("Certificate for alias " + 
                         masterEncryptionKeyAlias + " not found");
