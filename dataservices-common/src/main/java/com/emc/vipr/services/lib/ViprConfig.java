@@ -36,6 +36,7 @@ public class ViprConfig {
     public static final String PROP_PRIVATE_KEY = "vipr.encryption.privatekey";
     public static final String PROP_PROXY_HOST = "vipr.proxy.host";
     public static final String PROP_PROXY_PORT = "vipr.proxy.port";
+    public static final String PROP_FILE_ACCESS_TESTS_ENABLED = "vipr.file.access.tests.enabled";
 
     public static final String PROP_ATMOS_UID = "vipr.atmos.uid";
     public static final String PROP_ATMOS_SECRET = "vipr.atmos.secret_key";
