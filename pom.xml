@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonatype.oss</groupId>
     <artifactId>oss-parent</artifactId>
-    <version>7</version>
+    <version>9</version>
   </parent>
   <groupId>com.emc.vipr</groupId>
   <artifactId>dataservices</artifactId>
@@ -106,7 +106,7 @@
           <version>2.1</version>
           <configuration>
             <preparationGoals>clean install</preparationGoals>
-            <arguments>-Psonatype-oss-release</arguments>
+            <goals>deploy</goals>
           </configuration>
         </plugin>
       </plugins>
