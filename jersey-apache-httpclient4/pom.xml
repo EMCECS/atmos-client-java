@@ -6,7 +6,7 @@
     <version>1.2-SNAPSHOT</version>
   </parent>
   <artifactId>jersey-apache-httpclient4</artifactId>
-  <version>1.18-CUSTOM</version>
+  <version>1.18-CUSTOM-SNAPSHOT</version>
 
   <properties>
     <main.stage>${project.basedir}/../target/staging</main.stage>

@@ -106,109 +106,123 @@
           <version>2.1</version>
           <configuration>
             <preparationGoals>clean install</preparationGoals>
-            <arguments>-Psonatype-oss-release -DskipTests</arguments>
-          </configuration>
-        </plugin>
-        <plugin>
-          <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>2.7</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-site-plugin</artifactId>
-          <version>3.3</version>
-          <configuration>
-            <stagingDirectory>${main.stage}/latest</stagingDirectory>
-            <skipDeploy>true</skipDeploy>
-          </configuration>
-        </plugin>
-        <plugin>
-          <artifactId>maven-antrun-plugin</artifactId>
-          <version>1.7</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-scm-publish-plugin</artifactId>
-          <version>1.0-beta-2</version>
-          <extensions>true</extensions>
-          <configuration>
-            <checkinComment>Publishing Site Docs for ${project.artifactId}:${project.version}</checkinComment>
-            <content>${main.stage}</content>
-            <ignorePathsToDelete>
-              <ignorePathToDelete>dataservices-*.*</ignorePathToDelete>
-            </ignorePathsToDelete>
-            <!-- svn location for publication -->
-            <pubScmUrl>scm:git:https://github.com/emcvipr/dataservices-sdk-java.git</pubScmUrl>
-            <scmBranch>gh-pages</scmBranch>
+            <arguments>-Psonatype-oss-release</arguments>
           </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
-    <plugins>
-      <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>stage-for-scm-publish</id>
-            <phase>post-site</phase>
-            <goals>
-              <goal>stage</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>version-for-scm-publish</id>
-            <phase>site-deploy</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <copy todir="${main.stage}/versions/dataservices-${main.version}">
-                  <fileset dir="${main.stage}/latest" />
-                </copy>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-scm-publish-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>scm-publish</id>
-            <phase>site-deploy</phase>
-            <goals>
-              <goal>publish-scm</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
   </build>
 
-  <reporting>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.9.1</version>
-        <configuration>
-          <links>
-            <link>http://java.sun.com/j2se/1.6.0/docs/api</link>
-          </links>
-        </configuration>
-      </plugin>
-    </plugins>
-  </reporting>
-
-<!--
-for distribution zips which include source and javadoc jars with dependencies in lib/
-run in release sub-projects like so:
-    mvn package -Pdist
--->
   <profiles>
+    <!--
+    For site generation and deployment to github:gh-pages
+    -->
+    <profile>
+      <id>reports</id>
+      <properties>
+        <skipTests>true</skipTests>
+      </properties>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-project-info-reports-plugin</artifactId>
+              <version>2.7</version>
+            </plugin>
+            <plugin>
+              <artifactId>maven-site-plugin</artifactId>
+              <version>3.3</version>
+              <configuration>
+                <stagingDirectory>${main.stage}/latest</stagingDirectory>
+                <skipDeploy>true</skipDeploy>
+              </configuration>
+            </plugin>
+            <plugin>
+              <artifactId>maven-antrun-plugin</artifactId>
+              <version>1.7</version>
+            </plugin>
+            <plugin>
+              <artifactId>maven-scm-publish-plugin</artifactId>
+              <version>1.0</version>
+              <extensions>true</extensions>
+              <configuration>
+                <checkinComment>Publishing Site Docs for ${project.artifactId}:${project.version}</checkinComment>
+                <content>${main.stage}</content>
+                <ignorePathsToDelete>
+                  <ignorePathToDelete>dataservices-*.*</ignorePathToDelete>
+                </ignorePathsToDelete>
+                <!-- svn location for publication -->
+                <pubScmUrl>scm:git:https://github.com/emcvipr/dataservices-sdk-java.git</pubScmUrl>
+                <scmBranch>gh-pages</scmBranch>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+        <plugins>
+          <plugin>
+            <artifactId>maven-site-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>stage-for-scm-publish</id>
+                <phase>post-site</phase>
+                <goals>
+                  <goal>stage</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>version-for-scm-publish</id>
+                <phase>site-deploy</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target>
+                    <copy todir="${main.stage}/versions/dataservices-${main.version}">
+                      <fileset dir="${main.stage}/latest" />
+                    </copy>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-scm-publish-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>scm-publish</id>
+                <phase>site-deploy</phase>
+                <goals>
+                  <goal>publish-scm</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <reporting>
+        <plugins>
+          <plugin>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>2.9.1</version>
+            <configuration>
+              <links>
+                <link>http://java.sun.com/j2se/1.6.0/docs/api</link>
+              </links>
+            </configuration>
+          </plugin>
+        </plugins>
+      </reporting>
+    </profile>
+    <!--
+    for distribution zips which include source and javadoc jars with dependencies in lib/
+    run in release sub-projects like so:
+        mvn package -Pdist
+    -->
     <profile>
       <id>dist</id>
       <properties>
