@@ -8,6 +8,12 @@
   <artifactId>vipr-object-transformations</artifactId>
   <name>ViPR Object Transformations</name>
   <description>Implements generic compression and encryption functionality for the ViPR object SDKs.</description>
+
+  <properties>
+    <main.stage>${project.basedir}/../target/staging</main.stage>
+    <main.version>${project.parent.version}</main.version>
+  </properties>
+
   <dependencies>
   	<dependency>
   		<groupId>org.b1.pack</groupId>

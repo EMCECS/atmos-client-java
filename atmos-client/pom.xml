@@ -112,6 +112,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.1</version>
         <configuration>
           <excludes>
             <!-- it is currently difficult to procure lab resources for an ACDP test cluster, so these tests will be
