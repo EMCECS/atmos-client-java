@@ -17,6 +17,7 @@ package com.emc.atmos.sync.util;
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executor;
 
 public class NonClosingConnection implements Connection {
     private Connection connection;
@@ -278,4 +279,29 @@ public class NonClosingConnection implements Connection {
     public boolean isWrapperFor( Class<?> iface ) throws SQLException {
         return connection.isWrapperFor( iface );
     }
+
+	@Override
+	public void abort(Executor executor) throws SQLException {
+		connection.abort(executor);
+	}
+
+	@Override
+	public int getNetworkTimeout() throws SQLException {
+		return connection.getNetworkTimeout();
+	}
+
+	@Override
+	public String getSchema() throws SQLException {
+		return connection.getSchema();
+	}
+
+	@Override
+	public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
+		connection.setNetworkTimeout(executor, milliseconds);
+	}
+
+	@Override
+	public void setSchema(String schema) throws SQLException {
+		connection.setSchema(schema);
+	}
 }
