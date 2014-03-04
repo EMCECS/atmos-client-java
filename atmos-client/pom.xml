@@ -110,19 +110,4 @@
     	<scope>test</scope>
     </dependency>
   </dependencies>
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.1</version>
-        <configuration>
-          <excludes>
-            <!-- it is currently difficult to procure lab resources for an ACDP test cluster, so these tests will be
-                 run manually as needed -->
-            <exclude>com/emc/acdp/**</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>
