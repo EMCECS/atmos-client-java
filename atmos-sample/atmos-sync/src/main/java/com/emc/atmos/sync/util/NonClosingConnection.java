@@ -280,28 +280,23 @@ public class NonClosingConnection implements Connection {
         return connection.isWrapperFor( iface );
     }
 
-	@Override
 	public void abort(Executor executor) throws SQLException {
-		connection.abort(executor);
+		throw new UnsupportedOperationException( "JDK 7 methods not implemented" );
 	}
 
-	@Override
 	public int getNetworkTimeout() throws SQLException {
-		return connection.getNetworkTimeout();
+        throw new UnsupportedOperationException( "JDK 7 methods not implemented" );
 	}
 
-	@Override
 	public String getSchema() throws SQLException {
-		return connection.getSchema();
+        throw new UnsupportedOperationException( "JDK 7 methods not implemented" );
 	}
 
-	@Override
 	public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
-		connection.setNetworkTimeout(executor, milliseconds);
+        throw new UnsupportedOperationException( "JDK 7 methods not implemented" );
 	}
 
-	@Override
 	public void setSchema(String schema) throws SQLException {
-		connection.setSchema(schema);
+        throw new UnsupportedOperationException( "JDK 7 methods not implemented" );
 	}
 }
