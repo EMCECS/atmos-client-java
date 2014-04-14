@@ -1,0 +1,3 @@
+[submodule "aws-sdk-java"]
+	path = aws-sdk-java
+	url = https://github.com/emcvipr/aws-sdk-java.git
