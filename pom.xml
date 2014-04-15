@@ -29,6 +29,7 @@
     <module>dataservices-common</module>
     <module>vipr-object-transformations</module><!-- RELEASE PROJECT -->
     <module>atmos-sample</module>
+    <module>smart-client</module><!-- RELEASE PROJECT -->
   </modules>
 
   <distributionManagement>

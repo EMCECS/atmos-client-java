@@ -31,6 +31,8 @@ public class ViprConfig {
     public static final String PROP_S3_ACCESS_KEY_ID = "vipr.s3.access_key_id";
     public static final String PROP_S3_SECRET_KEY = "vipr.s3.secret_key";
     public static final String PROP_S3_ENDPOINT = "vipr.s3.endpoint";
+    public static final String PROP_S3_ENDPOINTS = "vipr.s3.endpoints";
+    public static final String PROP_S3_VIRTUAL_HOST = "vipr.s3.virtual_host";
     public static final String PROP_NAMESPACE = "vipr.namespace";
     public static final String PROP_PUBLIC_KEY = "vipr.encryption.publickey";
     public static final String PROP_PRIVATE_KEY = "vipr.encryption.privatekey";
