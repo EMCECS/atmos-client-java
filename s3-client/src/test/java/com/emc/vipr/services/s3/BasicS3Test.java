@@ -14,7 +14,18 @@
  */
 package com.emc.vipr.services.s3;
 
-import static org.junit.Assert.*;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.Upload;
+import com.emc.test.util.Concurrent;
+import com.emc.test.util.ConcurrentJunitRunner;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.*;
 import java.util.Map;
@@ -22,20 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.Upload;
-
-import com.emc.test.util.Concurrent;
-import com.emc.test.util.ConcurrentJunitRunner;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
-import org.junit.runner.RunWith;
+import static org.junit.Assert.assertEquals;
 
 /**
  * This class tests basic S3 functionality through the ViPRS3Client class.  This class
@@ -47,7 +45,7 @@ import org.junit.runner.RunWith;
 public class BasicS3Test {
     protected ViPRS3Client vipr;
 
-    private static final String TEST_BUCKET = "basic-s3-tests";
+    protected static final String TEST_BUCKET = "basic-s3-tests";
 
     @Before
     public void setUp() throws Exception {

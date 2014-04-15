@@ -15,15 +15,20 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.amazonaws</groupId>
+      <groupId>com.emc.vipr</groupId>
       <artifactId>aws-java-sdk</artifactId>
-      <version>1.6.11</version>
+      <version>1.7.5</version>
     </dependency>
     <dependency>
     	<groupId>com.emc.vipr</groupId>
     	<artifactId>dataservices-common</artifactId>
     	<version>1.1.2-SNAPSHOT</version>
     	<scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.emc.vipr</groupId>
+      <artifactId>smart-client</artifactId>
+      <version>1.1.2-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
