@@ -48,7 +48,7 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	/**
 	 * This pattern is used to activate this plugin.
 	 */
-	public static final String URI_PATTERN = "^(http|https)://([a-zA-Z0-9/\\-]+):([a-zA-Z0-9\\+/=]+)@([^/]*?)(:[0-9]+)?(?:/)?$";
+	public static final String URI_PATTERN = "^(http|https)://([a-zA-Z0-9/\\-@_\\.]+):([a-zA-Z0-9\\+/=]+)@([^/]*?)(:[0-9]+)?(?:/)?$";
 
 	public static final String DEST_NAMESPACE_OPTION = "dest-namespace";
 	public static final String DEST_NAMESPACE_DESC = "The destination within the Atmos namespace.  Note that a directory must end with a trailing slash (e.g. /dir1/dir2/) otherwise it will be interpreted as a single file (only useful for transferring a single file).";
