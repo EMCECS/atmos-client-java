@@ -12,7 +12,7 @@
  	</logger>
 
 	<!-- These are commented out so they fall under the rootLogger and can now be adjusted
-	     by the LoggingPlugin with --quiet, --silent, --debug, etc.  Default is INFO. -->
+	     by the LoggingPlugin with -quiet, -silent, -debug, etc.  Default is INFO. -->
 	<!-- 
 	<logger name="com.emc.atmos.sync">
  		<level value="DEBUG"></level>
