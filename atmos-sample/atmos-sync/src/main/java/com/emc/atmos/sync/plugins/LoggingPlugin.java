@@ -19,6 +19,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 /**
@@ -70,16 +71,17 @@ public class LoggingPlugin extends SyncPlugin {
      */
     @Override
     public boolean parseOptions(CommandLine line) {
-        Logger.getRootLogger().setLevel(Level.INFO);
+        LogManager.getRootLogger().setLevel(Level.INFO);
         
         if(line.hasOption(DEBUG_OPTION)) {
-            Logger.getRootLogger().setLevel(Level.DEBUG);
+            l4j.info("Setting debug level to DEBUG");
+            LogManager.getRootLogger().setLevel(Level.DEBUG);
         }
         if(line.hasOption(QUIET_OPTION)) {
-            Logger.getRootLogger().setLevel(Level.WARN);
+            LogManager.getRootLogger().setLevel(Level.WARN);
         }
         if(line.hasOption(SILENT_OPTION)) {
-            Logger.getRootLogger().setLevel(Level.FATAL);
+            LogManager.getRootLogger().setLevel(Level.FATAL);
         }
         
         // Always return false because we don't want this plugin to inject itself into the chain.

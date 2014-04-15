@@ -73,6 +73,7 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
 		plugins.add(new ShellCommandPlugin());
         plugins.add(new PolicyTransitionPlugin());
         plugins.add(new S3Destination());
+        plugins.add(new LoggingPlugin());
 		
 		Map<String,SyncPlugin> optionMap = new HashMap<String, SyncPlugin>();
 		

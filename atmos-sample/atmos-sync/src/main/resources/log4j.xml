@@ -11,12 +11,15 @@
  		<level value="INFO"></level>
  	</logger>
 
+	<!-- These are commented out so they fall under the rootLogger and can now be adjusted
+	     by the LoggingPlugin with --quiet, --silent, --debug, etc.  Default is INFO. -->
+	<!-- 
 	<logger name="com.emc.atmos.sync">
- 		<level value="INFO"></level>
+ 		<level value="DEBUG"></level>
  	</logger>
  	<logger name="com.emc.esu.api">
- 		<level value="WARN"></level>
- 	</logger>
+ 		<level value="DEBUG"></level>
+ 	</logger> -->
  	
  	<!-- # Turn on INFO logging in com.amazonaws.request to log
          # a summary of requests/responses with AWS request IDs -->
