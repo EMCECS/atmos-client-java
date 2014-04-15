@@ -36,15 +36,18 @@ import java.util.Properties;
  * This class looks on the classpath for a file named viprs3.properties and uses it to
  * configure a connection to ViPR.  The supported properties are:
  * <dt>
- * <dl>vipr.access_key_id</dl><dd>(Required) The access key (user ID)</dd>
- * <dl>vipr.secret_key</dl><dd>(Required) The shared secret key</dd>
- * <dl>vipr.endpoint</dl><dd>(Required) The endpoint hostname or IP address of the ViPR
+ * <dl>vipr.s3.access_key_id</dl><dd>(Required) The access key (user ID)</dd>
+ * <dl>vipr.s3.secret_key</dl><dd>(Required) The shared secret key</dd>
+ * <dl>vipr.s3.endpoint</dl><dd>(Required) The endpoint hostname or IP address of the ViPR
  * data service server to use</dd>
+ * <dl>vipr.s3.endpoints</dl><dd>(Optional) The endpoints (plural) to use in the smart client</dd>
  * <dl>vipr.namespace</dl><dd>(Optional) The ViPR namespace to connect to.  Generally
  * this is required if your endpoint is an IP or not in the format of {namespace}.company.com</dd>
+ * <dl>vipr.s3.virtual_host</dl><dd>(Optional) The root virtual host used for vhost requests (also used by the smart
+ * client as the load-balanced address.</dd>
  * </dt>
- * @author cwikj
  *
+ * @author cwikj
  */
 public class S3ClientFactory {
     private static Log log = LogFactory.getLog(S3ClientFactory.class);
@@ -74,8 +77,9 @@ public class S3ClientFactory {
 
             BasicAWSCredentials creds = new BasicAWSCredentials(accessKey, secretKey);
 
-            ViPRS3Config viprConfig = new ViPRS3Config().withS3Endpoints(endpoints)
-                    .withCredentialsProvider(new StaticCredentialsProvider(creds));
+            ViPRS3Config viprConfig = new ViPRS3Config().withCredentialsProvider(new StaticCredentialsProvider(creds));
+            if (endpoints != null) viprConfig.withS3Endpoints(endpoints);
+            else viprConfig.withS3Endpoints(endpoint);
             if (virtualHost != null) viprConfig.setVirtualHost(virtualHost);
 
             ViPRS3Client client = smart ? new ViPRS3Client(viprConfig) : new ViPRS3Client(endpoint, creds);
@@ -87,7 +91,7 @@ public class S3ClientFactory {
             }
 
             String namespace = props.getProperty(ViprConfig.PROP_NAMESPACE);
-            if(namespace != null && setNamespace) {
+            if (namespace != null && setNamespace) {
                 client.setNamespace(namespace);
             }
             checkProxyConfig(client, props);
@@ -102,6 +106,7 @@ public class S3ClientFactory {
     /**
      * Creates an EncryptionClient for testing.  Loads the public and private keys from
      * the properties file (not suitable for production).
+     *
      * @return
      * @throws IOException
      */
@@ -140,7 +145,7 @@ public class S3ClientFactory {
             checkProxyConfig(client, props);
 
             return client;
-        } catch(Exception e) {
+        } catch (Exception e) {
             log.info("Could not load configuration: " + e);
             return null;
         }
@@ -148,7 +153,7 @@ public class S3ClientFactory {
 
     private static void checkProxyConfig(AmazonS3Client client, Properties props) {
         String proxyHost = props.getProperty(ViprConfig.PROP_PROXY_HOST);
-        if(proxyHost != null && !proxyHost.isEmpty()) {
+        if (proxyHost != null && !proxyHost.isEmpty()) {
             int proxyPort = Integer.parseInt(props.getProperty(ViprConfig.PROP_PROXY_PORT));
             ClientConfiguration config = new ClientConfiguration();
             config.setProxyHost(proxyHost);
@@ -173,7 +178,7 @@ public class S3ClientFactory {
 
             System.out.println("Public Key: " + pubKeyStr);
             System.out.println("Private Key: " + privKeyStr);
-        } catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
