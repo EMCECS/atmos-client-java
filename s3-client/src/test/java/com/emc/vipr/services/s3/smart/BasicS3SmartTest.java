@@ -17,17 +17,20 @@ package com.emc.vipr.services.s3.smart;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.emc.vipr.services.s3.BasicS3Test;
 import com.emc.vipr.services.s3.S3ClientFactory;
-import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 
 public class BasicS3SmartTest extends BasicS3Test {
+    protected String getTestBucket() {
+        return "basic-s3-smart-tests";
+    }
+
     @Before
     public void setUp() throws Exception {
         vipr = S3ClientFactory.getSmartS3Client(false);
         Assume.assumeTrue("Could not configure S3 connection", vipr != null);
         try {
-            vipr.createBucket(TEST_BUCKET);
+            vipr.createBucket(getTestBucket());
         } catch (AmazonS3Exception e) {
             if (e.getStatusCode() == 409) {
                 // Ignore; bucket exists;
@@ -35,10 +38,5 @@ public class BasicS3SmartTest extends BasicS3Test {
                 throw e;
             }
         }
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        System.out.println(vipr.getLoadBalancerStats());
     }
 }
