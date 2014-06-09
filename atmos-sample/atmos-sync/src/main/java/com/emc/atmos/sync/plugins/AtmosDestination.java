@@ -97,6 +97,12 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 	 */
 	@Override
 	public void filter(final SyncObject obj) {
+        // skip the root namespace since it obviously exists
+        if ("/".equals(destNamespace + obj.getRelativePath())) {
+            l4j.debug("Destination namespace is root");
+            return;
+        }
+
         timeOperationStart(OPERATION_TOTAL);
 		try {
             // some sync objects lazy-load their metadata (i.e. AtmosSyncObject)
