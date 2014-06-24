@@ -14,3 +14,4 @@ bin
 *.iml
 dependency-reduced-pom.xml
 esu.log
+.gradle
