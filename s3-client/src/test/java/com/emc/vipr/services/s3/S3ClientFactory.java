@@ -73,14 +73,12 @@ public class S3ClientFactory {
             String secretKey = ViprConfig.getPropertyNotEmpty(props, ViprConfig.PROP_S3_SECRET_KEY);
             String endpoint = ViprConfig.getPropertyNotEmpty(props, ViprConfig.PROP_S3_ENDPOINT);
             String endpoints = props.getProperty(ViprConfig.PROP_S3_ENDPOINTS);
-            String virtualHost = props.getProperty(ViprConfig.PROP_S3_VIRTUAL_HOST);
 
             BasicAWSCredentials creds = new BasicAWSCredentials(accessKey, secretKey);
 
             ViPRS3Config viprConfig = new ViPRS3Config().withCredentialsProvider(new StaticCredentialsProvider(creds));
             if (endpoints != null) viprConfig.withS3Endpoints(endpoints);
             else viprConfig.withS3Endpoints(endpoint);
-            if (virtualHost != null) viprConfig.setVirtualHost(virtualHost);
 
             ViPRS3Client client = smart ? new ViPRS3Client(viprConfig) : new ViPRS3Client(endpoint, creds);
 

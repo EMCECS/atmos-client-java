@@ -14,18 +14,12 @@
  */
 package com.emc.vipr.services.s3;
 
-import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
-import com.emc.test.util.Concurrent;
-import com.emc.test.util.ConcurrentJunitRunner;
-import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.*;
 import java.util.Map;
@@ -40,34 +34,16 @@ import static org.junit.Assert.assertEquals;
  * will look for a viprs3.properties file on the classpath and use it to configure the
  * connection to ViPR.
  */
-@RunWith(ConcurrentJunitRunner.class)
-@Concurrent
-public class BasicS3Test {
-    protected ViPRS3Client vipr;
-
-    protected String getTestBucket() {
+public class BasicS3Test extends AbstractViPRS3Test {
+    @Override
+    protected String getTestBucketPrefix() {
         return "basic-s3-tests";
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        vipr = S3ClientFactory.getS3Client();
-        Assume.assumeTrue("Could not configure S3 connection", vipr != null);
-        try {
-            vipr.createBucket(getTestBucket());
-        } catch(AmazonS3Exception e) {
-            if(e.getStatusCode() == 409) {
-                // Ignore; bucket exists;
-            } else {
-                throw e;
-            }
-        }
     }
 
     @Test
     public void testCreateDeleteBucket() {
-        vipr.createBucket(getTestBucket()+"-1");
-        vipr.deleteBucket(getTestBucket()+"-1");
+        s3.createBucket(getTestBucket()+"-test");
+        s3.deleteBucket(getTestBucket()+"-test");
     }
 
     @Test
@@ -79,9 +55,9 @@ public class BasicS3Test {
         om.setContentLength(data.length);
         om.setContentType("text/plain");
 
-        vipr.putObject(getTestBucket(), key, new ByteArrayInputStream(data), om);
+        s3.putObject(getTestBucket(), key, new ByteArrayInputStream(data), om);
 
-        S3Object s3o = vipr.getObject(getTestBucket(), key);
+        S3Object s3o = s3.getObject(getTestBucket(), key);
         InputStream in = s3o.getObjectContent();
         data = new byte[data.length];
         in.read(data);
@@ -90,7 +66,7 @@ public class BasicS3Test {
 
         assertEquals("String not equal", testString, outString);
 
-        vipr.deleteObject(getTestBucket(), key);
+        s3.deleteObject(getTestBucket(), key);
     }
 
     @Test
@@ -104,14 +80,14 @@ public class BasicS3Test {
         om.addUserMetadata("name1", "value1");
         om.addUserMetadata("name2", "value2");
 
-        vipr.putObject(getTestBucket(), key, new ByteArrayInputStream(data), om);
+        s3.putObject(getTestBucket(), key, new ByteArrayInputStream(data), om);
 
-        ObjectMetadata om2 = vipr.getObjectMetadata(getTestBucket(), key);
+        ObjectMetadata om2 = s3.getObjectMetadata(getTestBucket(), key);
         Map<String,String> meta = om2.getUserMetadata();
         assertEquals("Metadata name1 incorrect on HEAD", "value1", meta.get("name1"));
         assertEquals("Metadata name2 incorrect on HEAD", "value2", meta.get("name2"));
 
-        S3Object s3o = vipr.getObject(getTestBucket(), key);
+        S3Object s3o = s3.getObject(getTestBucket(), key);
         InputStream in = s3o.getObjectContent();
         data = new byte[data.length];
         in.read(data);
@@ -123,7 +99,7 @@ public class BasicS3Test {
         assertEquals("Metadata name1 incorrect on GET", "value1", meta.get("name1"));
         assertEquals("Metadata name2 incorrect on GET", "value2", meta.get("name2"));
 
-        vipr.deleteObject(getTestBucket(), key);
+        s3.deleteObject(getTestBucket(), key);
     }
 
     @Test
@@ -141,7 +117,7 @@ public class BasicS3Test {
 
         ThreadPoolExecutor executor = new ThreadPoolExecutor(10, 10, 60, TimeUnit.SECONDS,
                 new LinkedBlockingQueue<Runnable>(50));
-        TransferManager tm = new TransferManager(vipr, executor);
+        TransferManager tm = new TransferManager(s3, executor);
 
         PutObjectRequest request = new PutObjectRequest(getTestBucket(), key, tmpFile);
         request.setMetadata(new ObjectMetadata());
@@ -151,12 +127,12 @@ public class BasicS3Test {
 
         upload.waitForCompletion();
 
-        S3Object object = vipr.getObject(getTestBucket(), key);
+        S3Object object = s3.getObject(getTestBucket(), key);
 
         int size = copyStream(object.getObjectContent(), null);
         assertEquals("Wrong object size", objectSize, size);
 
-        vipr.deleteObject(getTestBucket(), key);
+        s3.deleteObject(getTestBucket(), key);
     }
 
     private int copyStream(InputStream is, OutputStream os) throws IOException {

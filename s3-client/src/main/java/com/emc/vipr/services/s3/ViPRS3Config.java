@@ -32,7 +32,7 @@ import java.util.List;
 public class ViPRS3Config {
     private Protocol protocol = Protocol.HTTP;
     private List<URI> s3Endpoints;
-    private String virtualHost = "s3.amazonaws.com";
+    private String vipHost = "s3.amazonaws.com";
     private AWSCredentialsProvider credentialsProvider;
     private ClientConfiguration clientConfiguration;
     private int pollInterval; // seconds
@@ -61,17 +61,8 @@ public class ViPRS3Config {
         this.s3Endpoints = s3Endpoints;
     }
 
-    public String getVirtualHost() {
-        return virtualHost;
-    }
-
-    /**
-     * Set the base virtual host to use for virtual host style requests ("bucket.namespace.company.com" would have
-     * "company.com" as the base virtual host). This is configured in the ViPR admin console. Defaults to
-     * "s3.amazonaws.com".
-     */
-    public void setVirtualHost(String virtualHost) {
-        this.virtualHost = virtualHost;
+    public String getVipHost() {
+        return vipHost;
     }
 
     public AWSCredentialsProvider getCredentialsProvider() {
@@ -146,11 +137,6 @@ public class ViPRS3Config {
         }
     }
 
-    public ViPRS3Config withVirtualHost(String virtualHost) {
-        setVirtualHost(virtualHost);
-        return this;
-    }
-
     public ViPRS3Config withCredentialsProvider(AWSCredentialsProvider credentialsProvider) {
         setCredentialsProvider(credentialsProvider);
         return this;
@@ -172,7 +158,8 @@ public class ViPRS3Config {
     }
 
     public SmartClientConfig toSmartClientConfig() {
-        SmartClientConfig smartConfig = new SmartClientConfig().withInitialNodes(toServers(s3Endpoints)).withVipAddresses(virtualHost)
+        SmartClientConfig smartConfig = new SmartClientConfig().withInitialNodes(toServers(s3Endpoints)).withVipAddresses(vipHost)
+                .withPollProtocol(protocol.toString())
                 .withUsername(credentialsProvider.getCredentials().getAWSAccessKeyId())
                 .withSecret(credentialsProvider.getCredentials().getAWSSecretKey());
         if (pollInterval > 0) smartConfig.setPollInterval(pollInterval);

@@ -126,8 +126,8 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
     /**
      * Constructs a client with all options specified in a ViPRS3Config instance.  Use this constructor to enable the
-     * smart client.  Older constructors cannot differentiate between load balancing and virtual hosting, so this is the
-     * only constructor that will allow both, which is required by the smart client.
+     * smart client.  Older constructors cannot differentiate between load balancing and virtual hosting (which is not
+     * supported by the smart client), so this constructor is required for the smart client.
      *
      * Note that when the smart client is enabled, you *cannot* use DNS (virtual host) style buckets or namespaces.
      * Because of the nature of client-side load balancing, you must use path/header style requests.
@@ -135,11 +135,13 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
     public ViPRS3Client(ViPRS3Config viprConfig) {
         super(viprConfig.getCredentialsProvider(), viprConfig.getClientConfiguration());
         this.client = new ViPRS3HttpClient(viprConfig);
-        setEndpoint(viprConfig.getProtocol() + "://" + viprConfig.getVirtualHost());
+        setEndpoint(viprConfig.getProtocol() + "://" + viprConfig.getVipHost());
     }
 
     public LoadBalancerStats getLoadBalancerStats() {
-        return ((ViPRS3HttpClient) client).getLoadBalancerStats();
+        if (client instanceof ViPRS3HttpClient)
+            return ((ViPRS3HttpClient) client).getLoadBalancerStats();
+        throw new UnsupportedOperationException("this is not a load-balanced client (try constructing it with ViPRS3Config)");
     }
 
     public UpdateObjectResult updateObject(String bucketName, String key,
@@ -326,6 +328,24 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
                 return awsResponse;
             }
         }, bucketName, null);
+    }
+
+    public ListDataNodesResult listDataNodes(ListDataNodesRequest listDataNodesRequest)
+            throws AmazonClientException {
+        Request<ListDataNodesRequest> request = createRequest(null, null, listDataNodesRequest, HttpMethodName.GET);
+        request.addParameter(ViPRConstants.ENDPOINT_PARAMETER, null);
+
+        return invoke(request, new AbstractS3ResponseHandler<ListDataNodesResult>() {
+            public AmazonWebServiceResponse<ListDataNodesResult> handle(HttpResponse response) throws Exception {
+                log.trace("Beginning to parse endpoint response XML");
+                ListDataNodesResult result = new ListDataNodesResultUnmarshaller().unmarshall(response.getContent());
+                log.trace("Done parsing endpoint response XML");
+
+                AmazonWebServiceResponse<ListDataNodesResult> awsResponse = parseResponseMetadata(response);
+                awsResponse.setResult(result);
+                return awsResponse;
+            }
+        }, null, null);
     }
 
     /**
@@ -691,6 +711,15 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
 
         public GetFileAccessResult unmarshall(InputStream in) throws Exception {
             return new ViPRResponsesSaxParser().parseFileAccessResult(in).getResult();
+        }
+    }
+
+    public static final class ListDataNodesResultUnmarshaller implements
+            Unmarshaller<ListDataNodesResult, InputStream> {
+
+        @Override
+        public ListDataNodesResult unmarshall(InputStream in) throws Exception {
+            return new ViPRResponsesSaxParser().parseListDataNodeResult(in).getResult();
         }
     }
 }

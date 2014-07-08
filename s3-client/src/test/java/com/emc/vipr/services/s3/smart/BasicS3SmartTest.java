@@ -14,29 +14,43 @@
  */
 package com.emc.vipr.services.s3.smart;
 
-import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.emc.vipr.ribbon.ViPRDataServicesServerList;
 import com.emc.vipr.services.s3.BasicS3Test;
 import com.emc.vipr.services.s3.S3ClientFactory;
+import com.emc.vipr.services.s3.ViPRS3;
+import com.emc.vipr.services.s3.ViPRS3Client;
+import com.netflix.client.AbstractLoadBalancerAwareClient;
+import com.netflix.client.ClientFactory;
+import com.netflix.loadbalancer.LoadBalancerStats;
+import com.netflix.loadbalancer.ZoneAwareLoadBalancer;
+import org.junit.After;
 import org.junit.Assume;
-import org.junit.Before;
 
 public class BasicS3SmartTest extends BasicS3Test {
-    protected String getTestBucket() {
+    private static int localInstanceCounter = 0;
+
+    @Override
+    protected String getTestBucketPrefix() {
         return "basic-s3-smart-tests";
     }
 
-    @Before
-    public void setUp() throws Exception {
-        vipr = S3ClientFactory.getSmartS3Client(false);
-        Assume.assumeTrue("Could not configure S3 connection", vipr != null);
-        try {
-            vipr.createBucket(getTestBucket());
-        } catch (AmazonS3Exception e) {
-            if (e.getStatusCode() == 409) {
-                // Ignore; bucket exists;
-            } else {
-                throw e;
-            }
-        }
+    @Override
+    protected void initS3() throws Exception {
+        s3 = S3ClientFactory.getSmartS3Client(false);
+        Assume.assumeTrue("Could not configure S3 connection", s3 != null);
+        viprS3 = (ViPRS3) s3;
+
+        // force polling for all data service nodes
+        getTestBucket(); // make sure our instanceCounter is accurate
+        AbstractLoadBalancerAwareClient client = (AbstractLoadBalancerAwareClient) ClientFactory.getNamedClient("ViPR.SmartHttpClient_" + ++localInstanceCounter);
+        ZoneAwareLoadBalancer lb = (ZoneAwareLoadBalancer) client.getLoadBalancer();
+        ViPRDataServicesServerList serverList = (ViPRDataServicesServerList) lb.getServerListImpl();
+        serverList.getUpdatedListOfServers();
+    }
+
+    @After
+    public void dumpLBStats() throws Exception {
+        LoadBalancerStats lbStats = ((ViPRS3Client) viprS3).getLoadBalancerStats();
+        System.out.println(lbStats);
     }
 }
