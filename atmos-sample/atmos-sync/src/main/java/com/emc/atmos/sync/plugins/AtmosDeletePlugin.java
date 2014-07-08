@@ -17,6 +17,7 @@ package com.emc.atmos.sync.plugins;
 import com.emc.atmos.AtmosException;
 import com.emc.atmos.api.ObjectIdentifier;
 import com.emc.atmos.api.bean.Metadata;
+import com.emc.atmos.sync.Timeable;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;

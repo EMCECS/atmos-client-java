@@ -22,6 +22,7 @@ import com.emc.atmos.api.bean.ServiceInformation;
 import com.emc.atmos.api.jersey.AtmosApiClient;
 import com.emc.atmos.api.request.CreateObjectRequest;
 import com.emc.atmos.api.request.UpdateObjectRequest;
+import com.emc.atmos.sync.Timeable;
 import com.emc.atmos.sync.util.AtmosUtil;
 import com.emc.atmos.sync.util.Iso8601Util;
 import org.apache.commons.cli.CommandLine;
@@ -279,9 +280,9 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
 				try {
 					ObjectId id = null;
 					// Check and see if a destination ID was alredy computed
-					Set<ObjectAnnotation> anns = obj.getAnnotations(DestinationAtmosId.class);
-					if(anns.size()>0) {
-						id = ((DestinationAtmosId)anns.iterator().next()).getId();
+					DestinationAtmosId ann = obj.getAnnotation(DestinationAtmosId.class);
+					if(ann != null) {
+						id = ann.getId();
 					}
 
 					if(id != null) {
@@ -566,7 +567,7 @@ public class AtmosDestination extends DestinationPlugin implements InitializingB
                 final List<Metadata> retExpList = AtmosUtil.getExpirationMetadataForUpdate( obj.getMetadata() );
                 retExpList.addAll( AtmosUtil.getRetentionMetadataForUpdate( obj.getMetadata() ) );
                 if (retExpList.size() > 0) {
-                    time(new SyncPlugin.Timeable<Void>() {
+                    time(new Timeable<Void>() {
                         @Override
                         public Void call() {
                             atmos.setUserMetadata( destId, retExpList.toArray( new Metadata[retExpList.size()] ) );

@@ -15,6 +15,8 @@
 package com.emc.atmos.sync;
 
 import com.emc.atmos.sync.plugins.*;
+import com.emc.atmos.sync.plugins.cas.CasDestination;
+import com.emc.atmos.sync.plugins.cas.CasSource;
 import com.emc.atmos.sync.util.TimingUtil;
 import org.apache.commons.cli.*;
 import org.apache.log4j.LogMF;
@@ -59,6 +61,8 @@ public class AtmosSync2 implements Runnable, InitializingBean, DisposableBean {
         plugins.add(new PolicyTransitionPlugin());
         plugins.add(new S3Destination());
         plugins.add(new LoggingPlugin());
+        plugins.add(new CasSource());
+        plugins.add(new CasDestination());
         try {
             plugins.add(new ArchiveFileSource());
         } catch (UnsupportedClassVersionError e) {
