@@ -14,7 +14,6 @@
  */
 package com.emc.atmos.sync.util.test;
 
-import com.emc.atmos.sync.AtmosSync2;
 import com.emc.atmos.sync.plugins.ArchiveFileSource;
 import com.emc.atmos.sync.plugins.DummyDestination;
 import net.java.truevfs.access.TFile;
@@ -75,15 +74,6 @@ public class ArchiveSourceTest {
         Assert.assertEquals("Failures detected", 0, source.getFailedCount());
         Assert.assertEquals("Wrong number of files transferred", 4, source.getCompletedCount());
         Assert.assertEquals("Wrong number of bytes transferred", 26, source.getByteCount());
-    }
-
-    @Test
-    public void testTarGzipCli() throws Exception {
-        File file = File.createTempFile("test", ".tar.gz");
-        file.deleteOnExit();
-        writeFile(file, TAR_GZ_CONTENT);
-
-        AtmosSync2.main(new String[]{"-source", "archive:" + file.getAbsolutePath(), "--source-threads", "10", "-destination", "dummy", "--sink-data"});
     }
 
     private void writeFile(File file, byte[] content) throws IOException {
