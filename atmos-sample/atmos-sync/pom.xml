@@ -1,14 +1,13 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>com.emc.vipr</groupId>
     <artifactId>atmos-sample</artifactId>
-    <version>2.2-SNAPSHOT</version>
+    <version>2.2</version>
   </parent>
   <groupId>com.emc.vipr.samples.atmos</groupId>
   <artifactId>atmos-sync</artifactId>
-  <version>2.2-SNAPSHOT</version>
+  <version>2.2</version>
 
   <properties>
     <truevfs.version>0.10.6</truevfs.version>
@@ -30,7 +29,7 @@
         <artifactId>maven-shade-plugin</artifactId>
         <configuration>
           <transformers>
-            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
             <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
               <manifestEntries>
                 <Main-Class>com.emc.atmos.sync.AtmosSync2</Main-Class>
@@ -62,7 +61,7 @@
     <dependency>
       <groupId>com.emc.vipr</groupId>
       <artifactId>atmos-client</artifactId>
-      <version>2.2-SNAPSHOT</version>
+      <version>2.2</version>
     </dependency>
     <dependency>
       <groupId>net.sf.jgrapht</groupId>
@@ -143,7 +142,7 @@
     <dependency>
       <groupId>com.emc.vipr</groupId>
       <artifactId>dataservices-common</artifactId>
-      <version>1.1.2-SNAPSHOT</version>
+      <version>2.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
