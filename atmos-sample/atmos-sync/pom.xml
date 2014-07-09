@@ -3,11 +3,11 @@
   <parent>
     <groupId>com.emc.vipr</groupId>
     <artifactId>atmos-sample</artifactId>
-    <version>2.2</version>
+    <version>2.2.1-SNAPSHOT</version>
   </parent>
   <groupId>com.emc.vipr.samples.atmos</groupId>
   <artifactId>atmos-sync</artifactId>
-  <version>2.2</version>
+  <version>2.2.1-SNAPSHOT</version>
 
   <properties>
     <truevfs.version>0.10.6</truevfs.version>
@@ -61,7 +61,7 @@
     <dependency>
       <groupId>com.emc.vipr</groupId>
       <artifactId>atmos-client</artifactId>
-      <version>2.2</version>
+      <version>2.2.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>net.sf.jgrapht</groupId>
@@ -142,7 +142,7 @@
     <dependency>
       <groupId>com.emc.vipr</groupId>
       <artifactId>dataservices-common</artifactId>
-      <version>2.0</version>
+      <version>2.1-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
