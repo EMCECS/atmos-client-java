@@ -49,7 +49,12 @@ public class CasMigrationTest {
 
     @Before
     public void setup() throws Exception {
-        Properties viprProperties = ViprConfig.getProperties();
+        Properties viprProperties = null;
+        try {
+            viprProperties = ViprConfig.getProperties();
+        } catch(FileNotFoundException e) {
+            Assume.assumeFalse("Could not load vipr.properties", true);
+        }
 
         connectString1 = viprProperties.getProperty(ViprConfig.PROP_CAS_CONNECT_STRING);
         connectString2 = viprProperties.getProperty(ViprConfig.PROP_CAS_CONNECT_STRING + "2");
