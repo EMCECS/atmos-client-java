@@ -19,7 +19,6 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3EncryptionClient;
-import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.EncryptionMaterials;
 import com.emc.vipr.services.lib.ViprConfig;
 import org.apache.commons.codec.binary.Base64;
@@ -81,12 +80,6 @@ public class S3ClientFactory {
             else viprConfig.withS3Endpoints(endpoint);
 
             ViPRS3Client client = smart ? new ViPRS3Client(viprConfig) : new ViPRS3Client(endpoint, creds);
-
-            if (smart) {
-                S3ClientOptions s3ClientOptions = new S3ClientOptions();
-                s3ClientOptions.setPathStyleAccess(true);
-                client.setS3ClientOptions(s3ClientOptions);
-            }
 
             String namespace = props.getProperty(ViprConfig.PROP_NAMESPACE);
             if (namespace != null && setNamespace) {

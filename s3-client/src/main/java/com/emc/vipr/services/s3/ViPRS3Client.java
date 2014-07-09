@@ -30,6 +30,7 @@ import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.internal.*;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.transform.Unmarshaller;
@@ -136,6 +137,11 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         super(viprConfig.getCredentialsProvider(), viprConfig.getClientConfiguration());
         this.client = new ViPRS3HttpClient(viprConfig);
         setEndpoint(viprConfig.getProtocol() + "://" + viprConfig.getVipHost());
+
+        // enable path-style requests (cannot use DNS with client-side load balancing)
+        S3ClientOptions options = new S3ClientOptions();
+        options.setPathStyleAccess(true);
+        setS3ClientOptions(options);
     }
 
     public LoadBalancerStats getLoadBalancerStats() {
