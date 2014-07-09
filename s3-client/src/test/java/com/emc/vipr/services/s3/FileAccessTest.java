@@ -48,8 +48,14 @@ public class FileAccessTest extends AbstractViPRS3Test {
         Assume.assumeFalse("false".equals(ViprConfig.getProperties().getProperty(ViprConfig.PROP_FILE_ACCESS_TESTS_ENABLED, "true")));
     }
 
+
+
     @Override
     protected void createBucket() throws Exception {
+        if("false".equals(ViprConfig.getProperties().getProperty(ViprConfig.PROP_FILE_ACCESS_TESTS_ENABLED, "true"))) {
+            return;
+        }
+
         ViPRCreateBucketRequest request = new ViPRCreateBucketRequest(getTestBucket());
         request.setFsAccessEnabled(true);
         s3.createBucket(request);
@@ -57,6 +63,10 @@ public class FileAccessTest extends AbstractViPRS3Test {
 
     @Override
     protected void cleanUpBucket() throws Exception {
+        if("false".equals(ViprConfig.getProperties().getProperty(ViprConfig.PROP_FILE_ACCESS_TESTS_ENABLED, "true"))) {
+            return;
+        }
+
         try {
             SetBucketFileAccessModeRequest requestDisabled = new SetBucketFileAccessModeRequest();
             requestDisabled.setBucketName(getTestBucket());
