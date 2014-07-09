@@ -50,6 +50,9 @@ public class BasicS3SmartTest extends BasicS3Test {
 
     @After
     public void dumpLBStats() throws Exception {
+        if(s3 == null) {
+            return;
+        }
         LoadBalancerStats lbStats = ((ViPRS3Client) viprS3).getLoadBalancerStats();
         System.out.println(lbStats);
     }

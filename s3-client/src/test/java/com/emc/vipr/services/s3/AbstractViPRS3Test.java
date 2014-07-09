@@ -77,6 +77,9 @@ public abstract class AbstractViPRS3Test {
 
     @After
     public void tearDown() throws Exception {
+        if(s3 == null) {
+            return;
+        }
         cleanUpBucket();
         clearTestBucket();
     }
