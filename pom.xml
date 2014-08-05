@@ -23,12 +23,10 @@
 
   <modules>
     <module>s3-client</module><!-- RELEASE PROJECT -->
-    <module>s3-sample</module>
     <module>jersey-apache-httpclient4</module><!-- RELEASE PROJECT -->
     <module>atmos-client</module><!-- RELEASE PROJECT -->
     <module>dataservices-common</module>
     <module>vipr-object-transformations</module><!-- RELEASE PROJECT -->
-    <module>atmos-sample</module>
     <module>smart-client</module><!-- RELEASE PROJECT -->
   </modules>
 
