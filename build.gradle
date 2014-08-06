@@ -20,20 +20,33 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'org.ajoberstar:gradle-git:0.6.3',
+        classpath 'org.ajoberstar:gradle-git:0.9.0',
                 'com.eriwen:gradle-cobertura-plugin:1.1.1'
     }
 }
 
 allprojects {
+    group 'com.emc.vipr'
     apply plugin: 'idea'
     apply plugin: 'eclipse'
+
+    task printVersion << {
+        println "version: $project.version"
+    }
+}
+
+apply plugin: 'grgit-release'
+
+import org.ajoberstar.grgit.*
+
+release {
+    grgit = Grgit.open(project.file('.'))
+    releaseTasks = ['test', 'uploadArchives', 'publishGhPages']
 }
 
 subprojects {
-    group = 'com.emc.vipr'
-    if (project.name == 'atmos-client') version = '2.2.1-SNAPSHOT'
-    else version = '2.1-SNAPSHOT'
+    if (project.name == 'atmos-client') version = '2.2.1'
+    else version = rootProject.version
 
     apply plugin: 'java'
     apply plugin: 'cobertura'
@@ -180,7 +193,7 @@ githubPages {
         from aggregatedDocsDir
     }
 }
-processGhPages.dependsOn subprojects.aggregateDocs
+publishGhPages.dependsOn subprojects.aggregateDocs
 
 clean {
     delete aggregatedDocsDir
