@@ -17,7 +17,7 @@ description = 'ViPR Object Transformations - Implements generic compression and 
 dependencies {
     compile 'org.b1.pack:lzma-sdk-4j:9.22.0',
             'org.slf4j:slf4j-api:1.7.5',
-            'commons-codec:commons-codec:1.3'
+            'commons-codec:commons-codec:1.4'
     testCompile 'junit:junit:4.11',
             'org.slf4j:slf4j-simple:1.7.5'
 }

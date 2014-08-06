@@ -17,5 +17,6 @@ description = 'ViPR S3 Client for Java - extends the Amazon S3 client to add ViP
 dependencies {
 compile 'com.emc.vipr:aws-java-sdk:1.7.5'
     compile project(':smart-client')
+    testCompile 'junit:junit:4.11'
     testCompile project(':dataservices-common')
 }

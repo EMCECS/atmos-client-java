@@ -43,12 +43,14 @@ subprojects {
 
     defaultTasks 'distZip'
 
-    tasks.withType(Compile) {
-        options.encoding = 'UTF-8'
-    }
+    [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
     repositories {
         mavenCentral()
+    }
+
+    test {
+        jvmArgs '-XX:-UseSplitVerifier'
     }
 
     def projectPom = {
