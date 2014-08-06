@@ -41,6 +41,12 @@ subprojects {
     apply plugin: 'signing'
     apply plugin: 'maven'
 
+    defaultTasks 'distZip'
+
+    tasks.withType(Compile) {
+        options.encoding = 'UTF-8'
+    }
+
     repositories {
         mavenCentral()
     }
