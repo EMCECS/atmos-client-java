@@ -31,6 +31,8 @@ allprojects {
     apply plugin: 'eclipse'
 }
 
+import org.ajoberstar.grgit.*
+
 gradle.taskGraph.whenReady { taskGraph ->
     if (taskGraph.allTasks.any { it.name == 'uploadArchives' }) {
         def sonatypePass = new String(System.console().readPassword('\nSonatype password: '))
@@ -46,6 +48,10 @@ gradle.taskGraph.whenReady { taskGraph ->
     }
     if (taskGraph.hasTask(':publishGhPages')) {
         githubPages.credentials.password = new String(System.console().readPassword('\nGithub password: '))
+    }
+    if (taskGraph.hasTask(':release')) {
+        gitPassword = new String(System.console().readPassword('\nASD git password: '))
+        release.grgit = Grgit.open(project.file('.'), new Credentials(gitUsername, gitPassword))
     }
 }
 
@@ -204,10 +210,7 @@ githubPages {
 }
 publishGhPages.dependsOn subprojects.aggregateDocs
 
-import org.ajoberstar.grgit.*
-
 release {
-    release.grgit = Grgit.open(project.file('.'))
     releaseTasks = subprojects.test + subprojects.distZip + subprojects.uploadArchives + publishGhPages
 }
 
