@@ -50,7 +50,7 @@ gradle.taskGraph.whenReady { taskGraph ->
         githubPages.credentials.password = new String(System.console().readPassword('\nGithub password: '))
     }
     if (taskGraph.hasTask(':release')) {
-        gitPassword = new String(System.console().readPassword('\nASD git password: '))
+        def gitPassword = new String(System.console().readPassword('\nASD git password: '))
         release.grgit = Grgit.open(project.file('.'), new Credentials(gitUsername, gitPassword))
     }
 }
@@ -211,6 +211,7 @@ githubPages {
 publishGhPages.dependsOn subprojects.aggregateDocs
 
 release {
+    grgit = Grgit.open(project.file('.'))
     releaseTasks = subprojects.test + subprojects.distZip + subprojects.uploadArchives + publishGhPages
 }
 
