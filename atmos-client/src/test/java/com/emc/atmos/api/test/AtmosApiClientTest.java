@@ -102,7 +102,7 @@ public class AtmosApiClientTest {
                 l4j.warn( "Could not delete test dir: ", e );
             }
         }
-        
+
         if(!isVipr) {
             try {
                 ListAccessTokensResponse response = this.api.listAccessTokens( new ListAccessTokensRequest() );
@@ -1290,7 +1290,7 @@ public class AtmosApiClientTest {
         for ( DirectoryEntry de : dirList ) {
             if ( new ObjectPath( dirPath, de.getFilename() ).equals( op ) ) {
                 // Check the metadata
-                Assert.assertNotNull("Missing metadata 'listable'", 
+                Assert.assertNotNull("Missing metadata 'listable'",
                         de.getUserMetadataMap().get( "listable" ));
                 Assert.assertEquals( "Wrong value on metadata",
                                          de.getUserMetadataMap().get( "listable" ).getValue(), "foo" );
@@ -1934,6 +1934,55 @@ public class AtmosApiClientTest {
         Assert.assertTrue( "object content wrong",
                            Arrays.equals( content,
                                           this.api.readObject( crazyPath, null, byte[].class ) ) );
+    }
+
+    @Test
+    public void testPositiveChecksumValidation() throws Exception {
+        byte[] data = "Hello Checksums!".getBytes("UTF-8");
+        RunningChecksum md5 = new RunningChecksum(ChecksumAlgorithm.MD5);
+        RunningChecksum sha0 = new RunningChecksum(ChecksumAlgorithm.SHA0);
+        RunningChecksum sha1 = new RunningChecksum(ChecksumAlgorithm.SHA1);
+        md5.update(data, 0, data.length);
+        sha0.update(data, 0, data.length);
+        sha1.update(data, 0, data.length);
+
+        CreateObjectRequest request = new CreateObjectRequest().content(data);
+        ObjectId md5Id = api.createObject(request.wsChecksum(md5)).getObjectId();
+        ObjectId sha0Id = api.createObject(request.wsChecksum(sha0)).getObjectId();
+        ObjectId sha1Id = api.createObject(request.wsChecksum(sha1)).getObjectId();
+        cleanup.add(md5Id);
+        cleanup.add(sha0Id);
+        cleanup.add(sha1Id);
+
+        Assert.assertEquals("MD5 checksum was not equal",
+                md5, api.readObject(new ReadObjectRequest().identifier(md5Id), byte[].class).getWsChecksum());
+        Assert.assertEquals("SHA0 checksum was not equal",
+                sha0, api.readObject(new ReadObjectRequest().identifier(sha0Id), byte[].class).getWsChecksum());
+        Assert.assertEquals("SHA1 checksum was not equal",
+                sha1, api.readObject(new ReadObjectRequest().identifier(sha1Id), byte[].class).getWsChecksum());
+
+        // do a bunch of calls to make sure we don't try to validate
+        api.getSystemMetadata(md5Id);
+        api.getObjectMetadata(sha1Id);
+        api.getObjectInfo(sha0Id);
+        api.readObject(md5Id, new Range(1, 8), byte[].class);
+        api.listVersions(new ListVersionsRequest().objectId(sha1Id));
+        api.getAcl(sha0Id);
+
+        Assert.assertTrue("object stream is not a ChecksummedInputStream",
+                api.readObjectStream(sha0Id, null).getObject() instanceof ChecksummedInputStream);
+
+        // test update
+        byte[] appendData = " and stuff!".getBytes("UTF-8");
+        md5.update(appendData, 0, appendData.length);
+        UpdateObjectRequest uRequest = new UpdateObjectRequest().identifier(md5Id).content(appendData).wsChecksum(md5);
+        uRequest.setRange(new Range(data.length, data.length + appendData.length - 1));
+        api.updateObject(uRequest);
+
+        Assert.assertTrue("object stream is not a ChecksummedInputStream",
+                api.readObjectStream(md5Id, null).getObject() instanceof ChecksummedInputStream);
+
+        api.readObject(md5Id, byte[].class);
     }
 
     /**
