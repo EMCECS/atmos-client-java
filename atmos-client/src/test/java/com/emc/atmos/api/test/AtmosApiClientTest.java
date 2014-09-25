@@ -811,6 +811,15 @@ public class AtmosApiClientTest {
         Assert.assertNull( "value of 'listable' should not have been returned", meta.get( "listable" ) );
     }
 
+    @Test
+    public void testObjectExists() {
+        ObjectId oid = api.createObject("Hello exists!", "text/plain");
+        Assert.assertTrue("object exists!", api.objectExists(oid));
+
+        api.delete(oid);
+        Assert.assertFalse("object does not exist!", api.objectExists(oid));
+    }
+
     /**
      * Test listing objects by a tag that doesn't exist
      */
@@ -2048,19 +2057,20 @@ public class AtmosApiClientTest {
         // Check policyname
         Map<String,Metadata> sysmeta = this.api.getSystemMetadata(id, "policyname");
         Assert.assertNotNull("Missing system metadata 'policyname'", sysmeta.get("policyname") );
-        Assume.assumeTrue("policyname != retaindelete", "retaindelete".equals(sysmeta.get("policyname").getValue()));
 
         // Get the object info
         ObjectInfo oi = this.api.getObjectInfo( id );
         Assert.assertNotNull( "ObjectInfo null", oi );
-        Assert.assertNotNull( "ObjectInfo expiration null", oi.getExpiration().getEndAt() );
         Assert.assertNotNull( "ObjectInfo objectid null", oi.getObjectId() );
         Assert.assertTrue( "ObjectInfo numReplicas is 0", oi.getNumReplicas() > 0 );
         Assert.assertNotNull( "ObjectInfo replicas null", oi.getReplicas() );
-        Assert.assertNotNull( "ObjectInfo retention null", oi.getRetention().getEndAt() );
         Assert.assertNotNull( "ObjectInfo selection null", oi.getSelection() );
         Assert.assertTrue( "ObjectInfo should have at least one replica", oi.getReplicas().size() > 0 );
 
+        // only run these tests if the policy configuration is valid
+        Assume.assumeTrue("policyname != retaindelete", "retaindelete".equals(sysmeta.get("policyname").getValue()));
+        Assert.assertNotNull( "ObjectInfo expiration null", oi.getExpiration().getEndAt() );
+        Assert.assertNotNull( "ObjectInfo retention null", oi.getRetention().getEndAt() );
         api.setUserMetadata( id, new Metadata( "user.maui.retentionEnable", "false", false ) );
     }
 
