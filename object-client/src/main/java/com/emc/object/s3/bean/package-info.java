@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 EMC Corporation. All Rights Reserved.
+ * Copyright 2013 EMC Corporation. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -12,11 +12,8 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-description = 'ViPR S3 Client for Java - extends the Amazon S3 client to add ViPR extended functionality.'
+@XmlSchema(namespace = "http://s3.amazonaws.com/doc/2006-03-01/", elementFormDefault = javax.xml.bind.annotation.XmlNsForm.QUALIFIED)
+@XmlJavaTypeAdapter(value = com.emc.object.util.Iso8601Adapter.class, type = java.util.Date.class) package com.emc.object.s3.bean;
 
-dependencies {
-compile 'com.emc.vipr:aws-java-sdk:1.7.5'
-    compile project(':smart-client')
-    testCompile 'junit:junit:4.11'
-    testCompile project(':dataservices-common')
-}
+import javax.xml.bind.annotation.XmlSchema;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
