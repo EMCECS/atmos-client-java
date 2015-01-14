@@ -37,7 +37,6 @@ import com.amazonaws.transform.Unmarshaller;
 import com.amazonaws.util.BinaryUtils;
 import com.amazonaws.util.Md5Utils;
 import com.emc.vipr.services.s3.model.*;
-import com.netflix.loadbalancer.LoadBalancerStats;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -136,7 +135,7 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
      */
     public ViPRS3Client(ViPRS3Config viprConfig) {
         super(viprConfig.getCredentialsProvider(), viprConfig.getClientConfiguration());
-        this.client = new ViPRS3HttpClient(viprConfig);
+//        this.client = new ViPRS3HttpClient(viprConfig);
         setEndpoint(viprConfig.getProtocol() + "://" + viprConfig.getVipHost());
 
         // enable path-style requests (cannot use DNS with client-side load balancing)
@@ -145,11 +144,11 @@ public class ViPRS3Client extends AmazonS3Client implements ViPRS3, AmazonS3 {
         setS3ClientOptions(options);
     }
 
-    public LoadBalancerStats getLoadBalancerStats() {
-        if (client instanceof ViPRS3HttpClient)
-            return ((ViPRS3HttpClient) client).getLoadBalancerStats();
-        throw new UnsupportedOperationException("this is not a load-balanced client (try constructing it with ViPRS3Config)");
-    }
+//    public LoadBalancerStats getLoadBalancerStats() {
+//        if (client instanceof ViPRS3HttpClient)
+//            return ((ViPRS3HttpClient) client).getLoadBalancerStats();
+//        throw new UnsupportedOperationException("this is not a load-balanced client (try constructing it with ViPRS3Config)");
+//    }
 
     public UpdateObjectResult updateObject(String bucketName, String key,
             File file, long startOffset) throws AmazonClientException {

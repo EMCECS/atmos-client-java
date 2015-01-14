@@ -17,8 +17,7 @@ package com.emc.vipr.services.s3;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.emc.vipr.ribbon.SmartClientConfig;
-import com.netflix.loadbalancer.Server;
+//import com.netflix.loadbalancer.Server;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -157,23 +156,23 @@ public class ViPRS3Config {
         return this;
     }
 
-    public SmartClientConfig toSmartClientConfig() {
-        SmartClientConfig smartConfig = new SmartClientConfig().withInitialNodes(toServers(s3Endpoints)).withVipAddresses(vipHost)
-                .withPollProtocol(protocol.toString())
-                .withUsername(credentialsProvider.getCredentials().getAWSAccessKeyId())
-                .withSecret(credentialsProvider.getCredentials().getAWSSecretKey());
-        if (pollInterval > 0) smartConfig.setPollInterval(pollInterval);
-        if (timeout > 0) smartConfig.setTimeout(timeout);
-        return smartConfig;
-    }
-
-    protected Server[] toServers(List<URI> uris) {
-        List<Server> servers = new ArrayList<Server>();
-        for (URI uri : uris) {
-            int port = uri.getPort();
-            if (port == -1) port = (uri.getScheme().equalsIgnoreCase("https") ? 443 : 80);
-            servers.add(new Server(uri.getHost(), port));
-        }
-        return servers.toArray(new Server[servers.size()]);
-    }
+//    public SmartConfig toSmartClientConfig() {
+//        SmartConfig smartConfig = new SmartConfig().withInitialNodes(toServers(s3Endpoints)).withVipAddresses(vipHost)
+//                .withPollProtocol(protocol.toString())
+//                .withUsername(credentialsProvider.getCredentials().getAWSAccessKeyId())
+//                .withSecret(credentialsProvider.getCredentials().getAWSSecretKey());
+//        if (pollInterval > 0) smartConfig.setPollInterval(pollInterval);
+//        if (timeout > 0) smartConfig.setTimeout(timeout);
+//        return smartConfig;
+//    }
+//
+//    protected Server[] toServers(List<URI> uris) {
+//        List<Server> servers = new ArrayList<Server>();
+//        for (URI uri : uris) {
+//            int port = uri.getPort();
+//            if (port == -1) port = (uri.getScheme().equalsIgnoreCase("https") ? 443 : 80);
+//            servers.add(new Server(uri.getHost(), port));
+//        }
+//        return servers.toArray(new Server[servers.size()]);
+//    }
 }

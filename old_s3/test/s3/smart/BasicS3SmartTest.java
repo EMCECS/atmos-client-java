@@ -14,15 +14,9 @@
  */
 package com.emc.vipr.services.s3.smart;
 
-import com.emc.vipr.ribbon.ViPRDataServicesServerList;
 import com.emc.vipr.services.s3.BasicS3Test;
 import com.emc.vipr.services.s3.S3ClientFactory;
 import com.emc.vipr.services.s3.ViPRS3;
-import com.emc.vipr.services.s3.ViPRS3Client;
-import com.netflix.client.AbstractLoadBalancerAwareClient;
-import com.netflix.client.ClientFactory;
-import com.netflix.loadbalancer.LoadBalancerStats;
-import com.netflix.loadbalancer.ZoneAwareLoadBalancer;
 import org.junit.After;
 import org.junit.Assume;
 
@@ -42,10 +36,10 @@ public class BasicS3SmartTest extends BasicS3Test {
 
         // force polling for all data service nodes
         getTestBucket(); // make sure our instanceCounter is accurate
-        AbstractLoadBalancerAwareClient client = (AbstractLoadBalancerAwareClient) ClientFactory.getNamedClient("ViPR.SmartHttpClient_" + ++localInstanceCounter);
-        ZoneAwareLoadBalancer lb = (ZoneAwareLoadBalancer) client.getLoadBalancer();
-        ViPRDataServicesServerList serverList = (ViPRDataServicesServerList) lb.getServerListImpl();
-        serverList.getUpdatedListOfServers();
+//        AbstractLoadBalancerAwareClient client = (AbstractLoadBalancerAwareClient) ClientFactory.getNamedClient("ViPR.SmartHttpClient_" + ++localInstanceCounter);
+//        ZoneAwareLoadBalancer lb = (ZoneAwareLoadBalancer) client.getLoadBalancer();
+//        ViPRDataServicesServerList serverList = (ViPRDataServicesServerList) lb.getServerListImpl();
+//        serverList.getUpdatedListOfServers();
     }
 
     @After
@@ -53,7 +47,7 @@ public class BasicS3SmartTest extends BasicS3Test {
         if(s3 == null) {
             return;
         }
-        LoadBalancerStats lbStats = ((ViPRS3Client) viprS3).getLoadBalancerStats();
-        System.out.println(lbStats);
+//        LoadBalancerStats lbStats = ((ViPRS3Client) viprS3).getLoadBalancerStats();
+//        System.out.println(lbStats);
     }
 }

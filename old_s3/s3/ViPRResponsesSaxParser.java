@@ -14,8 +14,6 @@
  */
 package com.emc.vipr.services.s3;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.services.s3.model.transform.XmlResponsesSaxParser;
 import com.emc.vipr.services.s3.model.FileAccessObject;
 import com.emc.vipr.services.s3.model.GetFileAccessResult;
 import com.emc.vipr.services.s3.model.ListDataNodesResult;
@@ -32,7 +30,7 @@ import java.util.List;
 /**
  * Overrides XmlResponsesSaxParser to provide additional parsing for ViPR-specific S3 XML responses.
  */
-public class ViPRResponsesSaxParser extends XmlResponsesSaxParser {
+public class ViPRResponsesSaxParser {
     private static final Log log = LogFactory.getLog(ViPRResponsesSaxParser.class);
 
     /**
@@ -45,10 +43,9 @@ public class ViPRResponsesSaxParser extends XmlResponsesSaxParser {
      * @throws com.amazonaws.AmazonClientException
      *
      */
-    public FileAccessResultHandler parseFileAccessResult(InputStream inputStream)
-            throws AmazonClientException {
+    public FileAccessResultHandler parseFileAccessResult(InputStream inputStream) {
         FileAccessResultHandler handler = new FileAccessResultHandler();
-        parseXmlInputStream(handler, inputStream);
+        //parseXmlInputStream(handler, inputStream);
         return handler;
     }
 
@@ -155,10 +152,9 @@ public class ViPRResponsesSaxParser extends XmlResponsesSaxParser {
      * @throws com.amazonaws.AmazonClientException
      *
      */
-    public ListDataNodesResultHandler parseListDataNodeResult(InputStream inputStream)
-            throws AmazonClientException {
+    public ListDataNodesResultHandler parseListDataNodeResult(InputStream inputStream) {
         ListDataNodesResultHandler handler = new ListDataNodesResultHandler();
-        parseXmlInputStream(handler, inputStream);
+//        parseXmlInputStream(handler, inputStream);
         return handler;
     }
 
