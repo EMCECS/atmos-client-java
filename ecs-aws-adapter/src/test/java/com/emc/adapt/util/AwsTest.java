@@ -94,7 +94,7 @@ public class AwsTest {
         String readContent = new Scanner(object.getObjectContent(), "UTF-8").useDelimiter("\\A").next();
         Assert.assertEquals("content mismatch", content, readContent);
 
-        String newContent = "Hello Waldo!";
+        String newContent = "Goodbye World";
         s3.putObject(bucket, key, new StringInputStream(newContent), null);
 
         object = s3.getObject(bucket, key);
