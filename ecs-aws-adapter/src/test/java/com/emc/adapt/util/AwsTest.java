@@ -1,4 +1,4 @@
-package com.emc.adapt.util;
+package test.java.com.emc.adapt.util;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.HttpMethod;
@@ -10,7 +10,6 @@ import com.amazonaws.services.s3.model.*;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.amazonaws.util.StringInputStream;
-import com.emc.atmos.util.RandomInputStream;
 import com.emc.vipr.services.lib.ViprConfig;
 import org.junit.After;
 import org.junit.Assert;
@@ -229,7 +228,7 @@ public class AwsTest {
         tmpFile.deleteOnExit();
         int objectSize = 100 * 1024 * 1024; // 100M
 
-        copyStream(new RandomInputStream(objectSize), new FileOutputStream(tmpFile));
+        copyStream(new ByteArrayInputStream(new byte[objectSize]), new FileOutputStream(tmpFile));
 
         Assert.assertEquals("tmp file is not the right size", objectSize, tmpFile.length());
 
@@ -310,14 +309,14 @@ public class AwsTest {
         UploadPartRequest request = new UploadPartRequest();
         request.withBucketName(bucket).withKey(key)
                 .withUploadId(result.getUploadId()).withPartNumber(1)
-                .withInputStream(new RandomInputStream(partSize))
+                .withInputStream(new ByteArrayInputStream(new byte[partSize]))
                 .withPartSize(partSize);
         String etag1 = s3.uploadPart(request).getETag();
 
         // send part 2
         request.withBucketName(bucket).withKey(key)
                 .withUploadId(result.getUploadId()).withPartNumber(2)
-                .withInputStream(new RandomInputStream(partSize))
+                .withInputStream(new ByteArrayInputStream(new byte[partSize]))
                 .withPartSize(partSize);
         String etag2 = s3.uploadPart(request).getETag();
 
