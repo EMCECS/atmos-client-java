@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.regions.Region;
@@ -33,39 +34,57 @@ import com.emc.object.s3.S3Config;
 import com.emc.object.s3.S3ObjectMetadata;
 import com.emc.object.s3.bean.*;
 import com.emc.object.s3.bean.PutObjectResult;
-import com.emc.rest.smart.SmartClientFactory;
+import com.emc.object.s3.jersey.S3JerseyClient;
 
 /**
  * Amazon S3 adapter for ECS smart client.
  */
 public class SmartClientAdapter implements AmazonS3 {
 
-    protected S3Config config;
     protected S3Client client;
+    protected S3Config config;
 
     /**
      * Constructor for AWS adapter.
      *
-     * @param config S3Config object to configure S3Client.
+     * @param endpoints List of target endpoints for this client.
+     * @param accessKey Access key for this client.
+     * @param secretKey Secret key for this client.
      */
-    public SmartClientAdapter(S3Config config) {
-        this.config = config;
-        this.client = (S3Client)SmartClientFactory.createSmartClient(config.toSmartConfig());
+    public SmartClientAdapter(String endpoints, String accessKey, String secretKey) {
+        this.config = new S3Config();
+        setEndpoint(endpoints);
+        config.withIdentity(accessKey).withSecretKey(secretKey);
+        this.client = new S3JerseyClient(this.config);
     }
 
     /**
-     * Adds designated endpoint to the list of client endpoints.
+     * Constructor for AWS adapter.
      *
-     * @param endpoint The endpoint to be added to the list of communicable endpoints
-     *                 for this client.
+     * @param config S3Config object containing endpoint and access
+     *               credentials for client.
+     */
+    public SmartClientAdapter(S3Config config) {
+        this.config = config;
+        this.client = new S3JerseyClient(this.config);
+    }
+
+    /**
+     * Adds designated endpoint to the list of endpoints.
+     *
+     * @param endpoints The list of communicable endpoints for this client.
      */
     @Override
-    public void setEndpoint(String endpoint) {
-        try {
-            config.getEndpoints().add(new URI(endpoint));
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
+    public void setEndpoint(String endpoints) {
+        List<URI> uris = config.getEndpoints();
+        for (String uri : endpoints.split(",")) {
+            try {
+                uris.add(new URI(uri));
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
         }
+        config.setEndpoints(uris);
     }
 
     /**
@@ -1082,6 +1101,18 @@ public class SmartClientAdapter implements AmazonS3 {
     }
 
     /**
+     * Sets lifecycle configuraton for the specified bucket.
+     * Not supported by smart client.
+     *
+     * @param setBucketLifecycleConfigurationRequest Request object containing name of target bucket and
+     *                                                 new bucket lifecycle configuration.
+     */
+    @Override
+    public void setBucketLifecycleConfiguration(SetBucketLifecycleConfigurationRequest setBucketLifecycleConfigurationRequest) {
+        setBucketLifecycleConfiguration(setBucketLifecycleConfigurationRequest.getBucketName(), setBucketLifecycleConfigurationRequest.getLifecycleConfiguration());
+    }
+
+    /**
      * Deletes lifecycle configuraton for the specified bucket.
      * Not supported by smart client.
      *
@@ -1090,6 +1121,18 @@ public class SmartClientAdapter implements AmazonS3 {
     @Override
     public void deleteBucketLifecycleConfiguration(String bucketName) {
         client.deleteBucketLifecycle(bucketName);
+    }
+
+    /**
+     * Deletes lifecycle configuraton for the specified bucket.
+     * Not supported by smart client.
+     *
+     * @param deleteBucketLifecycleConfigurationRequest Request object containing name of bucket
+     *                                                  for which to delete lifecycle configuration.
+     */
+    @Override
+    public void deleteBucketLifecycleConfiguration(DeleteBucketLifecycleConfigurationRequest deleteBucketLifecycleConfigurationRequest) {
+
     }
 
     /**
@@ -1142,6 +1185,17 @@ public class SmartClientAdapter implements AmazonS3 {
     }
 
     /**
+     * Sets cross origin configuration for specified bucket.
+     *
+     * @param setBucketCrossOriginConfigurationRequest Request object containing name of target bucket and
+     *                                                 new cross origin configuration.
+     */
+    @Override
+    public void setBucketCrossOriginConfiguration(SetBucketCrossOriginConfigurationRequest setBucketCrossOriginConfigurationRequest) {
+        setBucketCrossOriginConfiguration(setBucketCrossOriginConfigurationRequest.getBucketName(), setBucketCrossOriginConfigurationRequest.getCrossOriginConfiguration());
+    }
+
+    /**
      * Deletes cross origin configuration for specified bucket.
      *
      * @param bucketName Name of bucket for which to delete cross origin configuration.
@@ -1149,6 +1203,17 @@ public class SmartClientAdapter implements AmazonS3 {
     @Override
     public void deleteBucketCrossOriginConfiguration(String bucketName) {
         client.deleteBucketCors(bucketName);
+    }
+
+    /**
+     * Deletes cross origin configuration for specified bucket.
+     *
+     * @param deleteBucketCrossOriginConfigurationRequest Request object contanining name of bucket for
+     *                                                    which to delete cross origin configuration.
+     */
+    @Override
+    public void deleteBucketCrossOriginConfiguration(DeleteBucketCrossOriginConfigurationRequest deleteBucketCrossOriginConfigurationRequest) {
+        client.deleteBucketCors(deleteBucketCrossOriginConfigurationRequest.getBucketName());
     }
 
     /**
@@ -1178,6 +1243,19 @@ public class SmartClientAdapter implements AmazonS3 {
     }
 
     /**
+     * Sets bucket tagging configuration for the specified bucket.
+     * Not supported by smart client.
+     *
+     * @param setBucketTaggingConfigurationRequest Request object containing name of target bucket and
+     *                                             new bucket tagging configuration.
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public void setBucketTaggingConfiguration(SetBucketTaggingConfigurationRequest setBucketTaggingConfigurationRequest) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Deletes bucket tagging configuration for the specified bucket.
      * Not supported by smart client.
      *
@@ -1186,6 +1264,19 @@ public class SmartClientAdapter implements AmazonS3 {
      */
     @Override
     public void deleteBucketTaggingConfiguration(String bucketName) throws UnsupportedOperationException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Deletes bucket tagging configuration for the specified bucket.
+     * Not supported by smart client.
+     *
+     * @param deleteBucketTaggingConfigurationRequest Request object containing name of bucket for which to
+     *                                                delete tagging configuration.
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public void deleteBucketTaggingConfiguration(DeleteBucketTaggingConfigurationRequest deleteBucketTaggingConfigurationRequest) {
         throw new UnsupportedOperationException();
     }
 
@@ -1199,6 +1290,19 @@ public class SmartClientAdapter implements AmazonS3 {
      */
     @Override
     public BucketNotificationConfiguration getBucketNotificationConfiguration(String bucketName) throws UnsupportedOperationException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Sets bucket notification configuration for the specified bucket.
+     * Not supported by smart client.
+     *
+     * @param setBucketNotificationConfigurationRequest Request object containing name of target bucket and
+     *                                                  new bucket notification configuration.
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public void setBucketNotificationConfiguration(SetBucketNotificationConfigurationRequest setBucketNotificationConfigurationRequest) throws AmazonClientException, AmazonServiceException {
         throw new UnsupportedOperationException();
     }
 

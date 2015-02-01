@@ -11,6 +11,7 @@ import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.amazonaws.util.StringInputStream;
 import com.emc.vipr.services.lib.ViprConfig;
+import main.java.com.emc.adapt.SmartClientAdapter;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -28,7 +29,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class AwsTest {
-    private static AmazonS3Client s3;
+    private static SmartClientAdapter s3;
     private Map<String, Set<String>> bucketsAndKeys = new TreeMap<String, Set<String>>();
 
     @Test
@@ -359,11 +360,8 @@ public class AwsTest {
         String endpoint = ViprConfig.getPropertyNotEmpty(props, ViprConfig.PROP_S3_ENDPOINT);
         String accessKey = ViprConfig.getPropertyNotEmpty(props, ViprConfig.PROP_S3_ACCESS_KEY_ID);
         String secret = ViprConfig.getPropertyNotEmpty(props, ViprConfig.PROP_S3_SECRET_KEY);
-        String proxyHost = props.getProperty(ViprConfig.PROP_PROXY_HOST);
-        String proxyPortStr = props.getProperty(ViprConfig.PROP_PROXY_PORT);
-        int proxyPort = proxyPortStr == null ? 0 : Integer.parseInt(proxyPortStr);
 
-        s3 = createClient(new URI(endpoint), proxyHost, proxyPort, accessKey, secret);
+        s3 = new SmartClientAdapter(endpoint, accessKey, secret);
     }
 
     private static AmazonS3Client createClient(URI endpoint, String proxyHost, int proxyPort,
