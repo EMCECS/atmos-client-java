@@ -1,4 +1,4 @@
-package main.java.com.emc.adapt;
+package com.emc.adapt;
 
 import java.io.*;
 import java.net.URI;

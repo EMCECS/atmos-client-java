@@ -1,4 +1,4 @@
-package test.java.com.emc.adapt.util;
+package com.emc.adapt;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.HttpMethod;
@@ -10,8 +10,7 @@ import com.amazonaws.services.s3.model.*;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.amazonaws.util.StringInputStream;
-import com.emc.vipr.services.lib.ViprConfig;
-import main.java.com.emc.adapt.SmartClientAdapter;
+import com.emc.util.TestConfig;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -29,6 +28,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class AwsTest {
+    private static final String PROP_S3_ENDPOINT = "s3.endpoint";
+    public static final String PROP_S3_ACCESS_KEY = "s3.access_key";
+    public static final String PROP_S3_SECRET_KEY = "s3.secret_key";
+
     private static SmartClientAdapter s3;
     private Map<String, Set<String>> bucketsAndKeys = new TreeMap<String, Set<String>>();
 
@@ -356,10 +359,10 @@ public class AwsTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        Properties props = ViprConfig.getProperties();
-        String endpoint = ViprConfig.getPropertyNotEmpty(props, ViprConfig.PROP_S3_ENDPOINT);
-        String accessKey = ViprConfig.getPropertyNotEmpty(props, ViprConfig.PROP_S3_ACCESS_KEY_ID);
-        String secret = ViprConfig.getPropertyNotEmpty(props, ViprConfig.PROP_S3_SECRET_KEY);
+        Properties props = TestConfig.getProperties();
+        String endpoint = TestConfig.getPropertyNotEmpty(props, PROP_S3_ENDPOINT);
+        String accessKey = TestConfig.getPropertyNotEmpty(props, PROP_S3_ACCESS_KEY);
+        String secret = TestConfig.getPropertyNotEmpty(props, PROP_S3_SECRET_KEY);
 
         s3 = new SmartClientAdapter(endpoint, accessKey, secret);
     }

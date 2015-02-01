@@ -15,11 +15,9 @@
 description = 'AWS S3 Adapter '
 
 dependencies {
-    compile 'com.amazonaws:aws-java-sdk:1.7+'
-    compile project(':object-client')
+    compile 'com.amazonaws:aws-java-sdk:1.7+',
+            project(':object-client')
     testCompile 'junit:junit:4.11'
-    testCompile project(':atmos-client')
-    testCompile project(':dataservices-common')
 }
 
 uploadArchives.enabled = false
