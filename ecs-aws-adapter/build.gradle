@@ -12,4 +12,15 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-include 'atmos-client', 'dataservices-common', 'jersey-apache-httpclient4', 'object-client', 'smart-client', 'vipr-object-transformations', 'ecs-aws-adapter'
+description = 'AWS S3 Adapter '
+
+dependencies {
+    compile 'com.amazonaws:aws-java-sdk:1.7+'
+    compile project(':object-client')
+    testCompile 'junit:junit:4.11'
+    testCompile project(':atmos-client')
+    testCompile project(':dataservices-common')
+}
+
+uploadArchives.enabled = false
+javadoc.enabled = false
