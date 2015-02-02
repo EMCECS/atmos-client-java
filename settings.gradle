@@ -12,4 +12,4 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-include 'atmos-client', 'dataservices-common', 'jersey-apache-httpclient4', 'object-client', 'smart-client', 'vipr-object-transformations', 'ecs-aws-adapter'
+include 'atmos-client', 'dataservices-common', 'jersey-apache-httpclient4', 'object-client', 'smart-client', 'ecs-object-transform', 'ecs-aws-adapter'
