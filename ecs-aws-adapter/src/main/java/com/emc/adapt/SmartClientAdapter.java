@@ -1,13 +1,5 @@
 package com.emc.adapt;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonWebServiceRequest;
@@ -28,13 +20,23 @@ import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.StorageClass;
-
 import com.emc.object.s3.S3Client;
 import com.emc.object.s3.S3Config;
 import com.emc.object.s3.S3ObjectMetadata;
 import com.emc.object.s3.bean.*;
 import com.emc.object.s3.bean.PutObjectResult;
 import com.emc.object.s3.jersey.S3JerseyClient;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.ObjectOutputStream;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import com.amazonaws.regions.Region;
 
 /**
  * Amazon S3 adapter for ECS smart client.
@@ -47,20 +49,6 @@ public class SmartClientAdapter implements AmazonS3 {
     /**
      * Constructor for AWS adapter.
      *
-     * @param endpoints List of target endpoints for this client.
-     * @param accessKey Access key for this client.
-     * @param secretKey Secret key for this client.
-     */
-    public SmartClientAdapter(String endpoints, String accessKey, String secretKey) {
-        this.config = new S3Config();
-        setEndpoint(endpoints);
-        config.withIdentity(accessKey).withSecretKey(secretKey);
-        this.client = new S3JerseyClient(this.config);
-    }
-
-    /**
-     * Constructor for AWS adapter.
-     *
      * @param config S3Config object containing endpoint and access
      *               credentials for client.
      */
@@ -69,22 +57,9 @@ public class SmartClientAdapter implements AmazonS3 {
         this.client = new S3JerseyClient(this.config);
     }
 
-    /**
-     * Adds designated endpoint to the list of endpoints.
-     *
-     * @param endpoints The list of communicable endpoints for this client.
-     */
     @Override
     public void setEndpoint(String endpoints) {
-        List<URI> uris = config.getEndpoints();
-        for (String uri : endpoints.split(",")) {
-            try {
-                uris.add(new URI(uri));
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-            }
-        }
-        config.setEndpoints(uris);
+        throw new UnsupportedOperationException("endpoint[s] can only be set in the constructor of this adapter");
     }
 
     /**
@@ -698,7 +673,7 @@ public class SmartClientAdapter implements AmazonS3 {
         S3ObjectMetadata md = client.getObjectMetadata(bucketName, key);
 
         ObjectMetadata ret = new ObjectMetadata();
-        ret.setExpirationTime(md.getExpirationTime());
+        ret.setExpirationTime(md.getExpirationDate());
         ret.setExpirationTimeRuleId(md.getExpirationRuleId());
         ret.setLastModified(md.getLastModified());
         ret.setContentMD5(md.getContentMd5());
@@ -1731,4 +1706,18 @@ public class SmartClientAdapter implements AmazonS3 {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void enableRequesterPays(String bucketName) throws AmazonServiceException, AmazonClientException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void disableRequesterPays(String bucketName) throws AmazonServiceException, AmazonClientException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isRequesterPaysEnabled(String bucketName) throws AmazonServiceException, AmazonClientException {
+        throw new UnsupportedOperationException();
+    }
 }

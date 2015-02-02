@@ -10,6 +10,7 @@ import com.amazonaws.services.s3.model.*;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.amazonaws.util.StringInputStream;
+import com.emc.object.s3.S3Config;
 import com.emc.util.TestConfig;
 import org.junit.After;
 import org.junit.Assert;
@@ -19,6 +20,7 @@ import org.junit.Test;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -351,7 +353,7 @@ public class AwsTest {
     private synchronized Set<String> createdKeys(String bucket) {
         Set<String> keys = bucketsAndKeys.get(bucket);
         if (keys == null) {
-            keys = new TreeSet<String>();
+            keys = new TreeSet<>();
             bucketsAndKeys.put(bucket, keys);
         }
         return keys;
@@ -364,7 +366,23 @@ public class AwsTest {
         String accessKey = TestConfig.getPropertyNotEmpty(props, PROP_S3_ACCESS_KEY);
         String secret = TestConfig.getPropertyNotEmpty(props, PROP_S3_SECRET_KEY);
 
-        s3 = new SmartClientAdapter(endpoint, accessKey, secret);
+        List<URI> uris = parseUris(endpoint);
+        String[] hosts = new String[uris.size()];
+        for (int i = 0; i < uris.size(); i++) {
+            hosts[i] = uris.get(i).getHost();
+        }
+        S3Config s3Config = new S3Config(com.emc.object.Protocol.valueOf(uris.get(0).getScheme().toUpperCase()), hosts);
+        s3Config.withIdentity(accessKey).withSecretKey(secret);
+
+        s3 = new SmartClientAdapter(s3Config);
+    }
+
+    protected static List<URI> parseUris(String endpoints) throws URISyntaxException {
+        List<URI> uris = new ArrayList<>();
+        for (String uri : endpoints.split(",")) {
+            uris.add(new URI(uri));
+        }
+        return uris;
     }
 
     private static AmazonS3Client createClient(URI endpoint, String proxyHost, int proxyPort,
