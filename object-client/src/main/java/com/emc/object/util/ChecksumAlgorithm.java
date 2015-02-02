@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 EMC Corporation. All Rights Reserved.
+ * Copyright 2013 EMC Corporation. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -12,11 +12,19 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-description = 'Common library functions for ViPR Data Services (e.g. test utils, etc)'
+package com.emc.object.util;
 
-dependencies {
-    compile 'junit:junit:4.11'
+public enum ChecksumAlgorithm {
+    SHA1("SHA-1"),
+    MD5("MD5");
+
+    private String digestName;
+
+    private ChecksumAlgorithm(String digestName) {
+        this.digestName = digestName;
+    }
+
+    public String getDigestName() {
+        return this.digestName;
+    }
 }
-
-uploadArchives.enabled = false
-javadoc.enabled = false
