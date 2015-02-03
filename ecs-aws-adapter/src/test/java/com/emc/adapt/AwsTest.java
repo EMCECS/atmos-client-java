@@ -35,7 +35,7 @@ public class AwsTest {
     public static final String PROP_S3_SECRET_KEY = "s3.secret_key";
 
     private static SmartClientAdapter s3;
-    private Map<String, Set<String>> bucketsAndKeys = new TreeMap<String, Set<String>>();
+    private Map<String, Set<String>> bucketsAndKeys = new TreeMap<>();
 
     @Test
     public void testCrudBuckets() throws Exception {
@@ -114,75 +114,6 @@ public class AwsTest {
         } catch (AmazonS3Exception e) {
             if (e.getStatusCode() != 404) throw e;
         }
-    }
-
-    @Test
-    public void testRequestExpiration() throws Exception {
-        String bucket = "test-bucket-aws";
-        String content = "Hello World";
-        String key = "testKey";
-        String cacheControl = "nocache";
-        String disposition = "attachment; filename=foo.txt";
-        String contentEncoding = "raw";
-        String contentLanguage = "en-US";
-        String contentType = "test/plain";
-        String expires = "0";
-
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.HOUR, 1);
-
-        s3.createBucket(bucket);
-        createdKeys(bucket); // make sure we clean up the bucket
-
-        // test PUT request
-        URL url = s3.generatePresignedUrl(bucket, key, cal.getTime(), HttpMethod.PUT);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setDoOutput(true);
-        con.setRequestMethod("PUT");
-        con.connect();
-        copyStream(new StringInputStream(content), con.getOutputStream());
-        copyStream(con.getInputStream(), new ByteArrayOutputStream());
-        con.disconnect();
-        Assert.assertEquals("PUT response code wrong", 200, con.getResponseCode());
-        createdKeys(bucket).add(key);
-
-        ResponseHeaderOverrides overrides = new ResponseHeaderOverrides();
-        overrides.setCacheControl(cacheControl);
-        overrides.setContentDisposition(disposition);
-        overrides.setContentEncoding(contentEncoding);
-        overrides.setContentLanguage(contentLanguage);
-        overrides.setContentType(contentType);
-        overrides.setExpires(expires);
-
-        GeneratePresignedUrlRequest gRequest = new GeneratePresignedUrlRequest(bucket, key);
-        gRequest.setMethod(HttpMethod.GET);
-        gRequest.setExpiration(cal.getTime());
-        gRequest.setResponseHeaders(overrides);
-
-        // test GET request
-        url = s3.generatePresignedUrl(gRequest);
-        con = (HttpURLConnection) url.openConnection();
-        con.setDoOutput(false);
-        con.setDoInput(true);
-        con.connect();
-
-        // verify headers
-        Assert.assertEquals("cache-control header mismatch", cacheControl, con.getHeaderField("Cache-Control"));
-        Assert.assertEquals("content-disposition header mismatch",
-                disposition,
-                con.getHeaderField("Content-Disposition"));
-        Assert.assertEquals("content-encoding header mismatch", contentEncoding, con.getContentEncoding());
-        Assert.assertEquals("content-language header mismatch",
-                contentLanguage,
-                con.getHeaderField("Content-Language"));
-        Assert.assertEquals("content-type header mismatch", contentType, con.getContentType());
-        Assert.assertEquals("expires header mismatch", expires, Long.toString(con.getExpiration()));
-
-        // verify content
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        copyStream(con.getInputStream(), baos);
-        con.disconnect();
-        Assert.assertEquals("content mismatch", content, baos.toString());
     }
 
     @Test

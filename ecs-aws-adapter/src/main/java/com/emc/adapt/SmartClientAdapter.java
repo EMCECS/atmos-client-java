@@ -36,8 +36,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.amazonaws.regions.Region;
-
 /**
  * Amazon S3 adapter for ECS smart client.
  */
@@ -57,6 +55,12 @@ public class SmartClientAdapter implements AmazonS3 {
         this.client = new S3JerseyClient(this.config);
     }
 
+    /**
+     * Sets the default endpoint(s) for this client.
+     *
+     * @param endpoints Single or list of endpoints which
+     *                  this client will communicate with.
+     */
     @Override
     public void setEndpoint(String endpoints) {
         throw new UnsupportedOperationException("endpoint[s] can only be set in the constructor of this adapter");
@@ -1706,18 +1710,40 @@ public class SmartClientAdapter implements AmazonS3 {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Allows Amazon S3 bucket owner to enable Requester Pays option for
+     * specified bucket. Not supporeted by smart client.
+     *
+     * @param bucketName The name of the bucket being enabled for Requester Pays.
+     * @throws UnsupportedOperationException
+     */
     @Override
-    public void enableRequesterPays(String bucketName) throws AmazonServiceException, AmazonClientException {
+    public void enableRequesterPays(String bucketName) throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Allows Amazon S3 bucket owner to disable Requester Pays option for
+     * specified bucket. Not supporeted by smart client.
+     *
+     * @param bucketName The name of the bucket being disabled for Requester Pays.
+     * @throws UnsupportedOperationException
+     */
     @Override
-    public void disableRequesterPays(String bucketName) throws AmazonServiceException, AmazonClientException {
+    public void disableRequesterPays(String bucketName) throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Retrieves the Requester Pays configuration associated with the specified
+     * bucket. Not supported by smart client.
+     *
+     * @param bucketName The name of the bucket being checked for Requester Pays.
+     * @return true if the bucket is enabled for Requester Pays else false.
+     * @throws UnsupportedOperationException
+     */
     @Override
-    public boolean isRequesterPaysEnabled(String bucketName) throws AmazonServiceException, AmazonClientException {
+    public boolean isRequesterPaysEnabled(String bucketName) throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 }

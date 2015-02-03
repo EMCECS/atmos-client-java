@@ -1,0 +1,1678 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.emc.adapt.AwsTest" tests="7" failures="6" errors="0" timestamp="2015-02-03T19:24:23" hostname="usxxpetera5m1.corp.emc.com" time="7.567">
+  <properties/>
+  <testcase name="testMultipartUpload" classname="com.emc.adapt.AwsTest" time="5.382">
+    <failure message="com.amazonaws.AmazonClientException: Unable to complete transfer: null" type="com.amazonaws.AmazonClientException">com.amazonaws.AmazonClientException: Unable to complete transfer: null
+	at com.amazonaws.services.s3.transfer.internal.AbstractTransfer.unwrapExecutionException(AbstractTransfer.java:300)
+	at com.amazonaws.services.s3.transfer.internal.AbstractTransfer.rethrowExecutionException(AbstractTransfer.java:284)
+	at com.amazonaws.services.s3.transfer.internal.AbstractTransfer.waitForCompletion(AbstractTransfer.java:125)
+	at com.emc.adapt.AwsTest.testMultipartUpload(AwsTest.java:186)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.runTestClass(JUnitTestClassExecuter.java:86)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.execute(JUnitTestClassExecuter.java:49)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassProcessor.processTestClass(JUnitTestClassProcessor.java:69)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:50)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:32)
+	at org.gradle.messaging.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:93)
+	at com.sun.proxy.$Proxy2.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.processTestClass(TestWorker.java:105)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.remote.internal.hub.MessageHub$Handler.run(MessageHub.java:355)
+	at org.gradle.internal.concurrent.DefaultExecutorFactory$StoppableExecutorImpl$1.run(DefaultExecutorFactory.java:64)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.NullPointerException
+	at com.emc.adapt.SmartClientAdapter.initiateMultipartUpload(SmartClientAdapter.java:1542)
+	at com.amazonaws.services.s3.transfer.internal.UploadCallable.initiateMultipartUpload(UploadCallable.java:248)
+	at com.amazonaws.services.s3.transfer.internal.UploadCallable.uploadInParts(UploadCallable.java:132)
+	at com.amazonaws.services.s3.transfer.internal.UploadCallable.call(UploadCallable.java:100)
+	at com.amazonaws.services.s3.transfer.internal.UploadMonitor.upload(UploadMonitor.java:192)
+	at com.amazonaws.services.s3.transfer.internal.UploadMonitor.call(UploadMonitor.java:150)
+	at com.amazonaws.services.s3.transfer.internal.UploadMonitor.call(UploadMonitor.java:50)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+	... 3 more
+</failure>
+  </testcase>
+  <testcase name="testCrudKeys" classname="com.emc.adapt.AwsTest" time="0.407">
+    <failure message="java.lang.UnsupportedOperationException: you must specify a content length with an input stream" type="java.lang.UnsupportedOperationException">java.lang.UnsupportedOperationException: you must specify a content length with an input stream
+	at com.emc.object.AbstractJerseyClient.executeRequest(AbstractJerseyClient.java:49)
+	at com.emc.object.AbstractJerseyClient.executeAndClose(AbstractJerseyClient.java:26)
+	at com.emc.object.s3.jersey.S3JerseyClient.putObject(S3JerseyClient.java:252)
+	at com.emc.adapt.SmartClientAdapter.putObject(SmartClientAdapter.java:839)
+	at com.emc.adapt.AwsTest.testCrudKeys(AwsTest.java:96)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.runTestClass(JUnitTestClassExecuter.java:86)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.execute(JUnitTestClassExecuter.java:49)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassProcessor.processTestClass(JUnitTestClassProcessor.java:69)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:50)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:32)
+	at org.gradle.messaging.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:93)
+	at com.sun.proxy.$Proxy2.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.processTestClass(TestWorker.java:105)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.remote.internal.hub.MessageHub$Handler.run(MessageHub.java:355)
+	at org.gradle.internal.concurrent.DefaultExecutorFactory$StoppableExecutorImpl$1.run(DefaultExecutorFactory.java:64)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+</failure>
+  </testcase>
+  <testcase name="testDeleteNonEmptyBucket" classname="com.emc.adapt.AwsTest" time="0.288">
+    <failure message="com.emc.object.s3.S3Exception: The requested bucket name is not available. The bucket namespace is shared by all users of the system. Please select a different name and try again." type="com.emc.object.s3.S3Exception">com.emc.object.s3.S3Exception: The requested bucket name is not available. The bucket namespace is shared by all users of the system. Please select a different name and try again.
+	at com.emc.object.s3.jersey.ErrorResponseFilter.parseErrorResponse(ErrorResponseFilter.java:65)
+	at com.emc.object.s3.jersey.ErrorResponseFilter.filter(ErrorResponseFilter.java:30)
+	at org.glassfish.jersey.client.ClientFilteringStages$ResponseFilterStage.apply(ClientFilteringStages.java:134)
+	at org.glassfish.jersey.client.ClientFilteringStages$ResponseFilterStage.apply(ClientFilteringStages.java:123)
+	at org.glassfish.jersey.process.internal.Stages.process(Stages.java:171)
+	at org.glassfish.jersey.client.ClientRuntime.invoke(ClientRuntime.java:251)
+	at org.glassfish.jersey.client.JerseyInvocation$1.call(JerseyInvocation.java:667)
+	at org.glassfish.jersey.client.JerseyInvocation$1.call(JerseyInvocation.java:664)
+	at org.glassfish.jersey.internal.Errors.process(Errors.java:315)
+	at org.glassfish.jersey.internal.Errors.process(Errors.java:297)
+	at org.glassfish.jersey.internal.Errors.process(Errors.java:228)
+	at org.glassfish.jersey.process.internal.RequestScope.runInScope(RequestScope.java:443)
+	at org.glassfish.jersey.client.JerseyInvocation.invoke(JerseyInvocation.java:664)
+	at org.glassfish.jersey.client.JerseyInvocation$Builder.method(JerseyInvocation.java:424)
+	at com.emc.object.AbstractJerseyClient.executeRequest(AbstractJerseyClient.java:54)
+	at com.emc.object.AbstractJerseyClient.executeAndClose(AbstractJerseyClient.java:26)
+	at com.emc.object.s3.jersey.S3JerseyClient.createBucket(S3JerseyClient.java:123)
+	at com.emc.object.s3.jersey.S3JerseyClient.createBucket(S3JerseyClient.java:118)
+	at com.emc.adapt.SmartClientAdapter.createBucket(SmartClientAdapter.java:453)
+	at com.emc.adapt.AwsTest.testDeleteNonEmptyBucket(AwsTest.java:74)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.runTestClass(JUnitTestClassExecuter.java:86)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.execute(JUnitTestClassExecuter.java:49)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassProcessor.processTestClass(JUnitTestClassProcessor.java:69)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:50)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:32)
+	at org.gradle.messaging.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:93)
+	at com.sun.proxy.$Proxy2.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.processTestClass(TestWorker.java:105)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.remote.internal.hub.MessageHub$Handler.run(MessageHub.java:355)
+	at org.gradle.internal.concurrent.DefaultExecutorFactory$StoppableExecutorImpl$1.run(DefaultExecutorFactory.java:64)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+</failure>
+  </testcase>
+  <testcase name="testUpdateMetadata" classname="com.emc.adapt.AwsTest" time="0.212">
+    <failure message="java.lang.UnsupportedOperationException: you must specify a content length with an input stream" type="java.lang.UnsupportedOperationException">java.lang.UnsupportedOperationException: you must specify a content length with an input stream
+	at com.emc.object.AbstractJerseyClient.executeRequest(AbstractJerseyClient.java:49)
+	at com.emc.object.AbstractJerseyClient.executeAndClose(AbstractJerseyClient.java:26)
+	at com.emc.object.s3.jersey.S3JerseyClient.putObject(S3JerseyClient.java:252)
+	at com.emc.adapt.SmartClientAdapter.putObject(SmartClientAdapter.java:839)
+	at com.emc.adapt.AwsTest.testUpdateMetadata(AwsTest.java:205)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.runTestClass(JUnitTestClassExecuter.java:86)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.execute(JUnitTestClassExecuter.java:49)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassProcessor.processTestClass(JUnitTestClassProcessor.java:69)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:50)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:32)
+	at org.gradle.messaging.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:93)
+	at com.sun.proxy.$Proxy2.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.processTestClass(TestWorker.java:105)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.remote.internal.hub.MessageHub$Handler.run(MessageHub.java:355)
+	at org.gradle.internal.concurrent.DefaultExecutorFactory$StoppableExecutorImpl$1.run(DefaultExecutorFactory.java:64)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+</failure>
+  </testcase>
+  <testcase name="testResponseHeaderOverride" classname="com.emc.adapt.AwsTest" time="0.19">
+    <failure message="java.lang.UnsupportedOperationException: you must specify a content length with an input stream" type="java.lang.UnsupportedOperationException">java.lang.UnsupportedOperationException: you must specify a content length with an input stream
+	at com.emc.object.AbstractJerseyClient.executeRequest(AbstractJerseyClient.java:49)
+	at com.emc.object.AbstractJerseyClient.executeAndClose(AbstractJerseyClient.java:26)
+	at com.emc.object.s3.jersey.S3JerseyClient.putObject(S3JerseyClient.java:252)
+	at com.emc.adapt.SmartClientAdapter.putObject(SmartClientAdapter.java:839)
+	at com.emc.adapt.AwsTest.testResponseHeaderOverride(AwsTest.java:135)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.runTestClass(JUnitTestClassExecuter.java:86)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.execute(JUnitTestClassExecuter.java:49)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassProcessor.processTestClass(JUnitTestClassProcessor.java:69)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:50)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:32)
+	at org.gradle.messaging.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:93)
+	at com.sun.proxy.$Proxy2.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.processTestClass(TestWorker.java:105)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.remote.internal.hub.MessageHub$Handler.run(MessageHub.java:355)
+	at org.gradle.internal.concurrent.DefaultExecutorFactory$StoppableExecutorImpl$1.run(DefaultExecutorFactory.java:64)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+</failure>
+  </testcase>
+  <testcase name="testCrudBuckets" classname="com.emc.adapt.AwsTest" time="0.895"/>
+  <testcase name="testMultipartList" classname="com.emc.adapt.AwsTest" time="0.189">
+    <failure message="java.lang.NullPointerException" type="java.lang.NullPointerException">java.lang.NullPointerException
+	at com.emc.adapt.SmartClientAdapter.initiateMultipartUpload(SmartClientAdapter.java:1542)
+	at com.emc.adapt.AwsTest.testMultipartList(AwsTest.java:241)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.runTestClass(JUnitTestClassExecuter.java:86)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.execute(JUnitTestClassExecuter.java:49)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassProcessor.processTestClass(JUnitTestClassProcessor.java:69)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:50)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:32)
+	at org.gradle.messaging.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:93)
+	at com.sun.proxy.$Proxy2.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.processTestClass(TestWorker.java:105)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:35)
+	at org.gradle.messaging.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.messaging.remote.internal.hub.MessageHub$Handler.run(MessageHub.java:355)
+	at org.gradle.internal.concurrent.DefaultExecutorFactory$StoppableExecutorImpl$1.run(DefaultExecutorFactory.java:64)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+</failure>
+  </testcase>
+  <system-out><![CDATA[0          DEBUG [Thread-5       ] PollingDaemon: polling daemon running
+525        DEBUG [Thread-5       ] S3HostListProvider: canonicalString:
+GET
+
+
+Tue, 03 Feb 2015 19:24:23 GMT
+/?endpoint
+525        DEBUG [Thread-5       ] S3HostListProvider: signature:
+waaDzJosPMKaocXIji8g/5wZYkw=
+2167       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+2168       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+3242       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/multipart-bucket/
+3373       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+PUT
+
+text/plain
+Tue, 3 Feb 2015 19:24:26 UTC
+/multipart-bucket/
+3373       DEBUG [Test worker    ] S3AuthUtil: signature:
+RCnrZuVzsDDY3R2Z5olecL2FGTw=
+4187       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+4305       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+4307       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 0 of 200; total allocated: 0 of 200]
+4352       DEBUG [Thread-5       ] RequestAddCookies: CookieSpec selected: best-match
+4352       DEBUG [Thread-5       ] RequestAuthCache: Auth cache not set in the context
+4353       DEBUG [Thread-5       ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 0 of 2; total allocated: 0 of 20]
+4389       DEBUG [Thread-5       ] PoolingHttpClientConnectionManager: Connection leased: [id: 0][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 2; total allocated: 1 of 20]
+4390       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+4400       DEBUG [Thread-5       ] MainClientExec: Opening connection {}->http://10.249.237.149:9020
+4400       DEBUG [Test worker    ] MainClientExec: Opening connection {}->http://10.249.237.149:9020
+4407       DEBUG [Thread-5       ] HttpClientConnectionManager: Connecting to /10.249.237.149:9020
+4407       DEBUG [Test worker    ] HttpClientConnectionManager: Connecting to /10.249.237.149:9020
+4484       DEBUG [Thread-5       ] MainClientExec: Executing request GET /?endpoint HTTP/1.1
+4484       DEBUG [Test worker    ] MainClientExec: Executing request PUT /multipart-bucket/ HTTP/1.1
+4485       DEBUG [Thread-5       ] MainClientExec: Proxy auth state: UNCHALLENGED
+4485       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+4490       DEBUG [Test worker    ] headers: http-outgoing-0 >> PUT /multipart-bucket/ HTTP/1.1
+4491       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Type: text/plain
+4491       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+4491       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:26 UTC
+4491       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:RCnrZuVzsDDY3R2Z5olecL2FGTw=
+4491       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Length: 0
+4491       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+4491       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+4491       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+4604       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 200 OK
+4604       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:28 GMT
+4604       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+4605       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f3:0
+4605       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: acac29a0e3c3ea94df0000f4da947acff5537077ac40caee8acbac7b325c8fbc
+4605       DEBUG [Test worker    ] headers: http-outgoing-0 << Location: /multipart-bucket
+4606       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+4607       DEBUG [Thread-5       ] MainClientExec: Connection can be kept alive indefinitely
+4607       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+4701       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 1270, queue size: 1, new average: 1270
+4702       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+4702       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+4996       DEBUG [Test worker    ] Mimetypes: Loading mime types from file in the classpath: mime.types
+5019       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/activemessage'
+5020       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ez' to 'application/andrew-inset'
+5020       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/applefile'
+5020       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'atom' to 'application/atom+xml'
+5020       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/atomicmail'
+5020       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/batch-smtp'
+5020       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/beep+xml'
+5020       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/cals-1840'
+5020       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/cnrp+xml'
+5020       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/commonground'
+5021       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/cpl+xml'
+5021       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/cybercash'
+5021       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/dca-rft'
+5021       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/dec-dx'
+5021       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/dvcs'
+5021       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/edi-consent'
+5021       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/edifact'
+5021       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/edi-x12'
+5021       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/eshop'
+5021       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/font-tdpfr'
+5022       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/http'
+5022       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/hyperstudio'
+5022       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/iges'
+5022       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/index'
+5022       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/index.cmd'
+5022       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/index.obj'
+5023       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/index.response'
+5024       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/index.vnd'
+5024       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/iotp'
+5024       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/ipp'
+5024       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/isup'
+5024       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'hqx' to 'application/mac-binhex40'
+5024       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'cpt' to 'application/mac-compactpro'
+5024       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/macwriteii'
+5024       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/marc'
+5024       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/mathematica'
+5025       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mathml' to 'application/mathml+xml'
+5025       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'doc' to 'application/msword'
+5025       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/news-message-id'
+5025       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/news-transmission'
+5025       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/ocsp-request'
+5026       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/ocsp-response'
+5026       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'bin' to 'application/octet-stream'
+5026       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'dms' to 'application/octet-stream'
+5026       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'lha' to 'application/octet-stream'
+5026       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'lzh' to 'application/octet-stream'
+5026       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'exe' to 'application/octet-stream'
+5026       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'class' to 'application/octet-stream'
+5026       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'so' to 'application/octet-stream'
+5026       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'dll' to 'application/octet-stream'
+5027       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'dmg' to 'application/octet-stream'
+5027       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'oda' to 'application/oda'
+5027       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ogg' to 'application/ogg'
+5027       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/parityfec'
+5027       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'pdf' to 'application/pdf'
+5027       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/pgp-encrypted'
+5027       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/pgp-keys'
+5027       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/pgp-signature'
+5027       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/pkcs10'
+5028       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/pkcs7-mime'
+5028       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/pkcs7-signature'
+5028       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/pkix-cert'
+5028       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/pkix-crl'
+5028       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/pkixcmp'
+5028       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ai' to 'application/postscript'
+5028       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'eps' to 'application/postscript'
+5028       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ps' to 'application/postscript'
+5028       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/prs.alvestrand.titrax-sheet'
+5029       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/prs.cww'
+5029       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/prs.nprend'
+5029       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/prs.plucker'
+5029       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/qsig'
+5029       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'rdf' to 'application/rdf+xml'
+5029       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/reginfo+xml'
+5029       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/remote-printing'
+5029       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/riscos'
+5029       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/rtf'
+5030       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/sdp'
+5030       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/set-payment'
+5030       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/set-payment-initiation'
+5030       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/set-registration'
+5030       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/set-registration-initiation'
+5031       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/sgml'
+5031       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/sgml-open-catalog'
+5031       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/sieve'
+5031       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/slate'
+5031       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'smi' to 'application/smil'
+5031       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'smil' to 'application/smil'
+5031       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'gram' to 'application/srgs'
+5031       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'grxml' to 'application/srgs+xml'
+5032       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/timestamp-query'
+5032       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/timestamp-reply'
+5032       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/tve-trigger'
+5032       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vemmi'
+5032       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.3gpp.pic-bw-large'
+5032       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.3gpp.pic-bw-small'
+5032       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.3gpp.pic-bw-var'
+5032       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.3gpp.sms'
+5033       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.3m.post-it-notes'
+5033       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.accpac.simply.aso'
+5033       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.accpac.simply.imp'
+5033       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.acucobol'
+5033       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.acucorp'
+5033       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.adobe.xfdf'
+5033       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.aether.imp'
+5033       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.amiga.ami'
+5034       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.anser-web-certificate-issue-initiation'
+5034       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.anser-web-funds-transfer-initiation'
+5034       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.audiograph'
+5034       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.blueice.multipass'
+5034       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.bmi'
+5034       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.businessobjects'
+5034       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.canon-cpdl'
+5035       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.canon-lips'
+5035       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.cinderella'
+5035       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.claymore'
+5035       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.commerce-battelle'
+5035       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.commonspace'
+5035       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.contact.cmsg'
+5035       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.cosmocaller'
+5035       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.criticaltools.wbs+xml'
+5036       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ctc-posml'
+5036       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.cups-postscript'
+5036       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.cups-raster'
+5036       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.cups-raw'
+5036       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.curl'
+5036       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.cybank'
+5036       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.data-vision.rdz'
+5036       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.dna'
+5037       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.dpgraph'
+5037       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.dreamfactory'
+5038       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.dxr'
+5038       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ecdis-update'
+5038       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ecowin.chart'
+5038       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ecowin.filerequest'
+5038       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ecowin.fileupdate'
+5038       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ecowin.series'
+5038       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ecowin.seriesrequest'
+5038       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ecowin.seriesupdate'
+5039       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.enliven'
+5039       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.epson.esf'
+5039       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.epson.msf'
+5039       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.epson.quickanime'
+5039       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.epson.salt'
+5039       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.epson.ssf'
+5039       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ericsson.quickcall'
+5039       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.eudora.data'
+5040       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fdf'
+5040       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ffsns'
+5040       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fints'
+5040       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.flographit'
+5040       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.framemaker'
+5040       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fsc.weblaunch'
+5040       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fujitsu.oasys'
+5040       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fujitsu.oasys2'
+5042       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fujitsu.oasys3'
+5042       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fujitsu.oasysgp'
+5043       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fujitsu.oasysprs'
+5043       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fujixerox.ddd'
+5043       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fujixerox.docuworks'
+5043       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fujixerox.docuworks.binder'
+5043       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.fut-misnet'
+5043       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.grafeq'
+5043       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.groove-account'
+5043       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.groove-help'
+5044       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.groove-identity-message'
+5044       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.groove-injector'
+5044       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.groove-tool-message'
+5044       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.groove-tool-template'
+5044       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.groove-vcard'
+5044       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.hbci'
+5044       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.hhe.lesson-player'
+5045       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.hp-hpgl'
+5045       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.hp-hpid'
+5045       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.hp-hps'
+5045       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.hp-pcl'
+5045       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.hp-pclxl'
+5045       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.httphone'
+5046       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.hzn-3d-crossword'
+5046       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ibm.afplinedata'
+5046       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ibm.electronic-media'
+5046       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ibm.minipay'
+5046       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ibm.modcap'
+5047       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ibm.rights-management'
+5047       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ibm.secure-container'
+5047       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.informix-visionary'
+5048       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.intercon.formnet'
+5048       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.intertrust.digibox'
+5048       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.intertrust.nncp'
+5048       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.intu.qbo'
+5048       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.intu.qfx'
+5048       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.irepository.package+xml'
+5049       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.is-xpr'
+5049       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.japannet-directory-service'
+5049       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.japannet-jpnstore-wakeup'
+5049       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.japannet-payment-wakeup'
+5050       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.japannet-registration'
+5050       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.japannet-registration-wakeup'
+5050       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.japannet-setstore-wakeup'
+5050       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.japannet-verification'
+5051       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.japannet-verification-wakeup'
+5051       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.jisp'
+5051       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.kde.karbon'
+5052       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.kde.kchart'
+5052       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.kde.kformula'
+5052       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.kde.kivio'
+5052       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.kde.kontour'
+5052       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.kde.kpresenter'
+5053       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.kde.kspread'
+5053       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.kde.kword'
+5053       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.kenameaapp'
+5053       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.koan'
+5054       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.liberty-request+xml'
+5054       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.llamagraphics.life-balance.desktop'
+5054       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.llamagraphics.life-balance.exchange+xml'
+5054       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.lotus-1-2-3'
+5054       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.lotus-approach'
+5055       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.lotus-freelance'
+5055       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.lotus-notes'
+5055       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.lotus-organizer'
+5055       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.lotus-screencam'
+5055       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.lotus-wordpro'
+5057       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mcd'
+5057       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mediastation.cdkey'
+5057       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.meridian-slingshot'
+5058       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.micrografx.flo'
+5059       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.micrografx.igx'
+5059       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mif' to 'application/vnd.mif'
+5059       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.minisoft-hp3000-save'
+5059       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mitsubishi.misty-guard.trustweb'
+5060       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mobius.daf'
+5060       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mobius.dis'
+5061       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mobius.mbk'
+5061       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mobius.mqy'
+5061       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mobius.msl'
+5062       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mobius.plc'
+5062       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mobius.txf'
+5062       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mophun.application'
+5062       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mophun.certificate'
+5062       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.motorola.flexsuite'
+5062       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.motorola.flexsuite.adsi'
+5062       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.motorola.flexsuite.fis'
+5062       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.motorola.flexsuite.gotap'
+5062       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.motorola.flexsuite.kmr'
+5063       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.motorola.flexsuite.ttc'
+5063       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.motorola.flexsuite.wem'
+5063       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'xul' to 'application/vnd.mozilla.xul+xml'
+5063       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ms-artgalry'
+5063       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ms-asf'
+5063       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'xls' to 'application/vnd.ms-excel'
+5063       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ms-lrm'
+5063       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ppt' to 'application/vnd.ms-powerpoint'
+5064       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ms-project'
+5064       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ms-tnef'
+5064       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ms-works'
+5064       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ms-wpl'
+5064       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.mseq'
+5064       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.msign'
+5064       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.music-niff'
+5064       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.musician'
+5065       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.netfpx'
+5065       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.noblenet-directory'
+5068       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.noblenet-sealer'
+5068       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.noblenet-web'
+5068       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.novadigm.edm'
+5068       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.novadigm.edx'
+5068       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.novadigm.ext'
+5069       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.obn'
+5069       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.osa.netdeploy'
+5069       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.palm'
+5069       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.pg.format'
+5069       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.pg.osasli'
+5069       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.powerbuilder6'
+5069       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.powerbuilder6-s'
+5069       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.powerbuilder7'
+5069       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.powerbuilder7-s'
+5070       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.powerbuilder75'
+5070       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.powerbuilder75-s'
+5070       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.previewsystems.box'
+5072       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.publishare-delta-tree'
+5072       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.pvi.ptid1'
+5073       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.pwg-multiplexed'
+5073       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.pwg-xhtml-print+xml'
+5073       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.quark.quarkxpress'
+5073       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.rapid'
+5073       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'rm' to 'application/vnd.rn-realmedia'
+5073       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.s3sms'
+5073       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.sealed.net'
+5073       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.seemail'
+5074       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.shana.informed.formdata'
+5074       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.shana.informed.formtemplate'
+5074       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.shana.informed.interchange'
+5074       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.shana.informed.package'
+5074       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.smaf'
+5074       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.sss-cod'
+5074       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.sss-dtf'
+5074       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.sss-ntf'
+5075       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.street-stream'
+5075       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.svd'
+5075       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.swiftview-ics'
+5075       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.triscape.mxs'
+5075       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.trueapp'
+5075       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.truedoc'
+5075       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.ufdl'
+5075       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.alert'
+5076       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.alert-wbxml'
+5076       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.bearer-choice'
+5076       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.bearer-choice-wbxml'
+5076       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.cacheop'
+5076       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.cacheop-wbxml'
+5076       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.channel'
+5076       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.channel-wbxml'
+5076       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.list'
+5077       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.list-wbxml'
+5077       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.listcmd'
+5077       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.listcmd-wbxml'
+5077       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.uplanet.signal'
+5077       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.vcx'
+5077       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.vectorworks'
+5077       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.vidsoft.vidconference'
+5077       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.visio'
+5078       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.visionary'
+5078       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.vividence.scriptfile'
+5078       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.vsf'
+5078       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.wap.sic'
+5078       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.wap.slc'
+5078       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'wbxml' to 'application/vnd.wap.wbxml'
+5078       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'wmlc' to 'application/vnd.wap.wmlc'
+5078       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'wmlsc' to 'application/vnd.wap.wmlscriptc'
+5079       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.webturbo'
+5079       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.wrq-hp3000-labelled'
+5079       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.wt.stf'
+5079       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.wv.csp+wbxml'
+5079       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.xara'
+5079       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.xfdl'
+5079       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.yamaha.hv-dic'
+5079       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.yamaha.hv-script'
+5080       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.yamaha.hv-voice'
+5082       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/vnd.yellowriver-custom-menu'
+5082       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'vxml' to 'application/voicexml+xml'
+5082       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/watcherinfo+xml'
+5082       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/whoispp-query'
+5082       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/whoispp-response'
+5082       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/wita'
+5082       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/wordperfect5.1'
+5083       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'bcpio' to 'application/x-bcpio'
+5083       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'vcd' to 'application/x-cdlink'
+5083       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'pgn' to 'application/x-chess-pgn'
+5083       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/x-compress'
+5083       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'cpio' to 'application/x-cpio'
+5083       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'csh' to 'application/x-csh'
+5083       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'dcr' to 'application/x-director'
+5083       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'dir' to 'application/x-director'
+5084       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'dxr' to 'application/x-director'
+5084       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'dvi' to 'application/x-dvi'
+5084       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'spl' to 'application/x-futuresplash'
+5084       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'gtar' to 'application/x-gtar'
+5084       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'gz' to 'application/x-gzip'
+5084       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'hdf' to 'application/x-hdf'
+5084       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'js' to 'application/x-javascript'
+5085       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'jnlp' to 'application/x-java-jnlp-file'
+5085       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'skp' to 'application/x-koan'
+5085       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'skd' to 'application/x-koan'
+5085       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'skt' to 'application/x-koan'
+5085       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'skm' to 'application/x-koan'
+5085       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'latex' to 'application/x-latex'
+5085       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'nc' to 'application/x-netcdf'
+5085       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'cdf' to 'application/x-netcdf'
+5086       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'sh' to 'application/x-sh'
+5086       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'shar' to 'application/x-shar'
+5086       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'swf' to 'application/x-shockwave-flash'
+5086       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'sit' to 'application/x-stuffit'
+5086       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'sv4cpio' to 'application/x-sv4cpio'
+5086       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'sv4crc' to 'application/x-sv4crc'
+5086       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'tar' to 'application/x-tar'
+5087       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'tcl' to 'application/x-tcl'
+5087       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'tex' to 'application/x-tex'
+5087       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'texinfo' to 'application/x-texinfo'
+5087       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'texi' to 'application/x-texinfo'
+5087       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 't' to 'application/x-troff'
+5087       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'tr' to 'application/x-troff'
+5087       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'roff' to 'application/x-troff'
+5087       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'man' to 'application/x-troff-man'
+5088       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'me' to 'application/x-troff-me'
+5088       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ms' to 'application/x-troff-ms'
+5088       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ustar' to 'application/x-ustar'
+5088       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'src' to 'application/x-wais-source'
+5088       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/x400-bp'
+5088       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'xhtml' to 'application/xhtml+xml'
+5088       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'xht' to 'application/xhtml+xml'
+5088       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'xslt' to 'application/xslt+xml'
+5089       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'xml' to 'application/xml'
+5089       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'xsl' to 'application/xml'
+5089       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'dtd' to 'application/xml-dtd'
+5089       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'application/xml-external-parsed-entity'
+5089       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'zip' to 'application/zip'
+5089       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/32kadpcm'
+5089       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/amr'
+5089       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/amr-wb'
+5090       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'au' to 'audio/basic'
+5090       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'snd' to 'audio/basic'
+5090       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/cn'
+5090       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/dat12'
+5090       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/dsr-es201108'
+5090       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/dvi4'
+5090       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/evrc'
+5090       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/evrc0'
+5090       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/g722'
+5091       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/g.722.1'
+5091       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/g723'
+5091       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/g726-16'
+5091       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/g726-24'
+5091       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/g726-32'
+5091       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/g726-40'
+5091       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/g728'
+5091       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/g729'
+5093       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/g729D'
+5094       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/g729E'
+5094       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/gsm'
+5094       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/gsm-efr'
+5094       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/l8'
+5094       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/l16'
+5094       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/l20'
+5094       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/l24'
+5094       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/lpc'
+5095       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mid' to 'audio/midi'
+5095       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'midi' to 'audio/midi'
+5095       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'kar' to 'audio/midi'
+5095       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/mpa'
+5095       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/mpa-robust'
+5095       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'm4a' to 'audio/mp4a-latm'
+5095       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'm4p' to 'audio/mp4a-latm'
+5096       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mpga' to 'audio/mpeg'
+5096       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mp2' to 'audio/mpeg'
+5096       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mp3' to 'audio/mpeg'
+5096       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/parityfec'
+5096       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/pcma'
+5096       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/pcmu'
+5096       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/prs.sid'
+5096       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/qcelp'
+5097       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/red'
+5097       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/smv'
+5097       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/smv0'
+5097       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/telephone-event'
+5097       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/tone'
+5097       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vdvi'
+5097       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.3gpp.iufp'
+5098       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.cisco.nse'
+5098       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.cns.anp1'
+5098       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.cns.inf1'
+5099       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.digital-winds'
+5099       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.everad.plj'
+5099       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.lucent.voice'
+5099       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.nortel.vbk'
+5099       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.nuera.ecelp4800'
+5099       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.nuera.ecelp7470'
+5099       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.nuera.ecelp9600'
+5100       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.octel.sbc'
+5100       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.qcelp'
+5100       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.rhetorex.32kadpcm'
+5100       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/vnd.vmx.cvsd'
+5100       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'aif' to 'audio/x-aiff'
+5100       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'aiff' to 'audio/x-aiff'
+5100       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'aifc' to 'audio/x-aiff'
+5100       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/x-alaw-basic'
+5101       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'm3u' to 'audio/x-mpegurl'
+5101       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ram' to 'audio/x-pn-realaudio'
+5101       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ra' to 'audio/x-pn-realaudio'
+5101       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'audio/x-pn-realaudio-plugin'
+5101       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'wav' to 'audio/x-wav'
+5102       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'pdb' to 'chemical/x-pdb'
+5102       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'xyz' to 'chemical/x-xyz'
+5102       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'bmp' to 'image/bmp'
+5102       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'cgm' to 'image/cgm'
+5102       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/g3fax'
+5102       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'gif' to 'image/gif'
+5102       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ief' to 'image/ief'
+5103       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'jpeg' to 'image/jpeg'
+5103       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'jpg' to 'image/jpeg'
+5103       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'jpe' to 'image/jpeg'
+5103       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'jp2' to 'image/jp2'
+5103       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/naplps'
+5103       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'pict' to 'image/pict'
+5104       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'pic' to 'image/pict'
+5104       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'pct' to 'image/pict'
+5104       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'png' to 'image/png'
+5104       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/prs.btif'
+5104       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/prs.pti'
+5105       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'svg' to 'image/svg+xml'
+5105       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/t38'
+5105       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'tiff' to 'image/tiff'
+5108       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'tif' to 'image/tiff'
+5108       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/tiff-fx'
+5109       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.cns.inf2'
+5109       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'djvu' to 'image/vnd.djvu'
+5109       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'djv' to 'image/vnd.djvu'
+5109       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.dwg'
+5109       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.dxf'
+5109       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.fastbidsheet'
+5109       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.fpx'
+5109       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.fst'
+5110       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.fujixerox.edmics-mmr'
+5110       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.fujixerox.edmics-rlc'
+5110       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.globalgraphics.pgb'
+5110       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.mix'
+5110       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.ms-modi'
+5110       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.net-fpx'
+5110       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.svf'
+5110       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'wbmp' to 'image/vnd.wap.wbmp'
+5111       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'image/vnd.xiff'
+5111       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ras' to 'image/x-cmu-raster'
+5111       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'pntg' to 'image/x-macpaint'
+5111       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'pnt' to 'image/x-macpaint'
+5111       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mac' to 'image/x-macpaint'
+5111       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ico' to 'image/x-icon'
+5112       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'pnm' to 'image/x-portable-anymap'
+5112       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'pbm' to 'image/x-portable-bitmap'
+5112       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'pgm' to 'image/x-portable-graymap'
+5112       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ppm' to 'image/x-portable-pixmap'
+5112       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'qtif' to 'image/x-quicktime'
+5112       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'qti' to 'image/x-quicktime'
+5112       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'rgb' to 'image/x-rgb'
+5113       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'xbm' to 'image/x-xbitmap'
+5113       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'xpm' to 'image/x-xpixmap'
+5113       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'xwd' to 'image/x-xwindowdump'
+5113       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'message/delivery-status'
+5113       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'message/disposition-notification'
+5113       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'message/external-body'
+5113       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'message/http'
+5113       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'message/news'
+5114       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'message/partial'
+5114       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'message/rfc822'
+5114       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'message/s-http'
+5114       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'message/sip'
+5114       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'message/sipfrag'
+5114       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'igs' to 'model/iges'
+5114       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'iges' to 'model/iges'
+5114       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'msh' to 'model/mesh'
+5114       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mesh' to 'model/mesh'
+5115       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'silo' to 'model/mesh'
+5116       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'model/vnd.dwf'
+5116       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'model/vnd.flatland.3dml'
+5116       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'model/vnd.gdl'
+5116       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'model/vnd.gs-gdl'
+5117       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'model/vnd.gtw'
+5117       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'model/vnd.mts'
+5117       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'model/vnd.parasolid.transmit.binary'
+5117       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'model/vnd.parasolid.transmit.text'
+5117       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'model/vnd.vtu'
+5117       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'wrl' to 'model/vrml'
+5117       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'vrml' to 'model/vrml'
+5117       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/alternative'
+5118       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/appledouble'
+5118       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/byteranges'
+5118       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/digest'
+5118       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/encrypted'
+5118       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/form-data'
+5118       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/header-set'
+5118       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/mixed'
+5118       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/parallel'
+5120       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/related'
+5121       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/report'
+5121       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/signed'
+5121       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'multipart/voice-message'
+5121       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ics' to 'text/calendar'
+5122       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ifb' to 'text/calendar'
+5122       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'css' to 'text/css'
+5122       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/directory'
+5122       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/enriched'
+5122       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'html' to 'text/html'
+5122       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'htm' to 'text/html'
+5122       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/parityfec'
+5123       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'asc' to 'text/plain'
+5123       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'txt' to 'text/plain'
+5123       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/prs.lines.tag'
+5123       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/rfc822-headers'
+5123       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'rtx' to 'text/richtext'
+5123       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'rtf' to 'text/rtf'
+5123       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'sgml' to 'text/sgml'
+5124       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'sgm' to 'text/sgml'
+5124       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/t140'
+5124       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'tsv' to 'text/tab-separated-values'
+5124       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/uri-list'
+5124       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.abc'
+5124       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.curl'
+5124       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.dmclientscript'
+5125       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.fly'
+5125       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.fmi.flexstor'
+5125       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.in3d.3dml'
+5125       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.in3d.spot'
+5125       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.iptc.nitf'
+5125       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.iptc.newsml'
+5125       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.latex-z'
+5125       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.motorola.reflex'
+5126       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.ms-mediapackage'
+5126       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.net2phone.commcenter.command'
+5126       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.sun.j2me.app-descriptor'
+5126       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.wap.si'
+5126       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/vnd.wap.sl'
+5126       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'wml' to 'text/vnd.wap.wml'
+5126       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'wmls' to 'text/vnd.wap.wmlscript'
+5126       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'etx' to 'text/x-setext'
+5127       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/xml'
+5127       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'text/xml-external-parsed-entity'
+5127       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension '3gp' to 'video/3gpp'
+5127       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/bmpeg'
+5127       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/bt656'
+5127       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/celb'
+5127       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/dv'
+5127       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/h261'
+5128       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/h263'
+5128       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/h263-1998'
+5128       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/h263-2000'
+5128       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/jpeg'
+5128       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/mp1s'
+5128       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/mp2p'
+5128       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/mp2t'
+5129       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mp4' to 'video/mp4'
+5129       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/mp4v-es'
+5129       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/mpv'
+5129       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mpeg' to 'video/mpeg'
+5129       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mpg' to 'video/mpeg'
+5131       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mpe' to 'video/mpeg'
+5131       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/nv'
+5131       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ogv' to 'video/ogv'
+5131       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/parityfec'
+5131       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/pointer'
+5131       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'qt' to 'video/quicktime'
+5132       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mov' to 'video/quicktime'
+5132       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/smpte292m'
+5132       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/vnd.fvt'
+5132       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/vnd.motorola.video'
+5132       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/vnd.motorola.videop'
+5133       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'mxu' to 'video/vnd.mpegurl'
+5133       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'm4u' to 'video/vnd.mpegurl'
+5133       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/vnd.nokia.interleaved-multimedia'
+5133       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/vnd.objectvideo'
+5133       DEBUG [Test worker    ] Mimetypes: Ignoring mimetype with no associated file extensions: 'video/vnd.vivo'
+5133       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'webm' to 'video/webm'
+5133       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'dv' to 'video/x-dv'
+5134       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'dif' to 'video/x-dv'
+5134       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'flv' to 'video/x-flv'
+5134       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'm4v' to 'video/x-m4v'
+5134       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'wmv' to 'video/x-ms-wmv'
+5134       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'avi' to 'video/x-msvideo'
+5134       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'movie' to 'video/x-sgi-movie'
+5135       DEBUG [Test worker    ] Mimetypes: Setting mime type for extension 'ice' to 'x-conference/x-cooltalk'
+5135       DEBUG [Test worker    ] Mimetypes: File name has no extension, mime type cannot be recognised for: random5129428602189274894bin
+5306       DEBUG [Thread-5       ] PoolingHttpClientConnectionManager: Connection [id: 0][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+5306       DEBUG [Thread-5       ] PoolingHttpClientConnectionManager: Connection released: [id: 0][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 2; total allocated: 1 of 20]
+5331       DEBUG [pool-1-thread-1] UploadCallable: Calculated optimal part size: 5242880
+5332       DEBUG [Thread-5       ] PollingDaemon: polling daemon finished; sleeping for 120 seconds..
+5389       DEBUG [Test worker    ] ObjectConfig: raw path & query: /multipartKey?null
+5389       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/multipartKey
+5390       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/multipart-bucket/multipartKey
+5390       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+DELETE
+
+
+Tue, 3 Feb 2015 19:24:28 UTC
+/multipart-bucket/multipartKey
+5390       DEBUG [Test worker    ] S3AuthUtil: signature:
+l4CFP6dT1yFz83v9BKpGz4BFDqo=
+5391       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+5391       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+5391       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+5391       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+5392       DEBUG [Test worker    ] MainClientExec: Stale connection check
+5393       DEBUG [Test worker    ] MainClientExec: Executing request DELETE /multipart-bucket/multipartKey HTTP/1.1
+5393       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+5393       DEBUG [Test worker    ] headers: http-outgoing-0 >> DELETE /multipart-bucket/multipartKey HTTP/1.1
+5394       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+5394       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:28 UTC
+5394       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:l4CFP6dT1yFz83v9BKpGz4BFDqo=
+5394       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+5394       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+5394       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+5444       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 204 No Content
+5444       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:29 GMT
+5444       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+5444       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f3:7
+5444       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: 79dd6ee00c34d5a2a3290acfff331cd309869841533fd7c96e081b091d4b133f
+5444       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+5444       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+5444       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+5444       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+5445       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 54, queue size: 2, new average: 662
+5445       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+5445       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+5446       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/multipart-bucket/
+5446       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+DELETE
+
+
+Tue, 3 Feb 2015 19:24:28 UTC
+/multipart-bucket/
+5446       DEBUG [Test worker    ] S3AuthUtil: signature:
+J/DrnqBgZskmdLuqYmJrCbx28lE=
+5447       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+5447       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+5447       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+5447       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+5447       DEBUG [Test worker    ] MainClientExec: Stale connection check
+5450       DEBUG [Test worker    ] MainClientExec: Executing request DELETE /multipart-bucket/ HTTP/1.1
+5450       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+5451       DEBUG [Test worker    ] headers: http-outgoing-0 >> DELETE /multipart-bucket/ HTTP/1.1
+5451       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+5451       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:28 UTC
+5451       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:J/DrnqBgZskmdLuqYmJrCbx28lE=
+5451       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+5451       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+5451       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+5531       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 204 No Content
+5532       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:29 GMT
+5532       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+5532       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f2:1
+5532       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: ns1.multipart-bucket
+5532       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+5532       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+5532       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+5532       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+5533       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 86, queue size: 3, new average: 470
+5539       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+5539       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+5540       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/test-bucket-aws/
+5540       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+PUT
+
+text/plain
+Tue, 3 Feb 2015 19:24:28 UTC
+/test-bucket-aws/
+5540       DEBUG [Test worker    ] S3AuthUtil: signature:
+QBjTGkrwSJRB/4EQb4Df54VbkyM=
+5547       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+5548       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+5548       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+5548       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+5548       DEBUG [Test worker    ] MainClientExec: Stale connection check
+5550       DEBUG [Test worker    ] MainClientExec: Executing request PUT /test-bucket-aws/ HTTP/1.1
+5550       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+5550       DEBUG [Test worker    ] headers: http-outgoing-0 >> PUT /test-bucket-aws/ HTTP/1.1
+5550       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Type: text/plain
+5550       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+5550       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:28 UTC
+5551       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:QBjTGkrwSJRB/4EQb4Df54VbkyM=
+5551       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Length: 0
+5551       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+5551       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+5551       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+5644       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 200 OK
+5644       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:29 GMT
+5644       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+5644       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f3:a
+5644       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: ae73d223abeb99f53bfbee59d8121d33d33e1d2dca8d09e719082718eac02cef
+5644       DEBUG [Test worker    ] headers: http-outgoing-0 << Location: /test-bucket-aws
+5644       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+5644       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+5646       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 105, queue size: 4, new average: 378
+5646       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+5646       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+5782       DEBUG [Test worker    ] ObjectConfig: raw path & query: /testKey?null
+5782       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/testKey
+5784       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+5784       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+5785       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/test-bucket-aws/
+5786       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+DELETE
+
+
+Tue, 3 Feb 2015 19:24:29 UTC
+/test-bucket-aws/
+5786       DEBUG [Test worker    ] S3AuthUtil: signature:
+Ja4Fv3+WuVYfEQc7UsYgbYsKiBU=
+5788       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+5788       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+5788       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+5788       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+5788       DEBUG [Test worker    ] MainClientExec: Stale connection check
+5798       DEBUG [Test worker    ] MainClientExec: Executing request DELETE /test-bucket-aws/ HTTP/1.1
+5798       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+5798       DEBUG [Test worker    ] headers: http-outgoing-0 >> DELETE /test-bucket-aws/ HTTP/1.1
+5798       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+5798       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:29 UTC
+5798       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:Ja4Fv3+WuVYfEQc7UsYgbYsKiBU=
+5798       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+5798       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+5798       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+5945       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 204 No Content
+5945       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:29 GMT
+5945       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+5945       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f3:11
+5945       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: ns1.test-bucket-aws
+5945       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+5945       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+5945       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+5945       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+5946       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 160, queue size: 5, new average: 335
+5947       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+5947       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+5948       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/test-nonempty-bucket/
+5948       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+PUT
+
+text/plain
+Tue, 3 Feb 2015 19:24:29 UTC
+/test-nonempty-bucket/
+5949       DEBUG [Test worker    ] S3AuthUtil: signature:
+L862vGK6Xg7hJypqoxo+2mCMpVo=
+5950       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+5950       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+5950       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+5950       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+5951       DEBUG [Test worker    ] MainClientExec: Stale connection check
+5955       DEBUG [Test worker    ] MainClientExec: Executing request PUT /test-nonempty-bucket/ HTTP/1.1
+5955       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+5955       DEBUG [Test worker    ] headers: http-outgoing-0 >> PUT /test-nonempty-bucket/ HTTP/1.1
+5955       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Type: text/plain
+5955       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+5955       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:29 UTC
+5955       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:L862vGK6Xg7hJypqoxo+2mCMpVo=
+5955       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Length: 0
+5956       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+5956       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+5956       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+6079       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 409 Conflict
+6080       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Type: application/xml
+6080       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 3 Feb 2015 19:24:29 GMT
+6080       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: 
+6080       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f3:18
+6080       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+6080       DEBUG [Test worker    ] headers: http-outgoing-0 << Transfer-Encoding: chunked
+6084       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+6084       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 135, queue size: 6, new average: 301
+6225       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+6225       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6234       DEBUG [Test worker    ] ErrorResponseFilter: Error: BucketAlreadyExists, message: The requested bucket name is not available. The bucket namespace is shared by all users of the system. Please select a different name and try again., requestId: 0af9ed95:14b4ba4ff77:9f3:18
+6236       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+6236       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+6237       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/meta-bucket/
+6237       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+PUT
+
+text/plain
+Tue, 3 Feb 2015 19:24:29 UTC
+/meta-bucket/
+6237       DEBUG [Test worker    ] S3AuthUtil: signature:
+GauJjPkM6KFrB5uD9c4E3yDHCUk=
+6238       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+6239       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+6239       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6239       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+6239       DEBUG [Test worker    ] MainClientExec: Stale connection check
+6241       DEBUG [Test worker    ] MainClientExec: Executing request PUT /meta-bucket/ HTTP/1.1
+6241       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+6241       DEBUG [Test worker    ] headers: http-outgoing-0 >> PUT /meta-bucket/ HTTP/1.1
+6241       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Type: text/plain
+6241       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+6241       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:29 UTC
+6241       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:GauJjPkM6KFrB5uD9c4E3yDHCUk=
+6242       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Length: 0
+6242       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+6242       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+6242       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+6354       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 200 OK
+6354       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:29 GMT
+6354       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+6354       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f2:8
+6354       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: d11fe7beca7b5dfcf10c628946ec82394ec02e5791ce42b45b7f14358af8c809
+6354       DEBUG [Test worker    ] headers: http-outgoing-0 << Location: /meta-bucket
+6354       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+6355       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+6356       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 118, queue size: 7, new average: 275
+6356       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+6357       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6358       DEBUG [Test worker    ] ObjectConfig: raw path & query: /metaKey?null
+6358       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/metaKey
+6359       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+6359       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+6359       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/meta-bucket/
+6360       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+DELETE
+
+
+Tue, 3 Feb 2015 19:24:29 UTC
+/meta-bucket/
+6360       DEBUG [Test worker    ] S3AuthUtil: signature:
+Bm2ZYJZ46mLLJDzZaEHvq5D2yZc=
+6361       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+6361       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+6361       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6361       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+6361       DEBUG [Test worker    ] MainClientExec: Stale connection check
+6362       DEBUG [Test worker    ] MainClientExec: Executing request DELETE /meta-bucket/ HTTP/1.1
+6363       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+6363       DEBUG [Test worker    ] headers: http-outgoing-0 >> DELETE /meta-bucket/ HTTP/1.1
+6363       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+6363       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:29 UTC
+6363       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:Bm2ZYJZ46mLLJDzZaEHvq5D2yZc=
+6363       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+6363       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+6363       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+6445       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 204 No Content
+6445       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:30 GMT
+6445       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+6445       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f3:1f
+6445       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: ns1.meta-bucket
+6445       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+6445       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+6446       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+6446       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6447       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 86, queue size: 8, new average: 251
+6451       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+6451       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+6452       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/test-bucket/
+6452       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+PUT
+
+text/plain
+Tue, 3 Feb 2015 19:24:29 UTC
+/test-bucket/
+6453       DEBUG [Test worker    ] S3AuthUtil: signature:
+8tRHrqe2IhExh52H9fCH+hrg3Sc=
+6453       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+6453       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+6454       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6454       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+6454       DEBUG [Test worker    ] MainClientExec: Stale connection check
+6460       DEBUG [Test worker    ] MainClientExec: Executing request PUT /test-bucket/ HTTP/1.1
+6460       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+6461       DEBUG [Test worker    ] headers: http-outgoing-0 >> PUT /test-bucket/ HTTP/1.1
+6461       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Type: text/plain
+6461       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+6461       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:29 UTC
+6461       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:8tRHrqe2IhExh52H9fCH+hrg3Sc=
+6461       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Length: 0
+6461       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+6461       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+6461       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+6551       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 200 OK
+6551       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:30 GMT
+6551       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+6551       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f3:26
+6551       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: 358c213a3fee862380d04ff30047297d73aa575e80826e31919378e1a08e724f
+6552       DEBUG [Test worker    ] headers: http-outgoing-0 << Location: /test-bucket
+6552       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+6552       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+6552       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 99, queue size: 9, new average: 234
+6552       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+6553       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6553       DEBUG [Test worker    ] ObjectConfig: raw path & query: /testKey?null
+6553       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/testKey
+6553       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+6553       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+6554       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/test-bucket/
+6554       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+DELETE
+
+
+Tue, 3 Feb 2015 19:24:29 UTC
+/test-bucket/
+6555       DEBUG [Test worker    ] S3AuthUtil: signature:
+Ba4sanZsZZrt4FAoGTlG9JswetE=
+6556       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+6556       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+6556       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6557       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+6557       DEBUG [Test worker    ] MainClientExec: Stale connection check
+6559       DEBUG [Test worker    ] MainClientExec: Executing request DELETE /test-bucket/ HTTP/1.1
+6559       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+6559       DEBUG [Test worker    ] headers: http-outgoing-0 >> DELETE /test-bucket/ HTTP/1.1
+6559       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+6559       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:29 UTC
+6559       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:Ba4sanZsZZrt4FAoGTlG9JswetE=
+6559       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+6559       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+6559       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+6636       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 204 No Content
+6636       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:30 GMT
+6636       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+6636       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f2:f
+6636       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: ns1.test-bucket
+6636       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+6637       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+6637       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+6637       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6637       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 82, queue size: 10, new average: 219
+6639       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+6639       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+6640       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/test-bucket-aws/
+6640       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+PUT
+
+text/plain
+Tue, 3 Feb 2015 19:24:29 UTC
+/test-bucket-aws/
+6641       DEBUG [Test worker    ] S3AuthUtil: signature:
+RTkq5UlBoIcV7xzYsBMm8v7V62Y=
+6641       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+6641       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+6642       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6642       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+6642       DEBUG [Test worker    ] MainClientExec: Stale connection check
+6646       DEBUG [Test worker    ] MainClientExec: Executing request PUT /test-bucket-aws/ HTTP/1.1
+6646       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+6646       DEBUG [Test worker    ] headers: http-outgoing-0 >> PUT /test-bucket-aws/ HTTP/1.1
+6646       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Type: text/plain
+6646       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+6646       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:29 UTC
+6646       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:RTkq5UlBoIcV7xzYsBMm8v7V62Y=
+6646       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Length: 0
+6646       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+6646       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+6646       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+6733       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 200 OK
+6733       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:30 GMT
+6733       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+6734       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f3:2d
+6734       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: 916eaf6bf6ca45f6b9446c32bfea3e7b976921f53d63e32a266fb9aa79c04fd3
+6734       DEBUG [Test worker    ] headers: http-outgoing-0 << Location: /test-bucket-aws
+6734       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+6734       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+6734       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 93, queue size: 11, new average: 208
+6734       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+6735       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6735       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+6735       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+6736       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/test-bucket-aws/
+6736       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+HEAD
+
+
+Tue, 3 Feb 2015 19:24:30 UTC
+/test-bucket-aws/
+6736       DEBUG [Test worker    ] S3AuthUtil: signature:
+KzJGcrZmpxvRqNZQok0tToLAuYM=
+6737       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+6737       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+6737       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6737       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+6737       DEBUG [Test worker    ] MainClientExec: Stale connection check
+6738       DEBUG [Test worker    ] MainClientExec: Executing request HEAD /test-bucket-aws/ HTTP/1.1
+6739       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+6739       DEBUG [Test worker    ] headers: http-outgoing-0 >> HEAD /test-bucket-aws/ HTTP/1.1
+6739       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+6739       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:30 UTC
+6739       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:KzJGcrZmpxvRqNZQok0tToLAuYM=
+6739       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+6739       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+6739       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+6789       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 200 OK
+6789       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:30 GMT
+6789       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+6789       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f2:16
+6789       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: 916eaf6bf6ca45f6b9446c32bfea3e7b976921f53d63e32a266fb9aa79c04fd3
+6789       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+6789       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+6789       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+6789       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6790       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 54, queue size: 12, new average: 195
+6791       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+6791       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+6792       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+GET
+
+
+Tue, 3 Feb 2015 19:24:30 UTC
+/
+6793       DEBUG [Test worker    ] S3AuthUtil: signature:
+Zvfno4bO3rrr3nXMUDNgd1WJ3p8=
+6793       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+6794       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+6794       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+6794       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+6794       DEBUG [Test worker    ] MainClientExec: Stale connection check
+6795       DEBUG [Test worker    ] MainClientExec: Executing request GET / HTTP/1.1
+6795       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+6796       DEBUG [Test worker    ] headers: http-outgoing-0 >> GET / HTTP/1.1
+6796       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+6796       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:30 UTC
+6796       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:Zvfno4bO3rrr3nXMUDNgd1WJ3p8=
+6796       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+6796       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+6796       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+7009       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 200 OK
+7009       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:30 GMT
+7009       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+7009       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f3:34
+7009       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: 
+7009       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Type: application/xml
+7009       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 463
+7009       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+7010       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 216, queue size: 13, new average: 196
+7110       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+7111       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+7111       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+7111       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+7113       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/test-bucket-aws/
+7113       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+DELETE
+
+
+Tue, 3 Feb 2015 19:24:30 UTC
+/test-bucket-aws/
+7114       DEBUG [Test worker    ] S3AuthUtil: signature:
+6BClqdO1i0bmVJPvxx4oI551bKI=
+7115       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+7115       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+7115       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+7115       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+7115       DEBUG [Test worker    ] MainClientExec: Stale connection check
+7117       DEBUG [Test worker    ] MainClientExec: Executing request DELETE /test-bucket-aws/ HTTP/1.1
+7117       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+7117       DEBUG [Test worker    ] headers: http-outgoing-0 >> DELETE /test-bucket-aws/ HTTP/1.1
+7117       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+7117       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:30 UTC
+7117       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:6BClqdO1i0bmVJPvxx4oI551bKI=
+7117       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+7117       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+7118       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+7204       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 204 No Content
+7204       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:30 GMT
+7204       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+7204       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f2:17
+7204       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: ns1.test-bucket-aws
+7204       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+7204       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+7204       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+7204       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+7205       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 91, queue size: 14, new average: 189
+7205       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+7205       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+7206       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/test-bucket-aws/
+7206       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+HEAD
+
+
+Tue, 3 Feb 2015 19:24:30 UTC
+/test-bucket-aws/
+7207       DEBUG [Test worker    ] S3AuthUtil: signature:
+KzJGcrZmpxvRqNZQok0tToLAuYM=
+7207       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+7207       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+7207       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+7208       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+7208       DEBUG [Test worker    ] MainClientExec: Stale connection check
+7209       DEBUG [Test worker    ] MainClientExec: Executing request HEAD /test-bucket-aws/ HTTP/1.1
+7209       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+7209       DEBUG [Test worker    ] headers: http-outgoing-0 >> HEAD /test-bucket-aws/ HTTP/1.1
+7209       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+7209       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:30 UTC
+7209       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:KzJGcrZmpxvRqNZQok0tToLAuYM=
+7209       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+7209       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+7210       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+7263       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 404 Not Found
+7263       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 3 Feb 2015 19:24:30 GMT
+7263       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: 
+7263       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f2:1e
+7263       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+7263       DEBUG [Test worker    ] headers: http-outgoing-0 << Cache-Control: must-revalidate,no-cache,no-store
+7263       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Type: text/html;charset=ISO-8859-1
+7263       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 1283
+7263       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+7264       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+7264       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+7266       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 59, queue size: 15, new average: 180
+7279       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+7279       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+7279       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+GET
+
+
+Tue, 3 Feb 2015 19:24:30 UTC
+/
+7280       DEBUG [Test worker    ] S3AuthUtil: signature:
+Zvfno4bO3rrr3nXMUDNgd1WJ3p8=
+7280       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+7280       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+7281       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+7281       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+7281       DEBUG [Test worker    ] MainClientExec: Stale connection check
+7286       DEBUG [Test worker    ] MainClientExec: Executing request GET / HTTP/1.1
+7286       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+7287       DEBUG [Test worker    ] headers: http-outgoing-0 >> GET / HTTP/1.1
+7287       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+7287       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:30 UTC
+7287       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:Zvfno4bO3rrr3nXMUDNgd1WJ3p8=
+7287       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+7287       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+7287       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+7527       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 200 OK
+7527       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:31 GMT
+7527       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+7527       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f3:3c
+7527       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: 
+7528       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Type: application/xml
+7528       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 365
+7528       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+7528       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 248, queue size: 16, new average: 184
+7533       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+7533       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+7534       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+7534       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+7535       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/multipart-list-bucket/
+7536       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+PUT
+
+text/plain
+Tue, 3 Feb 2015 19:24:30 UTC
+/multipart-list-bucket/
+7537       DEBUG [Test worker    ] S3AuthUtil: signature:
+qsYlk+43+P0TZSJGFhVjpLSMYt4=
+7538       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+7539       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+7539       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+7539       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+7539       DEBUG [Test worker    ] MainClientExec: Stale connection check
+7541       DEBUG [Test worker    ] MainClientExec: Executing request PUT /multipart-list-bucket/ HTTP/1.1
+7541       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+7542       DEBUG [Test worker    ] headers: http-outgoing-0 >> PUT /multipart-list-bucket/ HTTP/1.1
+7542       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Type: text/plain
+7542       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+7542       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:30 UTC
+7542       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:qsYlk+43+P0TZSJGFhVjpLSMYt4=
+7542       DEBUG [Test worker    ] headers: http-outgoing-0 >> Content-Length: 0
+7542       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+7542       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+7542       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+7631       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 200 OK
+7631       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:31 GMT
+7631       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+7631       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f2:21
+7631       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: 82f277642c3c0024730cdacc00c2018624b3e87f90e95d1fde6b54f51b1599bf
+7631       DEBUG [Test worker    ] headers: http-outgoing-0 << Location: /multipart-list-bucket
+7632       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+7632       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+7632       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 95, queue size: 17, new average: 179
+7632       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+7632       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+7633       DEBUG [Test worker    ] ObjectConfig: raw path & query: /?null
+7633       DEBUG [Test worker    ] ObjectConfig: resolved URI: HTTP://10.249.237.149:9020/
+7634       DEBUG [Test worker    ] BucketRequestFilter: URI including bucket: HTTP://10.249.237.149:9020/multipart-list-bucket/
+7634       DEBUG [Test worker    ] S3AuthUtil: stringToSign:
+DELETE
+
+
+Tue, 3 Feb 2015 19:24:30 UTC
+/multipart-list-bucket/
+7634       DEBUG [Test worker    ] S3AuthUtil: signature:
+fK9JL/+JTB2nPtF9b/i51PQ/14w=
+7635       DEBUG [Test worker    ] RequestAddCookies: CookieSpec selected: best-match
+7635       DEBUG [Test worker    ] RequestAuthCache: Auth cache not set in the context
+7636       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection request: [route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+7636       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection leased: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 0; route allocated: 1 of 200; total allocated: 1 of 200]
+7636       DEBUG [Test worker    ] MainClientExec: Stale connection check
+7638       DEBUG [Test worker    ] MainClientExec: Executing request DELETE /multipart-list-bucket/ HTTP/1.1
+7638       DEBUG [Test worker    ] MainClientExec: Proxy auth state: UNCHALLENGED
+7638       DEBUG [Test worker    ] headers: http-outgoing-0 >> DELETE /multipart-list-bucket/ HTTP/1.1
+7638       DEBUG [Test worker    ] headers: http-outgoing-0 >> User-Agent: ECS Java SDK v2.0.4-dev.83+7b5493b
+7638       DEBUG [Test worker    ] headers: http-outgoing-0 >> Date: Tue, 3 Feb 2015 19:24:30 UTC
+7638       DEBUG [Test worker    ] headers: http-outgoing-0 >> Authorization: AWS root:fK9JL/+JTB2nPtF9b/i51PQ/14w=
+7638       DEBUG [Test worker    ] headers: http-outgoing-0 >> Host: 10.249.237.149:9020
+7638       DEBUG [Test worker    ] headers: http-outgoing-0 >> Connection: Keep-Alive
+7639       DEBUG [Test worker    ] headers: http-outgoing-0 >> Accept-Encoding: gzip,deflate
+7722       DEBUG [Test worker    ] headers: http-outgoing-0 << HTTP/1.1 204 No Content
+7722       DEBUG [Test worker    ] headers: http-outgoing-0 << Date: Tue, 03 Feb 2015 19:24:31 GMT
+7722       DEBUG [Test worker    ] headers: http-outgoing-0 << Server: ViPR/1.0
+7722       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-request-id: 0af9ed95:14b4ba4ff77:9f3:44
+7722       DEBUG [Test worker    ] headers: http-outgoing-0 << x-amz-id-2: ns1.multipart-list-bucket
+7722       DEBUG [Test worker    ] headers: http-outgoing-0 << Content-Length: 0
+7722       DEBUG [Test worker    ] MainClientExec: Connection can be kept alive indefinitely
+7722       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection [id: 1][route: {}->http://10.249.237.149:9020] can be kept alive indefinitely
+7722       DEBUG [Test worker    ] PoolingHttpClientConnectionManager: Connection released: [id: 1][route: {}->http://10.249.237.149:9020][total kept alive: 1; route allocated: 1 of 200; total allocated: 1 of 200]
+7723       DEBUG [Test worker    ] Host: call complete for 10.249.237.149; duration: 88, queue size: 18, new average: 174
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
