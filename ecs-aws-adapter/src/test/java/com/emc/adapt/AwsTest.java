@@ -1,7 +1,6 @@
 package com.emc.adapt;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.HttpMethod;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -18,10 +17,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.*;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -67,12 +64,12 @@ public class AwsTest {
 
     @Test
     public void testDeleteNonEmptyBucket() throws Exception {
-        String bucket = "test-nonempty-bucket";
+        String bucket = "tst-nonempty-bucket";
         String content = "Hello World";
         String key = "testKey";
 
         s3.createBucket(bucket);
-        s3.putObject(bucket, key, new StringInputStream(content), null);
+        s3.putObject(bucket, key, new StringInputStream(content), new ObjectMetadata());
         createdKeys(bucket).add(key);
 
         try {
@@ -92,6 +89,9 @@ public class AwsTest {
 
         s3.createBucket(bucket);
         createdKeys(bucket); // make sure we clean up the bucket
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setHeader(key, content);
+        metadata.setContentLength(content.length());
 
         s3.putObject(bucket, key, new StringInputStream(content), null);
 
@@ -100,6 +100,7 @@ public class AwsTest {
         Assert.assertEquals("content mismatch", content, readContent);
 
         String newContent = "Goodbye World";
+        metadata.setContentLength(content.length());
         s3.putObject(bucket, key, new StringInputStream(newContent), null);
 
         object = s3.getObject(bucket, key);
@@ -132,6 +133,10 @@ public class AwsTest {
         s3.createBucket(bucket);
         createdKeys(bucket); // make sure we clean up the bucket
 
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setHeader(key, content);
+        metadata.setContentLength(content.length());
+
         s3.putObject(bucket, key, new StringInputStream(content), null);
         createdKeys(bucket).add(key);
 
@@ -145,7 +150,7 @@ public class AwsTest {
         overrides.setExpires(expires);
         request.setResponseHeaders(overrides);
         S3Object object = s3.getObject(request);
-        ObjectMetadata metadata = object.getObjectMetadata();
+        metadata = object.getObjectMetadata();
         Assert.assertEquals("cache-control header mismatch", cacheControl, metadata.getCacheControl());
         Assert.assertEquals("content-disposition header mismatch", disposition, metadata.getContentDisposition());
         Assert.assertEquals("content-encoding header mismatch", contentEncoding, metadata.getContentEncoding());
@@ -202,7 +207,8 @@ public class AwsTest {
 
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.addUserMetadata("key1", "value1");
-        s3.putObject(bucket, key, new StringInputStream(content), metadata);
+        //metadata.setContentLength(content.length());
+        s3.putObject(bucket, key, new StringInputStream(content), null);
         createdKeys(bucket).add(key);
 
         // verify metadata
@@ -213,7 +219,7 @@ public class AwsTest {
         // update (add) metadata - only way is to copy
         metadata.addUserMetadata("key2", "value2");
         CopyObjectRequest request = new CopyObjectRequest(bucket, key, bucket, key);
-        request.setNewObjectMetadata(metadata);
+        request.setNewObjectMetadata(null);
         s3.copyObject(request);
 
         // verify metadata (both keys)

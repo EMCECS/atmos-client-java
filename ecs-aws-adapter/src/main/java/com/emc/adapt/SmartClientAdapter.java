@@ -836,6 +836,19 @@ public class SmartClientAdapter implements AmazonS3 {
     public com.amazonaws.services.s3.model.PutObjectResult putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata) throws AmazonClientException {
 
         com.emc.object.s3.request.PutObjectRequest por = new com.emc.object.s3.request.PutObjectRequest(bucketName, key, input);
+
+        if (metadata != null) {
+            S3ObjectMetadata md = new S3ObjectMetadata();
+            md.setLastModified(metadata.getLastModified());
+            md.setContentType(metadata.getContentType());
+            md.setContentLength(metadata.getContentLength());
+            md.setCacheControl(metadata.getCacheControl());
+            md.setContentDisposition(metadata.getContentDisposition());
+            md.setContentEncoding(metadata.getContentEncoding());
+            por.setObjectMetadata(md);
+        }
+
+
         PutObjectResult pores = client.putObject(por);
 
         com.amazonaws.services.s3.model.PutObjectResult ret = new com.amazonaws.services.s3.model.PutObjectResult();
@@ -1538,8 +1551,10 @@ public class SmartClientAdapter implements AmazonS3 {
                 reqAcl.getGrants().add(newGrant);
             }
         }
+        else if (request.getCannedACL() != null) {
+            req.setCannedAcl(CannedAcl.fromHeaderValue(request.getCannedACL().toString()));
+        }
 
-        req.setCannedAcl(CannedAcl.fromHeaderValue(request.getCannedACL().toString()));
         com.emc.object.s3.bean.InitiateMultipartUploadResult imur = client.initiateMultipartUpload(req);
 
         InitiateMultipartUploadResult ret = new InitiateMultipartUploadResult();
