@@ -1,4 +1,4 @@
-package com.emc.adapt;
+package com.emc.object.s3.aws;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
@@ -36,12 +36,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.amazonaws.regions.Region;
-
 /**
  * Amazon S3 adapter for ECS smart client.
  */
-public class SmartClientAdapter implements AmazonS3 {
+public class EcsAwsAdapter implements AmazonS3 {
 
     protected S3Client client;
     protected S3Config config;
@@ -52,11 +50,17 @@ public class SmartClientAdapter implements AmazonS3 {
      * @param config S3Config object containing endpoint and access
      *               credentials for client.
      */
-    public SmartClientAdapter(S3Config config) {
+    public EcsAwsAdapter(S3Config config) {
         this.config = config;
         this.client = new S3JerseyClient(this.config);
     }
 
+    /**
+     * Sets the default endpoint(s) for this client.
+     *
+     * @param endpoints Single or list of endpoints which
+     *                  this client will communicate with.
+     */
     @Override
     public void setEndpoint(String endpoints) {
         throw new UnsupportedOperationException("endpoint[s] can only be set in the constructor of this adapter");
@@ -832,6 +836,18 @@ public class SmartClientAdapter implements AmazonS3 {
     public com.amazonaws.services.s3.model.PutObjectResult putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata) throws AmazonClientException {
 
         com.emc.object.s3.request.PutObjectRequest por = new com.emc.object.s3.request.PutObjectRequest(bucketName, key, input);
+
+        if (metadata != null) {
+            S3ObjectMetadata md = new S3ObjectMetadata();
+            md.setLastModified(metadata.getLastModified());
+            md.setContentType(metadata.getContentType());
+            md.setContentLength(metadata.getContentLength());
+            md.setCacheControl(metadata.getCacheControl());
+            md.setContentDisposition(metadata.getContentDisposition());
+            md.setContentEncoding(metadata.getContentEncoding());
+            por.setObjectMetadata(md);
+        }
+
         PutObjectResult pores = client.putObject(por);
 
         com.amazonaws.services.s3.model.PutObjectResult ret = new com.amazonaws.services.s3.model.PutObjectResult();
@@ -856,6 +872,7 @@ public class SmartClientAdapter implements AmazonS3 {
     public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws AmazonClientException {
         com.emc.object.s3.request.PutObjectRequest req = new com.emc.object.s3.request.PutObjectRequest(destinationBucketName,
                 destinationKey, client.readObject(sourceBucketName, sourceKey, S3Object.class));
+        req.setObjectMetadata(client.getObjectMetadata(sourceBucketName, sourceKey));
         PutObjectResult res = client.putObject(req);
 
         CopyObjectResult cor = new CopyObjectResult();
@@ -891,6 +908,7 @@ public class SmartClientAdapter implements AmazonS3 {
         com.emc.object.s3.request.CopyPartRequest req = new com.emc.object.s3.request.CopyPartRequest(
                 copyPartRequest.getSourceBucketName(), copyPartRequest.getSourceKey(), copyPartRequest.getDestinationBucketName(),
                 copyPartRequest.getDestinationBucketName(), copyPartRequest.getUploadId(), copyPartRequest.getPartNumber());
+        req.setObjectMetadata(client.getObjectMetadata(copyPartRequest.getSourceBucketName(), copyPartRequest.getSourceKey()));
         com.emc.object.s3.bean.CopyPartResult res = client.copyPart(req);
 
         CopyPartResult ret = new CopyPartResult();
@@ -1514,7 +1532,7 @@ public class SmartClientAdapter implements AmazonS3 {
             S3ObjectMetadata smd = new S3ObjectMetadata();
             ObjectMetadata omd =request.getObjectMetadata();
             smd.setContentType(omd.getContentType());
-            smd.setContentLength(omd.getContentLength());
+            //smd.setContentLength(omd.getContentLength());
             smd.setContentEncoding(omd.getContentEncoding());
             smd.setCacheControl(omd.getCacheControl());
             smd.setContentMd5(omd.getContentMD5());
@@ -1534,8 +1552,10 @@ public class SmartClientAdapter implements AmazonS3 {
                 reqAcl.getGrants().add(newGrant);
             }
         }
+        else if (request.getCannedACL() != null) {
+            req.setCannedAcl(CannedAcl.fromHeaderValue(request.getCannedACL().toString()));
+        }
 
-        req.setCannedAcl(CannedAcl.fromHeaderValue(request.getCannedACL().toString()));
         com.emc.object.s3.bean.InitiateMultipartUploadResult imur = client.initiateMultipartUpload(req);
 
         InitiateMultipartUploadResult ret = new InitiateMultipartUploadResult();
@@ -1558,20 +1578,20 @@ public class SmartClientAdapter implements AmazonS3 {
 
         MultipartPart mp;
         if (request.getInputStream() != null) {
-            com.emc.object.s3.request.UploadPartRequest req = new com.emc.object.s3.request.UploadPartRequest(
-                    request.getBucketName(), request.getKey(), request.getUploadId(), request.getPartNumber(), request.getInputStream());
-            mp = client.uploadPart(req);
+            mp = client.uploadPart(new com.emc.object.s3.request.UploadPartRequest(
+                    request.getBucketName(), request.getKey(), request.getUploadId(),
+                     request.getPartNumber(), request.getInputStream()).withContentLength(request.getPartSize()));
         }
         else {
-            com.emc.object.s3.request.UploadPartRequest req = new com.emc.object.s3.request.UploadPartRequest(
-                    request.getBucketName(), request.getKey(), request.getUploadId(), request.getPartNumber(), request.getFile());
-            mp = client.uploadPart(req);
+            mp = client.uploadPart(new com.emc.object.s3.request.UploadPartRequest(
+                    request.getBucketName(), request.getKey(), request.getUploadId(),
+                    request.getPartNumber(), request.getFile()).withContentLength(request.getPartSize()));
         }
 
         UploadPartResult ret = new UploadPartResult();
         ret.setETag(mp.getETag());
         ret.setPartNumber(mp.getPartNumber());
-        return new UploadPartResult();
+        return ret;
     }
 
     /**
@@ -1706,18 +1726,40 @@ public class SmartClientAdapter implements AmazonS3 {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Allows Amazon S3 bucket owner to enable Requester Pays option for
+     * specified bucket. Not supporeted by smart client.
+     *
+     * @param bucketName The name of the bucket being enabled for Requester Pays.
+     * @throws UnsupportedOperationException
+     */
     @Override
-    public void enableRequesterPays(String bucketName) throws AmazonServiceException, AmazonClientException {
+    public void enableRequesterPays(String bucketName) throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Allows Amazon S3 bucket owner to disable Requester Pays option for
+     * specified bucket. Not supporeted by smart client.
+     *
+     * @param bucketName The name of the bucket being disabled for Requester Pays.
+     * @throws UnsupportedOperationException
+     */
     @Override
-    public void disableRequesterPays(String bucketName) throws AmazonServiceException, AmazonClientException {
+    public void disableRequesterPays(String bucketName) throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Retrieves the Requester Pays configuration associated with the specified
+     * bucket. Not supported by smart client.
+     *
+     * @param bucketName The name of the bucket being checked for Requester Pays.
+     * @return true if the bucket is enabled for Requester Pays else false.
+     * @throws UnsupportedOperationException
+     */
     @Override
-    public boolean isRequesterPaysEnabled(String bucketName) throws AmazonServiceException, AmazonClientException {
+    public boolean isRequesterPaysEnabled(String bucketName) throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 }

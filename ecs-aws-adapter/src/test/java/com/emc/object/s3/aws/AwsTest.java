@@ -1,7 +1,6 @@
-package com.emc.adapt;
+package com.emc.object.s3.aws;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.HttpMethod;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -18,10 +17,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.*;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -34,8 +31,8 @@ public class AwsTest {
     public static final String PROP_S3_ACCESS_KEY = "s3.access_key";
     public static final String PROP_S3_SECRET_KEY = "s3.secret_key";
 
-    private static SmartClientAdapter s3;
-    private Map<String, Set<String>> bucketsAndKeys = new TreeMap<String, Set<String>>();
+    private static EcsAwsAdapter s3;
+    private Map<String, Set<String>> bucketsAndKeys = new TreeMap<>();
 
     @Test
     public void testCrudBuckets() throws Exception {
@@ -72,7 +69,10 @@ public class AwsTest {
         String key = "testKey";
 
         s3.createBucket(bucket);
-        s3.putObject(bucket, key, new StringInputStream(content), null);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setHeader(key, content);
+        metadata.setContentLength(content.length());
+        s3.putObject(bucket, key, new StringInputStream(content), metadata);
         createdKeys(bucket).add(key);
 
         try {
@@ -92,15 +92,19 @@ public class AwsTest {
 
         s3.createBucket(bucket);
         createdKeys(bucket); // make sure we clean up the bucket
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setHeader(key, content);
+        metadata.setContentLength(content.length());
 
-        s3.putObject(bucket, key, new StringInputStream(content), null);
+        s3.putObject(bucket, key, new StringInputStream(content), metadata);
 
         S3Object object = s3.getObject(bucket, key);
         String readContent = new Scanner(object.getObjectContent(), "UTF-8").useDelimiter("\\A").next();
         Assert.assertEquals("content mismatch", content, readContent);
 
         String newContent = "Goodbye World";
-        s3.putObject(bucket, key, new StringInputStream(newContent), null);
+        metadata.setContentLength(content.length());
+        s3.putObject(bucket, key, new StringInputStream(newContent), metadata);
 
         object = s3.getObject(bucket, key);
         readContent = new Scanner(object.getObjectContent(), "UTF-8").useDelimiter("\\A").next();
@@ -114,75 +118,6 @@ public class AwsTest {
         } catch (AmazonS3Exception e) {
             if (e.getStatusCode() != 404) throw e;
         }
-    }
-
-    @Test
-    public void testRequestExpiration() throws Exception {
-        String bucket = "test-bucket-aws";
-        String content = "Hello World";
-        String key = "testKey";
-        String cacheControl = "nocache";
-        String disposition = "attachment; filename=foo.txt";
-        String contentEncoding = "raw";
-        String contentLanguage = "en-US";
-        String contentType = "test/plain";
-        String expires = "0";
-
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.HOUR, 1);
-
-        s3.createBucket(bucket);
-        createdKeys(bucket); // make sure we clean up the bucket
-
-        // test PUT request
-        URL url = s3.generatePresignedUrl(bucket, key, cal.getTime(), HttpMethod.PUT);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setDoOutput(true);
-        con.setRequestMethod("PUT");
-        con.connect();
-        copyStream(new StringInputStream(content), con.getOutputStream());
-        copyStream(con.getInputStream(), new ByteArrayOutputStream());
-        con.disconnect();
-        Assert.assertEquals("PUT response code wrong", 200, con.getResponseCode());
-        createdKeys(bucket).add(key);
-
-        ResponseHeaderOverrides overrides = new ResponseHeaderOverrides();
-        overrides.setCacheControl(cacheControl);
-        overrides.setContentDisposition(disposition);
-        overrides.setContentEncoding(contentEncoding);
-        overrides.setContentLanguage(contentLanguage);
-        overrides.setContentType(contentType);
-        overrides.setExpires(expires);
-
-        GeneratePresignedUrlRequest gRequest = new GeneratePresignedUrlRequest(bucket, key);
-        gRequest.setMethod(HttpMethod.GET);
-        gRequest.setExpiration(cal.getTime());
-        gRequest.setResponseHeaders(overrides);
-
-        // test GET request
-        url = s3.generatePresignedUrl(gRequest);
-        con = (HttpURLConnection) url.openConnection();
-        con.setDoOutput(false);
-        con.setDoInput(true);
-        con.connect();
-
-        // verify headers
-        Assert.assertEquals("cache-control header mismatch", cacheControl, con.getHeaderField("Cache-Control"));
-        Assert.assertEquals("content-disposition header mismatch",
-                disposition,
-                con.getHeaderField("Content-Disposition"));
-        Assert.assertEquals("content-encoding header mismatch", contentEncoding, con.getContentEncoding());
-        Assert.assertEquals("content-language header mismatch",
-                contentLanguage,
-                con.getHeaderField("Content-Language"));
-        Assert.assertEquals("content-type header mismatch", contentType, con.getContentType());
-        Assert.assertEquals("expires header mismatch", expires, Long.toString(con.getExpiration()));
-
-        // verify content
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        copyStream(con.getInputStream(), baos);
-        con.disconnect();
-        Assert.assertEquals("content mismatch", content, baos.toString());
     }
 
     @Test
@@ -201,7 +136,11 @@ public class AwsTest {
         s3.createBucket(bucket);
         createdKeys(bucket); // make sure we clean up the bucket
 
-        s3.putObject(bucket, key, new StringInputStream(content), null);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setHeader(key, content);
+        metadata.setContentLength(content.length());
+
+        s3.putObject(bucket, key, new StringInputStream(content), metadata);
         createdKeys(bucket).add(key);
 
         GetObjectRequest request = new GetObjectRequest(bucket, key);
@@ -214,7 +153,7 @@ public class AwsTest {
         overrides.setExpires(expires);
         request.setResponseHeaders(overrides);
         S3Object object = s3.getObject(request);
-        ObjectMetadata metadata = object.getObjectMetadata();
+        metadata = object.getObjectMetadata();
         Assert.assertEquals("cache-control header mismatch", cacheControl, metadata.getCacheControl());
         Assert.assertEquals("content-disposition header mismatch", disposition, metadata.getContentDisposition());
         Assert.assertEquals("content-encoding header mismatch", contentEncoding, metadata.getContentEncoding());
@@ -248,6 +187,7 @@ public class AwsTest {
         PutObjectRequest request = new PutObjectRequest(bucket, key, tmpFile);
         request.setMetadata(new ObjectMetadata());
         request.getMetadata().addUserMetadata("selector", "one");
+        request.getMetadata().setContentLength(objectSize);
 
         Upload upload = tm.upload(request);
         createdKeys(bucket).add(key);
@@ -271,7 +211,7 @@ public class AwsTest {
 
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.addUserMetadata("key1", "value1");
-        s3.putObject(bucket, key, new StringInputStream(content), metadata);
+        s3.putObject(bucket, key, new StringInputStream(content), null);
         createdKeys(bucket).add(key);
 
         // verify metadata
@@ -374,7 +314,7 @@ public class AwsTest {
         S3Config s3Config = new S3Config(com.emc.object.Protocol.valueOf(uris.get(0).getScheme().toUpperCase()), hosts);
         s3Config.withIdentity(accessKey).withSecretKey(secret);
 
-        s3 = new SmartClientAdapter(s3Config);
+        s3 = new EcsAwsAdapter(s3Config);
     }
 
     protected static List<URI> parseUris(String endpoints) throws URISyntaxException {
