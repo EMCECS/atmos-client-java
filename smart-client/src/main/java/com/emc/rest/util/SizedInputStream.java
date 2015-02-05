@@ -2,7 +2,7 @@
  * Copyright (c) 2015 EMC Corporation
  * All Rights Reserved
  */
-package com.emc.object.util;
+package com.emc.rest.util;
 
 import java.io.IOException;
 import java.io.InputStream;

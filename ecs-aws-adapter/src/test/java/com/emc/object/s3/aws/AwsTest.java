@@ -1,4 +1,4 @@
-package com.emc.adapt;
+package com.emc.object.s3.aws;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
@@ -31,7 +31,7 @@ public class AwsTest {
     public static final String PROP_S3_ACCESS_KEY = "s3.access_key";
     public static final String PROP_S3_SECRET_KEY = "s3.secret_key";
 
-    private static SmartClientAdapter s3;
+    private static EcsAwsAdapter s3;
     private Map<String, Set<String>> bucketsAndKeys = new TreeMap<>();
 
     @Test
@@ -64,12 +64,15 @@ public class AwsTest {
 
     @Test
     public void testDeleteNonEmptyBucket() throws Exception {
-        String bucket = "tst-nonempty-bucket";
+        String bucket = "test-nonempty-bucket";
         String content = "Hello World";
         String key = "testKey";
 
         s3.createBucket(bucket);
-        s3.putObject(bucket, key, new StringInputStream(content), new ObjectMetadata());
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setHeader(key, content);
+        metadata.setContentLength(content.length());
+        s3.putObject(bucket, key, new StringInputStream(content), metadata);
         createdKeys(bucket).add(key);
 
         try {
@@ -93,7 +96,7 @@ public class AwsTest {
         metadata.setHeader(key, content);
         metadata.setContentLength(content.length());
 
-        s3.putObject(bucket, key, new StringInputStream(content), null);
+        s3.putObject(bucket, key, new StringInputStream(content), metadata);
 
         S3Object object = s3.getObject(bucket, key);
         String readContent = new Scanner(object.getObjectContent(), "UTF-8").useDelimiter("\\A").next();
@@ -101,7 +104,7 @@ public class AwsTest {
 
         String newContent = "Goodbye World";
         metadata.setContentLength(content.length());
-        s3.putObject(bucket, key, new StringInputStream(newContent), null);
+        s3.putObject(bucket, key, new StringInputStream(newContent), metadata);
 
         object = s3.getObject(bucket, key);
         readContent = new Scanner(object.getObjectContent(), "UTF-8").useDelimiter("\\A").next();
@@ -137,7 +140,7 @@ public class AwsTest {
         metadata.setHeader(key, content);
         metadata.setContentLength(content.length());
 
-        s3.putObject(bucket, key, new StringInputStream(content), null);
+        s3.putObject(bucket, key, new StringInputStream(content), metadata);
         createdKeys(bucket).add(key);
 
         GetObjectRequest request = new GetObjectRequest(bucket, key);
@@ -184,6 +187,7 @@ public class AwsTest {
         PutObjectRequest request = new PutObjectRequest(bucket, key, tmpFile);
         request.setMetadata(new ObjectMetadata());
         request.getMetadata().addUserMetadata("selector", "one");
+        request.getMetadata().setContentLength(objectSize);
 
         Upload upload = tm.upload(request);
         createdKeys(bucket).add(key);
@@ -207,7 +211,6 @@ public class AwsTest {
 
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.addUserMetadata("key1", "value1");
-        //metadata.setContentLength(content.length());
         s3.putObject(bucket, key, new StringInputStream(content), null);
         createdKeys(bucket).add(key);
 
@@ -219,7 +222,7 @@ public class AwsTest {
         // update (add) metadata - only way is to copy
         metadata.addUserMetadata("key2", "value2");
         CopyObjectRequest request = new CopyObjectRequest(bucket, key, bucket, key);
-        request.setNewObjectMetadata(null);
+        request.setNewObjectMetadata(metadata);
         s3.copyObject(request);
 
         // verify metadata (both keys)
@@ -311,7 +314,7 @@ public class AwsTest {
         S3Config s3Config = new S3Config(com.emc.object.Protocol.valueOf(uris.get(0).getScheme().toUpperCase()), hosts);
         s3Config.withIdentity(accessKey).withSecretKey(secret);
 
-        s3 = new SmartClientAdapter(s3Config);
+        s3 = new EcsAwsAdapter(s3Config);
     }
 
     protected static List<URI> parseUris(String endpoints) throws URISyntaxException {
