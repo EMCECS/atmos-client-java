@@ -14,26 +14,32 @@
  */
 package com.emc.acdp.api.test;
 
+import com.emc.acdp.api.AcdpAdminConfig;
+import com.emc.acdp.api.AcdpMgmtConfig;
+import com.emc.util.TestConfig;
+import org.apache.log4j.Logger;
+import org.junit.Assume;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Properties;
 
-import org.apache.log4j.Logger;
-import org.junit.Assume;
-
-import com.emc.acdp.api.AcdpAdminConfig;
-import com.emc.acdp.api.AcdpMgmtConfig;
-import com.emc.vipr.services.lib.ViprConfig;
-
 public class AcdpTestUtil {
     private static final Logger l4j = Logger.getLogger( AcdpTestUtil.class );
 
+    public static final String PROP_ACDP_ADMIN_ENDPOINT = "acdp.admin.endpoint";
+    public static final String PROP_ACDP_ADMIN_USERNAME = "acdp.admin.username";
+    public static final String PROP_ACDP_ADMIN_PASSWORD = "acdp.admin.password";
+    public static final String PROP_ACDP_MGMT_ENDPOINT = "acdp.mgmt.endpoint";
+    public static final String PROP_ACDP_MGMT_USERNAME = "acdp.mgmt.username";
+    public static final String PROP_ACDP_MGMT_PASSWORD = "acdp.mgmt.password";
+
     public static AcdpAdminConfig loadAdminConfig() throws URISyntaxException {
         try {
-            Properties p = ViprConfig.getProperties();
-            URI endpoint = new URI( ViprConfig.getPropertyNotEmpty(p, ViprConfig.PROP_ACDP_ADMIN_ENDPOINT) );
-            String username = ViprConfig.getPropertyNotEmpty(p, ViprConfig.PROP_ACDP_ADMIN_USERNAME);
-            String password = ViprConfig.getPropertyNotEmpty(p, ViprConfig.PROP_ACDP_ADMIN_PASSWORD);
+            Properties p = TestConfig.getProperties();
+            URI endpoint = new URI(TestConfig.getPropertyNotEmpty(p, PROP_ACDP_ADMIN_ENDPOINT));
+            String username = TestConfig.getPropertyNotEmpty(p, PROP_ACDP_ADMIN_USERNAME);
+            String password = TestConfig.getPropertyNotEmpty(p, PROP_ACDP_ADMIN_PASSWORD);
     
             return new AcdpAdminConfig( endpoint.getScheme(), endpoint.getHost(), endpoint.getPort(), username, password );
         } catch(Exception e) {
@@ -45,10 +51,10 @@ public class AcdpTestUtil {
 
     public static AcdpMgmtConfig loadMgmtConfig() throws URISyntaxException {
         try {
-            Properties p = ViprConfig.getProperties();
-            URI endpoint = new URI( ViprConfig.getPropertyNotEmpty(p, ViprConfig.PROP_ACDP_MGMT_ENDPOINT) );
-            String username = ViprConfig.getPropertyNotEmpty(p, ViprConfig.PROP_ACDP_MGMT_USERNAME);
-            String password = ViprConfig.getPropertyNotEmpty(p, ViprConfig.PROP_ACDP_MGMT_PASSWORD);
+            Properties p = TestConfig.getProperties();
+            URI endpoint = new URI(TestConfig.getPropertyNotEmpty(p, PROP_ACDP_MGMT_ENDPOINT));
+            String username = TestConfig.getPropertyNotEmpty(p, PROP_ACDP_MGMT_USERNAME);
+            String password = TestConfig.getPropertyNotEmpty(p, PROP_ACDP_MGMT_PASSWORD);
     
             return new AcdpMgmtConfig( endpoint.getScheme(), endpoint.getHost(), endpoint.getPort(), username, password );
         } catch(Exception e) {

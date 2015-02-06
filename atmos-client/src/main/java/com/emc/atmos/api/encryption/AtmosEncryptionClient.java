@@ -878,7 +878,7 @@ public class AtmosEncryptionClient implements AtmosApi {
     @Override
     public Map<String, Metadata> getUserMetadata(ObjectIdentifier identifier,
             String... metadataNames) {
-        return getUserMetadata(identifier, metadataNames);
+        return delegate.getUserMetadata(identifier, metadataNames);
     }
 
     /*

@@ -20,9 +20,9 @@ import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.filter.ClientFilter;
 import org.apache.log4j.Logger;
-import org.jdom.Document;
-import org.jdom.Namespace;
-import org.jdom.input.SAXBuilder;
+import org.jdom2.Document;
+import org.jdom2.Namespace;
+import org.jdom2.input.SAXBuilder;
 
 public class ErrorFilter extends ClientFilter {
     private static final Logger log = Logger.getLogger( ErrorFilter.class );
@@ -37,11 +37,11 @@ public class ErrorFilter extends ClientFilter {
             // a namespace. In lieu of writing a SAXFilter to apply a default namespace in-line, this works just as well.
             SAXBuilder sb = new SAXBuilder();
 
-            Document d = null;
+            Document d;
             try {
                 d = sb.build( response.getEntityInputStream() );
             } catch ( Exception e ) {
-                throw new AcdpException( response.getClientResponseStatus().getReasonPhrase(), response.getStatus() );
+                throw new AcdpException( response.getStatusInfo().getReasonPhrase(), response.getStatus() );
             }
 
             String code = d.getRootElement().getChildText( "code" );
@@ -56,7 +56,7 @@ public class ErrorFilter extends ClientFilter {
 
             if ( code == null && message == null ) {
                 // not an error from CDP
-                throw new AcdpException( response.getClientResponseStatus().getReasonPhrase(), response.getStatus() );
+                throw new AcdpException( response.getStatusInfo().getReasonPhrase(), response.getStatus() );
             }
 
             log.debug( "Error: " + code + " message: " + message );

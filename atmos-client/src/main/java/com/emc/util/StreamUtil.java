@@ -29,30 +29,6 @@ public class StreamUtil {
         }
     }
 
-    public static byte[] readAsBytes( InputStream in, int expectedLength ) throws IOException {
-        try {
-            byte[] output = new byte[expectedLength];
-
-            int c = 0;
-            while ( c < expectedLength ) {
-                int read = in.read( output, c, expectedLength - c );
-                if ( read == -1 ) {
-                    // EOF!
-                    throw new EOFException(
-                            "EOF reading response at position " + c
-                            + " size " + (expectedLength - c) );
-                }
-                c += read;
-            }
-
-            return output;
-        } finally {
-            if ( in != null ) {
-                in.close();
-            }
-        }
-    }
-
     public static byte[] readAsBytes( InputStream in ) throws IOException {
         try {
             byte[] buffer = new byte[4096];
