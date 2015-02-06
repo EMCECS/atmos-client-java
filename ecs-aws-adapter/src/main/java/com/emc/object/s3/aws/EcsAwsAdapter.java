@@ -139,6 +139,18 @@ public class EcsAwsAdapter implements AmazonS3 {
         ol.setPrefix(lor.getPrefix());
         ol.setTruncated(lor.getTruncated());
 
+        for(com.emc.object.s3.bean.S3Object obj : lor.getObjects()) {
+            S3ObjectSummary os = new S3ObjectSummary();
+            os.setBucketName(lor.getBucketName());
+            os.setKey(obj.getKey());
+            os.setETag(obj.geteTag());
+            os.setLastModified(obj.getLastModified());
+            os.setSize(obj.getSize());
+            os.setStorageClass(obj.getStorageClass().toString());
+            os.setOwner(new Owner(obj.getOwner().getDisplayName(), obj.getOwner().getId()));
+            ol.getObjectSummaries().add(os);
+        }
+
         return ol;
     }
 
@@ -165,6 +177,18 @@ public class EcsAwsAdapter implements AmazonS3 {
         ol.setPrefix(lor.getPrefix());
         ol.setTruncated(lor.getTruncated());
 
+        for(com.emc.object.s3.bean.S3Object obj : lor.getObjects()) {
+            S3ObjectSummary os = new S3ObjectSummary();
+            os.setBucketName(lor.getBucketName());
+            os.setKey(obj.getKey());
+            os.setETag(obj.geteTag());
+            os.setLastModified(obj.getLastModified());
+            os.setSize(obj.getSize());
+            os.setStorageClass(obj.getStorageClass().toString());
+            os.setOwner(new Owner(obj.getOwner().getDisplayName(), obj.getOwner().getId()));
+            ol.getObjectSummaries().add(os);
+        }
+
         return ol;
     }
 
@@ -189,6 +213,18 @@ public class EcsAwsAdapter implements AmazonS3 {
         ol.setNextMarker(lor.getNextMarker());
         ol.setPrefix(lor.getPrefix());
         ol.setTruncated(lor.getTruncated());
+
+        for(com.emc.object.s3.bean.S3Object obj : lor.getObjects()) {
+            S3ObjectSummary os = new S3ObjectSummary();
+            os.setBucketName(lor.getBucketName());
+            os.setKey(obj.getKey());
+            os.setETag(obj.geteTag());
+            os.setLastModified(obj.getLastModified());
+            os.setSize(obj.getSize());
+            os.setStorageClass(obj.getStorageClass().toString());
+            os.setOwner(new Owner(obj.getOwner().getDisplayName(), obj.getOwner().getId()));
+            ol.getObjectSummaries().add(os);
+        }
 
         return ol;
     }
@@ -387,8 +423,7 @@ public class EcsAwsAdapter implements AmazonS3 {
         List<com.emc.object.s3.bean.Bucket> clientList = client.listBuckets().getBuckets();
         List<Bucket> retList = new ArrayList<Bucket>();
         for (com.emc.object.s3.bean.Bucket bucket : clientList) {
-            Bucket newBucket = new Bucket();
-            newBucket.setName(bucket.getName());
+            Bucket newBucket = new Bucket(bucket.getName());
             newBucket.setCreationDate(bucket.getCreationDate());
             retList.add(newBucket);
         }

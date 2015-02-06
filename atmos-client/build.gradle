@@ -23,6 +23,6 @@ dependencies {
             'com.sun.jersey.contribs:jersey-apache-client4:1.18.3',
             'com.sun.jersey.contribs:jersey-multipart:1.18.3',
             'org.jdom:jdom2:2.0.5',
-            project(':vipr-object-transformations')
+            'com.emc.vipr:vipr-object-transformations:2.0.3'
     testCompile 'junit:junit:4.11'
 }
