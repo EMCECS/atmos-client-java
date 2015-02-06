@@ -29,8 +29,8 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.AbstractHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.ProxySelectorRoutePlanner;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.SyncBasicHttpParams;
 import sun.net.spi.DefaultProxySelector;
@@ -60,7 +60,7 @@ public class JerseyApacheUtil {
             ClientConfig clientConfig = new DefaultApacheHttpClient4Config();
 
             // make sure the apache client is thread-safe
-            PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
+            ThreadSafeClientConnManager connectionManager = new ThreadSafeClientConnManager();
             // Increase max total connection to 200
             connectionManager.setMaxTotal(200);
             // Increase default max connection per route to 200

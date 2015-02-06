@@ -14,8 +14,6 @@
  */
 package com.emc.atmos.api;
 
-import org.apache.log4j.Logger;
-
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -24,8 +22,6 @@ import java.security.NoSuchAlgorithmException;
  * Used to store, update and compute checksums
  */
 public class RunningChecksum extends ChecksumValue {
-    private static final Logger l4j = Logger.getLogger( RunningChecksum.class );
-
     private ChecksumAlgorithm algorithm;
     private long offset;
     private MessageDigest digest;

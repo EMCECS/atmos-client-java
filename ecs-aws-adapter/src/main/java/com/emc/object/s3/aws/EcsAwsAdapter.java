@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2015 EMC Corporation
+ * All Rights Reserved
+ */
 package com.emc.object.s3.aws;
 
 import com.amazonaws.AmazonClientException;
@@ -381,7 +385,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     @Override
     public List<Bucket> listBuckets() throws AmazonClientException {
         List<com.emc.object.s3.bean.Bucket> clientList = client.listBuckets().getBuckets();
-        List<Bucket> retList = new ArrayList<>();
+        List<Bucket> retList = new ArrayList<Bucket>();
         for (com.emc.object.s3.bean.Bucket bucket : clientList) {
             Bucket newBucket = new Bucket();
             newBucket.setName(bucket.getName());
@@ -954,7 +958,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     public DeleteObjectsResult deleteObjects(DeleteObjectsRequest deleteObjectsRequest) throws AmazonClientException {
         com.emc.object.s3.request.DeleteObjectsRequest dor = new com.emc.object.s3.request.DeleteObjectsRequest(deleteObjectsRequest.getBucketName());
         com.emc.object.s3.bean.DeleteObjectsResult dObjs = client.deleteObjects(dor);
-        List<DeleteObjectsResult.DeletedObject> dObjList = new ArrayList<>();
+        List<DeleteObjectsResult.DeletedObject> dObjList = new ArrayList<DeleteObjectsResult.DeletedObject>();
         for (AbstractDeleteResult adr : dObjs.getResults()) {
             DeleteObjectsResult.DeletedObject dObj = new DeleteObjectsResult.DeletedObject();
             dObj.setKey(adr.getKey());
@@ -1057,7 +1061,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     @Override
     public BucketLifecycleConfiguration getBucketLifecycleConfiguration(String bucketName) {
         LifecycleConfiguration lc = client.getBucketLifecycle(bucketName);
-        List<BucketLifecycleConfiguration.Rule> rules = new ArrayList<>();
+        List<BucketLifecycleConfiguration.Rule> rules = new ArrayList<BucketLifecycleConfiguration.Rule>();
 
         for (LifecycleRule lr : lc.getRules()) {
             BucketLifecycleConfiguration.Rule rule = new BucketLifecycleConfiguration.Rule().withId(lr.getId());
@@ -1166,7 +1170,7 @@ public class EcsAwsAdapter implements AmazonS3 {
             ncr.setAllowedHeaders(cr.getAllowedHeaders());
             ncr.setAllowedOrigins(cr.getAllowedOrigins());
             ncr.setExposeHeaders(cr.getExposedHeaders());
-            List<CorsMethod> cml = new ArrayList<>();
+            List<CorsMethod> cml = new ArrayList<CorsMethod>();
             for (CORSRule.AllowedMethods am : cr.getAllowedMethods()) {
                 cml.add(CorsMethod.valueOf(am.toString()));
             }
@@ -1631,7 +1635,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     public CompleteMultipartUploadResult completeMultipartUpload(CompleteMultipartUploadRequest request) throws AmazonClientException {
         com.emc.object.s3.request.CompleteMultipartUploadRequest req = new com.emc.object.s3.request.CompleteMultipartUploadRequest(
                 request.getBucketName(), request.getKey(), request.getUploadId());
-        List<MultipartPart> mpList = new ArrayList<>();
+        List<MultipartPart> mpList = new ArrayList<MultipartPart>();
         for (PartETag tag : request.getPartETags()) {
             mpList.add(new MultipartPart(tag.getPartNumber(), tag.getETag()));
         }
@@ -1671,7 +1675,7 @@ public class EcsAwsAdapter implements AmazonS3 {
         mul.setTruncated(res.getTruncated());
         mul.setUploadIdMarker(res.getUploadIdMarker());
 
-        List<MultipartUpload> mpuList = new ArrayList<>();
+        List<MultipartUpload> mpuList = new ArrayList<MultipartUpload>();
         for (Upload ul : res.getUploads()) {
             MultipartUpload mpu = new MultipartUpload();
 //            mpu.setKey(ul.getKey());

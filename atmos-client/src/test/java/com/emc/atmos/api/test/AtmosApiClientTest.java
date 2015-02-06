@@ -25,8 +25,7 @@ import com.emc.atmos.api.request.*;
 import com.emc.atmos.util.AtmosClientFactory;
 import com.emc.atmos.util.RandomInputStream;
 import com.emc.atmos.util.ReorderedFormDataContentDisposition;
-import com.emc.test.util.Concurrent;
-import com.emc.test.util.ConcurrentJunitRunner;
+import com.emc.util.ConcurrentJunitRunner;
 import com.emc.util.StreamUtil;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -56,7 +55,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(ConcurrentJunitRunner.class)
-@Concurrent
 public class AtmosApiClientTest {
     public static Logger l4j = Logger.getLogger( AtmosApiClientTest.class );
 
@@ -68,7 +66,7 @@ public class AtmosApiClientTest {
 
     protected AtmosConfig config;
     protected AtmosApi api;
-    protected boolean isVipr = false;
+    protected boolean isEcs = false;
 
     protected List<ObjectIdentifier> cleanup = Collections.synchronizedList( new ArrayList<ObjectIdentifier>() );
     protected List<ObjectPath> cleanupDirs = Collections.synchronizedList( new ArrayList<ObjectPath>() );
@@ -81,7 +79,7 @@ public class AtmosApiClientTest {
         config.setEnableRetry( false );
         config.setLoadBalancingAlgorithm( new StickyThreadAlgorithm() );
         api = new AtmosApiClient( config );
-        isVipr = AtmosClientFactory.atmosIsVipr();
+        isEcs = AtmosClientFactory.atmosIsEcs();
     }
 
     @After
@@ -103,7 +101,7 @@ public class AtmosApiClientTest {
             }
         }
 
-        if(!isVipr) {
+        if (!isEcs) {
             try {
                 ListAccessTokensResponse response = this.api.listAccessTokens( new ListAccessTokensRequest() );
                 if ( response.getTokens() != null ) {
@@ -606,7 +604,7 @@ public class AtmosApiClientTest {
      */
     @Test
     public void testVersionObject() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         // Create an object
         String content = "Version Test";
         CreateObjectRequest request = new CreateObjectRequest().content( content );
@@ -644,7 +642,7 @@ public class AtmosApiClientTest {
      */
     @Test
     public void testListVersions() {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         // Create an object
         CreateObjectRequest request = new CreateObjectRequest();
         Metadata listable = new Metadata( "listable", "foo", true );
@@ -686,7 +684,7 @@ public class AtmosApiClientTest {
      */
     @Test
     public void testListVersionsLong() {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         // Create an object
         CreateObjectRequest request = new CreateObjectRequest();
         Metadata listable = new Metadata( "listable", "foo", true );
@@ -731,7 +729,7 @@ public class AtmosApiClientTest {
      */
     @Test
     public void testDeleteVersion() {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         // Create an object
         CreateObjectRequest request = new CreateObjectRequest();
         Metadata listable = new Metadata( "listable", "foo", true );
@@ -767,7 +765,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testRestoreVersion() throws IOException {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         ObjectId id = this.api.createObject( "Base Version Content".getBytes( "UTF-8" ), "text/plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -1491,7 +1489,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testGetShareableUrl() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectId id = this.api.createObject( str.getBytes( "UTF-8" ), "text/plain" );
@@ -1515,7 +1513,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testGetShareableUrlWithPath() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectPath op = new ObjectPath( "/" + rand8char() + ".txt" );
@@ -1540,7 +1538,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testExpiredSharableUrl() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectId id = this.api.createObject( str.getBytes( "UTF-8" ), "text/plain" );
@@ -1590,7 +1588,7 @@ public class AtmosApiClientTest {
     @Test
     public void testCreateChecksum() throws Exception {
         byte[] data = "hello".getBytes( "UTF-8" );
-        RunningChecksum ck = new RunningChecksum( ChecksumAlgorithm.SHA0 );
+        RunningChecksum ck = new RunningChecksum(ChecksumAlgorithm.SHA1);
         ck.update( data, 0, data.length );
 
         CreateObjectRequest request = new CreateObjectRequest().content( data ).contentType( "text/plain" );
@@ -1617,14 +1615,14 @@ public class AtmosApiClientTest {
             testData[i] = (byte) (i % 0x93);
         }
 
-        RunningChecksum sha0 = new RunningChecksum( ChecksumAlgorithm.SHA0 );
+        RunningChecksum sha1 = new RunningChecksum(ChecksumAlgorithm.SHA1);
         BufferSegment segment = new BufferSegment( testData, 0, chunkSize );
 
         // upload in chunks
-        sha0.update( segment );
-        l4j.debug( "Create checksum: " + sha0 );
+        sha1.update(segment);
+        l4j.debug("Create checksum: " + sha1);
         CreateObjectRequest request = new CreateObjectRequest();
-        request.content( segment ).userMetadata( new Metadata( "policy", "erasure", false ) ).setWsChecksum( sha0 );
+        request.content(segment).userMetadata(new Metadata("policy", "erasure", false)).setWsChecksum(sha1);
         ObjectId id = api.createObject( request ).getObjectId();
         cleanup.add( id );
 
@@ -1632,10 +1630,10 @@ public class AtmosApiClientTest {
             segment.setOffset( segment.getOffset() + chunkSize );
             if ( segment.getOffset() + chunkSize > totalSize ) segment.setSize( totalSize - segment.getOffset() );
             Range range = new Range( segment.getOffset(), segment.getOffset() + segment.getSize() - 1 );
-            sha0.update( segment.getBuffer(), segment.getOffset(), segment.getSize() );
-            l4j.debug( "Update checksum: " + sha0 );
+            sha1.update(segment.getBuffer(), segment.getOffset(), segment.getSize());
+            l4j.debug("Update checksum: " + sha1);
             api.updateObject( new UpdateObjectRequest().identifier( id ).range( range )
-                                                       .content( segment ).wsChecksum( sha0 ) );
+                    .content(segment).wsChecksum(sha1));
         }
 
         // download in chunks
@@ -1645,11 +1643,11 @@ public class AtmosApiClientTest {
         int first = 0, last = chunkSize - 1;
         Range range = new Range( first, last );
         ReadObjectResponse<byte[]> response;
-        RunningChecksum readSha0 = new RunningChecksum( ChecksumAlgorithm.SHA0 );
+        RunningChecksum readSha1 = new RunningChecksum(ChecksumAlgorithm.SHA1);
         do {
             response = api.readObject( new ReadObjectRequest().identifier( id ).ranges( range ),
                                        byte[].class );
-            readSha0.update( response.getObject(), 0, response.getObject().length );
+            readSha1.update(response.getObject(), 0, response.getObject().length);
             out.write( response.getObject() );
             first += chunkSize;
             last += chunkSize;
@@ -1660,8 +1658,8 @@ public class AtmosApiClientTest {
         byte[] outData = out.toByteArray();
 
         // verify checksum
-        Assert.assertEquals( "Write checksum doesn't match read checksum", sha0, readSha0 );
-        Assert.assertEquals( "Read checksum doesn't match", readSha0, response.getWsChecksum() );
+        Assert.assertEquals("Write checksum doesn't match read checksum", sha1, readSha1);
+        Assert.assertEquals("Read checksum doesn't match", readSha1, response.getWsChecksum());
 
         // Check the files
         Assert.assertEquals( "File lengths differ", testData.length, outData.length );
@@ -2005,7 +2003,7 @@ public class AtmosApiClientTest {
     public void testReadChecksum() throws Exception {
         byte[] data = "hello".getBytes( "UTF-8" );
         Metadata policy = new Metadata( "policy", "erasure", false );
-        RunningChecksum wsChecksum = new RunningChecksum( ChecksumAlgorithm.SHA0 );
+        RunningChecksum wsChecksum = new RunningChecksum(ChecksumAlgorithm.SHA1);
         wsChecksum.update( data, 0, data.length );
 
         CreateObjectRequest request = new CreateObjectRequest().content( data ).contentType( "text/plain" );
@@ -2054,10 +2052,6 @@ public class AtmosApiClientTest {
         String content = new String( this.api.readObject( id, null, byte[].class ), "UTF-8" );
         Assert.assertEquals( "object content wrong", "hello", content );
 
-        // Check policyname
-        Map<String,Metadata> sysmeta = this.api.getSystemMetadata(id, "policyname");
-        Assert.assertNotNull("Missing system metadata 'policyname'", sysmeta.get("policyname") );
-
         // Get the object info
         ObjectInfo oi = this.api.getObjectInfo( id );
         Assert.assertNotNull( "ObjectInfo null", oi );
@@ -2068,6 +2062,8 @@ public class AtmosApiClientTest {
         Assert.assertTrue( "ObjectInfo should have at least one replica", oi.getReplicas().size() > 0 );
 
         // only run these tests if the policy configuration is valid
+        Map<String, Metadata> sysmeta = this.api.getSystemMetadata(id);
+        Assume.assumeNotNull(sysmeta.get("policyname"));
         Assume.assumeTrue("policyname != retaindelete", "retaindelete".equals(sysmeta.get("policyname").getValue()));
         Assert.assertNotNull( "ObjectInfo expiration null", oi.getExpiration().getEndAt() );
         Assert.assertNotNull( "ObjectInfo retention null", oi.getRetention().getEndAt() );
@@ -2160,7 +2156,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testGetShareableUrlAndDisposition() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectId id = this.api.createObject( str.getBytes( "UTF-8" ), "text/plain" );
@@ -2186,7 +2182,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testGetShareableUrlWithPathAndDisposition() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectPath op = new ObjectPath( "/" + rand8char() + ".txt" );
@@ -2214,7 +2210,7 @@ public class AtmosApiClientTest {
     @Test
     public void testGetShareableUrlWithPathAndUTF8Disposition() throws Exception {
         // Create an object with content.
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         String str = "Four score and twenty years ago";
         ObjectPath op = new ObjectPath( "/" + rand8char() + ".txt" );
         ObjectId id = this.api.createObject( op, str.getBytes( "UTF-8" ), "text/plain" );
@@ -2264,10 +2260,10 @@ public class AtmosApiClientTest {
 
         try {
             Range range = new Range( 1000, 1999 );
-            RunningChecksum sha0 = new RunningChecksum( ChecksumAlgorithm.SHA0 );
-            sha0.update( data, 0, 1000 );
+            RunningChecksum md5 = new RunningChecksum(ChecksumAlgorithm.MD5);
+            md5.update(data, 0, 1000);
             this.api.updateObject( new UpdateObjectRequest().identifier( response.getObjectId() ).content( data )
-                                                            .range( range ).wsChecksum( sha0 ).userMetadata( meta ) );
+                    .range(range).wsChecksum(md5).userMetadata(meta));
 
             Assert.fail( "Should have triggered an exception" );
         } catch ( AtmosException e ) {
@@ -2277,7 +2273,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testCrudKeys() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         ObjectKey key = new ObjectKey( "Test_key-pool#@!$%^..", "KEY_TEST" );
         String content = "Hello World!";
 
@@ -2408,7 +2404,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testServerGeneratedChecksum() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         byte[] data = "hello".getBytes( "UTF-8" );
 
         // generate our own checksum
@@ -2437,7 +2433,7 @@ public class AtmosApiClientTest {
     @Ignore("Blocked by Bug 30073")
     @Test
     public void testReadAccessToken() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         ObjectPath parentDir = createTestDir("ReadAccessToken");
         ObjectPath path = new ObjectPath( parentDir, "read_token \n,<x> test" );
         ObjectId id = api.createObject( path, "hello", "text/plain" );
@@ -2488,7 +2484,7 @@ public class AtmosApiClientTest {
     @Ignore("Blocked by Bug 30073")
     @Test
     public void testWriteAccessToken() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         ObjectPath parentDir = createTestDir("WriteAccessToken");
         ObjectPath path = new ObjectPath( parentDir, "write_token_test" );
 
@@ -2575,7 +2571,7 @@ public class AtmosApiClientTest {
     @Ignore("Blocked by Bug 30073")
     @Test
     public void testListAccessTokens() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         ObjectPath parentDir = createTestDir("ListAccessTokens");
         ObjectPath path = new ObjectPath( parentDir, "read_token_test" );
         ObjectId id = api.createObject( path, "hello", "text/plain" );
@@ -2619,7 +2615,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testDisableSslValidation() throws Exception {
-        Assume.assumeFalse(isVipr);
+        Assume.assumeFalse(isEcs);
         config.setDisableSslValidation( true );
         api = new AtmosApiClient( config );
         List<URI> sslUris = new ArrayList<URI>();

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2015 EMC Corporation
+ * All Rights Reserved
+ */
 package com.emc.object.s3.aws;
 
 import com.amazonaws.ClientConfiguration;
@@ -32,7 +36,7 @@ public class AwsTest {
     public static final String PROP_S3_SECRET_KEY = "s3.secret_key";
 
     private static EcsAwsAdapter s3;
-    private Map<String, Set<String>> bucketsAndKeys = new TreeMap<>();
+    private Map<String, Set<String>> bucketsAndKeys = new TreeMap<String, Set<String>>();
 
     @Test
     public void testCrudBuckets() throws Exception {
@@ -293,7 +297,7 @@ public class AwsTest {
     private synchronized Set<String> createdKeys(String bucket) {
         Set<String> keys = bucketsAndKeys.get(bucket);
         if (keys == null) {
-            keys = new TreeSet<>();
+            keys = new TreeSet<String>();
             bucketsAndKeys.put(bucket, keys);
         }
         return keys;
@@ -318,7 +322,7 @@ public class AwsTest {
     }
 
     protected static List<URI> parseUris(String endpoints) throws URISyntaxException {
-        List<URI> uris = new ArrayList<>();
+        List<URI> uris = new ArrayList<URI>();
         for (String uri : endpoints.split(",")) {
             uris.add(new URI(uri));
         }

@@ -14,18 +14,17 @@
  */
 package com.emc.acdp.api.test;
 
-import java.text.MessageFormat;
-import java.util.Random;
-
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Test;
-
+import com.emc.acdp.AcdpException;
 import com.emc.acdp.api.AcdpAdminApi;
 import com.emc.acdp.api.AcdpAdminConfig;
 import com.emc.acdp.api.jersey.AcdpAdminApiClient;
 import com.emc.cdp.services.rest.model.Account;
-import com.emc.esu.api.EsuException;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Test;
+
+import java.text.MessageFormat;
+import java.util.Random;
 
 /**
  * This test case tests provisioning an ACDP account from front-to-back using
@@ -117,7 +116,7 @@ public class AdminProvisionTest {
             // Do it again, should get error.
             api.addAccountAssignee( accountId, identityId, password, firstName, lastName, email, role );
             Assert.fail( "Expected Exception" );
-        } catch ( EsuException e ) {
+        } catch ( AcdpException e ) {
             Assert.assertEquals( "HTTP code wrong", 409, e.getHttpCode() );
             String msg = MessageFormat.format(
                     "The identity \"{0}\" is already assigned to an account",
@@ -144,7 +143,7 @@ public class AdminProvisionTest {
 
     protected String rand8char() {
         Random r = new Random();
-        StringBuffer sb = new StringBuffer( 8 );
+        StringBuilder sb = new StringBuilder( 8 );
         for ( int i = 0; i < 8; i++ ) {
             sb.append( (char) ('a' + r.nextInt( 26 )) );
         }
