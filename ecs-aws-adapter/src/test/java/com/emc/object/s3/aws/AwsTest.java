@@ -38,12 +38,11 @@ public class AwsTest {
     private static EcsAwsAdapter s3;
     private Map<String, Set<String>> bucketsAndKeys = new TreeMap<String, Set<String>>();
 
+
     @Test
     public void testCrudBuckets() throws Exception {
         String bucket = "test-bucket-aws";
-
         s3.createBucket(bucket);
-
         Assert.assertTrue("created bucket does not exist", s3.doesBucketExist(bucket));
 
         boolean bucketFound = false;
@@ -75,7 +74,6 @@ public class AwsTest {
         s3.createBucket(bucket);
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setHeader(key, content);
-        metadata.setContentLength(content.length());
         s3.putObject(bucket, key, new StringInputStream(content), metadata);
         createdKeys(bucket).add(key);
 
@@ -102,17 +100,19 @@ public class AwsTest {
 
         s3.putObject(bucket, key, new StringInputStream(content), metadata);
 
-        S3Object object = s3.getObject(bucket, key);
+        S3Object object = s3.getObject(bucket,key);
         String readContent = new Scanner(object.getObjectContent(), "UTF-8").useDelimiter("\\A").next();
         Assert.assertEquals("content mismatch", content, readContent);
 
         String newContent = "Goodbye World";
-        metadata.setContentLength(content.length());
+        metadata.setContentLength(newContent.length());
         s3.putObject(bucket, key, new StringInputStream(newContent), metadata);
 
         object = s3.getObject(bucket, key);
         readContent = new Scanner(object.getObjectContent(), "UTF-8").useDelimiter("\\A").next();
         Assert.assertEquals("updated content mismatch", newContent, readContent);
+
+        System.out.println("bob");
 
         s3.deleteObject(bucket, key);
 
@@ -315,6 +315,7 @@ public class AwsTest {
         for (int i = 0; i < uris.size(); i++) {
             hosts[i] = uris.get(i).getHost();
         }
+
         S3Config s3Config = new S3Config(com.emc.object.Protocol.valueOf(uris.get(0).getScheme().toUpperCase()), hosts);
         s3Config.withIdentity(accessKey).withSecretKey(secret);
 

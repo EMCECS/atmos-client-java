@@ -13,28 +13,43 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.S3ResponseMetadata;
 import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
+import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.CopyObjectResult;
+import com.amazonaws.services.s3.model.CopyPartRequest;
 import com.amazonaws.services.s3.model.CopyPartResult;
+import com.amazonaws.services.s3.model.CreateBucketRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsResult;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.Grant;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
+import com.amazonaws.services.s3.model.ListBucketsRequest;
+import com.amazonaws.services.s3.model.ListMultipartUploadsRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ListVersionsRequest;
 import com.amazonaws.services.s3.model.Permission;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.SetBucketAclRequest;
 import com.amazonaws.services.s3.model.StorageClass;
+import com.amazonaws.services.s3.model.UploadPartRequest;
+import com.emc.object.Range;
 import com.emc.object.s3.S3Client;
 import com.emc.object.s3.S3Config;
 import com.emc.object.s3.S3ObjectMetadata;
 import com.emc.object.s3.bean.*;
 import com.emc.object.s3.bean.PutObjectResult;
 import com.emc.object.s3.jersey.S3JerseyClient;
+import com.emc.object.s3.request.*;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
@@ -754,7 +769,20 @@ public class EcsAwsAdapter implements AmazonS3 {
      */
     @Override
     public S3Object getObject(String bucketName, String key) throws AmazonClientException {
-        return client.readObject(bucketName, key, S3Object.class);
+        GetObjectResult gores = client.getObject(new com.emc.object.s3.request.GetObjectRequest(bucketName, key), InputStream.class);
+        S3Object obj = new S3Object();
+        obj.setObjectContent((InputStream) gores.getObject());
+        if (gores.getObjectMetadata() != null) {
+            ObjectMetadata md = new ObjectMetadata();
+            md.setLastModified(gores.getObjectMetadata().getLastModified());
+            md.setContentType(gores.getObjectMetadata().getContentType());
+            md.setContentLength(gores.getObjectMetadata().getContentLength());
+            md.setCacheControl(gores.getObjectMetadata().getCacheControl());
+            md.setContentDisposition(gores.getObjectMetadata().getContentDisposition());
+            md.setContentEncoding(gores.getObjectMetadata().getContentEncoding());
+            obj.setObjectMetadata(md);
+        }
+        return obj;
     }
 
     /**
@@ -766,7 +794,32 @@ public class EcsAwsAdapter implements AmazonS3 {
      */
     @Override
     public S3Object getObject(GetObjectRequest getObjectRequest) throws AmazonClientException {
-        return getObject(getObjectRequest.getBucketName(), getObjectRequest.getKey());
+        com.emc.object.s3.request.GetObjectRequest gor =
+                new com.emc.object.s3.request.GetObjectRequest(getObjectRequest.getBucketName(), getObjectRequest.getKey());
+        gor.setVersionId(getObjectRequest.getVersionId());
+        if(getObjectRequest.getRange() != null) {
+            gor.setRange(new Range(getObjectRequest.getRange()[0], getObjectRequest.getRange()[0] + getObjectRequest.getRange().length));
+        }
+        gor.setIfUnmodifiedSince(getObjectRequest.getUnmodifiedSinceConstraint());
+        gor.setIfMatch(getObjectRequest.getMatchingETagConstraints().toString());
+        gor.setIfModifiedSince(getObjectRequest.getModifiedSinceConstraint());
+        gor.setIfNoneMatch(getObjectRequest.getNonmatchingETagConstraints().toString());
+
+        GetObjectResult gores = client.getObject(gor, InputStream.class);
+
+        S3Object obj = new S3Object();
+        obj.setObjectContent((InputStream) gores.getObject());
+        if (gores.getObjectMetadata() != null) {
+            ObjectMetadata md = new ObjectMetadata();
+            md.setLastModified(gores.getObjectMetadata().getLastModified());
+            md.setContentType(gores.getObjectMetadata().getContentType());
+            md.setContentLength(gores.getObjectMetadata().getContentLength());
+            md.setCacheControl(gores.getObjectMetadata().getCacheControl());
+            md.setContentDisposition(gores.getObjectMetadata().getContentDisposition());
+            md.setContentEncoding(gores.getObjectMetadata().getContentEncoding());
+            obj.setObjectMetadata(md);
+        }
+        return obj;
     }
 
     /**
@@ -781,18 +834,19 @@ public class EcsAwsAdapter implements AmazonS3 {
     @Override
     public ObjectMetadata getObject(GetObjectRequest getObjectRequest, File destinationFile) throws AmazonClientException {
         try {
-            FileOutputStream fos = new FileOutputStream(destinationFile.getAbsolutePath());
-            ObjectOutputStream oos =new ObjectOutputStream(fos);
-            oos.writeObject(getObject(getObjectRequest));
-        } catch (Exception e) {
-            FileOutputStream fos = null;
-            try {
-                fos = new FileOutputStream(new File(destinationFile.getAbsolutePath()));
+            if (destinationFile.exists()) {
+                FileOutputStream fos = new FileOutputStream(destinationFile.getAbsolutePath());
                 ObjectOutputStream oos = new ObjectOutputStream(fos);
                 oos.writeObject(getObject(getObjectRequest));
-            } catch (Exception e1) {
-                e1.printStackTrace();
             }
+            else {
+                FileOutputStream fos = new FileOutputStream(new File(destinationFile.getAbsolutePath()));
+                ObjectOutputStream oos = new ObjectOutputStream(fos);
+                oos.writeObject(getObject(getObjectRequest));
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
         }
 
         return getObjectMetadata(getObjectRequest.getBucketName(), getObjectRequest.getKey());
@@ -1619,7 +1673,7 @@ public class EcsAwsAdapter implements AmazonS3 {
         if (request.getInputStream() != null) {
             mp = client.uploadPart(new com.emc.object.s3.request.UploadPartRequest(
                     request.getBucketName(), request.getKey(), request.getUploadId(),
-                     request.getPartNumber(), request.getInputStream()).withContentLength(request.getPartSize()));
+                    request.getPartNumber(), request.getInputStream()).withContentLength(request.getPartSize()));
         }
         else {
             mp = client.uploadPart(new com.emc.object.s3.request.UploadPartRequest(
