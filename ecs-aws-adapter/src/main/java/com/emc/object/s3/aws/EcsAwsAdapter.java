@@ -40,6 +40,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.SetBucketAclRequest;
 import com.amazonaws.services.s3.model.StorageClass;
 import com.amazonaws.services.s3.model.UploadPartRequest;
+import com.emc.object.Method;
 import com.emc.object.Range;
 import com.emc.object.s3.S3Client;
 import com.emc.object.s3.S3Config;
@@ -56,8 +57,24 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Amazon S3 adapter for ECS smart client.
- */
+ * Amazon S3 adapter for AWS.
+ * Provides an interface for accessing the Amazon S3 web service.
+ *
+ * Amazon S3 provides storage for the Internet,
+ * and is designed to make web-scale computing easier for developers.
+ *
+ * The Amazon S3 Java SDK provides a simple interface that can be
+ * used to store and retrieve any amount of data, at any time,
+ * from anywhere on the web. It gives any developer access to the same
+ * highly scalable, reliable, secure, fast, inexpensive infrastructure
+ * that Amazon uses to run its own global network of web sites.
+ * The service aims to maximize benefits of scale and to pass those
+ * benefits on to developers.
+ *
+ * For more information about Amazon S3, please see
+ * <a href="http://aws.amazon.com/s3">
+ * http://aws.amazon.com/s3</a>
+ **/
 public class EcsAwsAdapter implements AmazonS3 {
 
     protected S3Client client;
@@ -75,10 +92,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets the default endpoint(s) for this client.
-     *
-     * @param endpoints Single or list of endpoints which
-     *                  this client will communicate with.
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setEndpoint(String endpoints) {
@@ -86,10 +103,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets AWS region for communications. Not supported by smart client.
-     *
-     * @param region Region this client will communicate with.
-     * @throws UnsupportedOperationException
+     *{@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setRegion(Region region) throws UnsupportedOperationException {
@@ -97,10 +114,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Override current S3 Client options for this client. Not supported by smart client.
-     *
-     * @param clientOptions S3 client options to use.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setS3ClientOptions(S3ClientOptions clientOptions) throws UnsupportedOperationException {
@@ -108,12 +125,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Changes S3 storage class for the specified object. Not supported by smart client.
-     *
-     * @param bucketName Bucket containing the target object.
-     * @param key Key of object within specified bucket.
-     * @param newStorageClass New storage class for specified object.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void changeObjectStorageClass(String bucketName, String key, StorageClass newStorageClass) throws UnsupportedOperationException {
@@ -121,12 +136,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Changes redirect location for the specified object. Not supported by smart client.
-     *
-     * @param bucketName Bucket containing the target object.
-     * @param key Key of object within specified bucket.
-     * @param newRedirectLocation New redirect location for the specified object.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setObjectRedirectLocation(String bucketName, String key, String newRedirectLocation) throws UnsupportedOperationException {
@@ -134,12 +147,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Returns list of summary information about objects in specified bucket.
-     *
-     * @param bucketName Name of bucket to list.
-     * @return Listing of objects in the specified bucket, along with associated information
-     * including common prefixes, original request parameters, etc.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
+     * <p>
+     * Return object will not contain object encoding type details.
+     * </p>
      */
     public ObjectListing listObjects(String bucketName) throws AmazonClientException {
         ListObjectsResult lor = client.listObjects(bucketName);
@@ -170,13 +181,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Returns list of summary information about objects in specified bucket.
-     *
-     * @param bucketName Name of bucket to list.
-     * @param prefix Optional; restricts response to keys beginning with this prefix.
-     * @return Listing of objects in the specified bucket, along with associated information
-     * including common prefixes, original request parameters, etc.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
+     * <p>
+     * Return object will not include object encoding type details.
+     * </p>
      */
     @Override
     public ObjectListing listObjects(String bucketName, String prefix) throws AmazonClientException {
@@ -208,12 +216,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Returns list of summary information about objects in specified bucket.
-     *
-     * @param listObjectsRequest Request object containing all options for listing objects.
-     * @return Listing of objects in the specified bucket, along with associated information
-     * including common prefixes, original request parameters, etc.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
+     * <p>
+     * Return object will not include object encoding type details.
+     * </p>
      */
     @Override
     public ObjectListing listObjects(ListObjectsRequest listObjectsRequest) throws AmazonClientException {
@@ -245,12 +251,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Provides easy way to continue truncated Objectlisting with next result page.
-     * Not supported by smart client.
-     *
-     * @param previousObjectListing Previous truncated ObjectListing.
-     * @return Next set of ObjectListing results following previousObjectListing.
-     * @throws java.lang.UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public ObjectListing listNextBatchOfObjects(ObjectListing previousObjectListing) throws UnsupportedOperationException {
@@ -258,13 +262,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Returns a list of summary information about the versions in the specified bucket.
-     *
-     * @param bucketName Name of bucket for which versions are to be listed.
-     * @param prefix Optional; restricts response to keys beginning with this prefix.
-     * @return Listing of versions inthe specified bucket, along with associated information
-     * including common prefixes, original request parameters, etc.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
+     * <p>
+     * Return object will not include object encoding type details.
+     * </p>
      */
     @Override
     public VersionListing listVersions(String bucketName, String prefix) throws AmazonClientException {
@@ -295,12 +296,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Provides easy way to continue truncated VersionListing with next result page.
-     * Not supported by smart client.
-     *
-     * @param previousVersionListing Previous truncated VersionListing
-     * @return Next set of VersionListing results following previous VersionListing
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public VersionListing listNextBatchOfVersions(VersionListing previousVersionListing) throws UnsupportedOperationException {
@@ -308,22 +307,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Returns a list of summary information about the versions in the specified bucket.
-     *
-     * @param bucketName Name of bucket for which versions are to be listed.
-     * @param prefix Optional; restricts response to keys beginning with this prefix.
-     * @param keyMarker Optional; indicates where in version list to begin returning results.
-     *                  Without versionIDMarker, results beging immediately after this key's
-     *                  last version.
-     * @param versionIdMarker Optional; indicates where in version list to begin returning results.
-     *                        Key marker must also be specified. Listing results begins immediately
-     *                        following version with specified key and version ID.
-     * @param delimiter Optional; causes keys containing same string between prefix and first occurence
-     *                  of delimiter to be condensed into single result element.
-     * @param maxResults Optional; indicates maximum number of results in the response.
-     * @return Listing of versions inthe specified bucket, along with associated information
-     * including common prefixes, original request parameters, etc.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
+     * <p>
+     * Return object will not include object encoding type details.
+     * </p>
      */
     @Override
     public VersionListing listVersions(String bucketName, String prefix, String keyMarker, String versionIdMarker, String delimiter, Integer maxResults) throws AmazonClientException {
@@ -360,12 +347,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Returns a list of summary information about the versions in the specified bucket.
-     *
-     * @param listVersionsRequest Request object containing all options for version listing.
-     * @return Listing of versions inthe specified bucket, along with associated information
-     * including common prefixes, original request parameters, etc.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
+     * <p>
+     * Return object will not include object encoding type details.
+     * </p>
      */
     @Override
     public VersionListing listVersions(ListVersionsRequest listVersionsRequest) throws AmazonClientException {
@@ -404,11 +389,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets the current owner of the AWS account used by the sender of the request.
-     * Not supported by smart client.
-     *
-     * @return Account of the authenticated sender.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public Owner getS3AccountOwner() throws UnsupportedOperationException {
@@ -416,11 +400,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Checks if the specified bucket already exists.
-     *
-     * @param bucketName Name of the bucket to check.
-     * @return True if the specified bucket exists.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public boolean doesBucketExist(String bucketName) throws AmazonClientException {
@@ -428,10 +408,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Returns a list of all buckets accessible to the requester.
-     *
-     * @return List of all buckets accessible to the requester.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public List<Bucket> listBuckets() throws AmazonClientException {
@@ -446,11 +423,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Returns a list of all buckets currently accessible to the requester.
-     *
-     * @param listBucketsRequest Request object containing all options related to bucket listing.
-     * @return List of all bucekts currently accessible to the requester.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public List<Bucket> listBuckets(ListBucketsRequest listBucketsRequest) throws AmazonClientException {
@@ -458,11 +431,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets the geographical location where the bucket is stored.
-     *
-     * @param bucketName Name of bucket to look up.
-     * @return Location where the specified bucket is stored.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public String getBucketLocation(String bucketName) throws AmazonClientException {
@@ -471,11 +440,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets the geographical location where the bucket is stored.
-     *
-     * @param getBucketLocationRequest Request object containing name of bucket to look up.
-     * @return Location where the specified bucket is stored.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public String getBucketLocation(GetBucketLocationRequest getBucketLocationRequest) throws AmazonClientException {
@@ -483,11 +448,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Creates a new bucket in the default region.
-     *
-     * @param createBucketRequest Request object containing all options for creating a bucket.
-     * @return New bucket with requested name.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public Bucket createBucket(CreateBucketRequest createBucketRequest) throws AmazonClientException {
@@ -496,11 +457,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Creates a new bucket in the default region.
-     *
-     * @param bucketName Name of the bucket to create.
-     * @return New bucket with requested name.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public Bucket createBucket(String bucketName) throws AmazonClientException {
@@ -509,12 +466,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Creates a new bucket in the specified region.
-     *
-     * @param bucketName Name of the bucket to create.
-     * @param region Region in which to create bucket.
-     * @return New bucket with requested name in specified region.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public Bucket createBucket(String bucketName, com.amazonaws.services.s3.model.Region region) throws AmazonClientException {
@@ -522,12 +474,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Creates a new bucket in the specified region.
-     *
-     * @param bucketName Name of the bucket to create.
-     * @param region Region in which to create bucket.
-     * @return New bucket with requested name in specified region.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public Bucket createBucket(String bucketName, String region) throws AmazonClientException {
@@ -535,12 +482,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets the AccessControlList for the specified object.
-     *
-     * @param bucketName Name of bucket containing the target object.
-     * @param key Name of object whose ACL is being retrieved.
-     * @return The AccessControlList for the specified object.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public AccessControlList getObjectAcl(String bucketName, String key) throws AmazonClientException {
@@ -559,13 +501,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets the AccessControlList for the specified version of the specified object.
-     *
-     * @param bucketName Name of bucket containing the target object.
-     * @param key Name of object whose ACL is being retrieved.
-     * @param versionId Version ID of object version for which to retrieve ACL.
-     * @return The AccessControlList for the specified object.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public AccessControlList getObjectAcl(String bucketName, String key, String versionId) throws AmazonClientException {
@@ -573,12 +509,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets the access control list for the specified object.
-     *
-     * @param bucketName Name of bucket containing the target object.
-     * @param key Name of object whose access control list is being set.
-     * @param acl New AccessControlList for specified object.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void setObjectAcl(String bucketName, String key, AccessControlList acl) throws AmazonClientException {
@@ -596,12 +527,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets the canned access control list for the specified object.
-     *
-     * @param bucketName Name of bucket containing the target object.
-     * @param key Name of object whose canned access control list is being set.
-     * @param acl New CannedAccessControlList for specified object.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void setObjectAcl(String bucketName, String key, CannedAccessControlList acl) throws AmazonClientException {
@@ -609,13 +535,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets the access control list for the specified version of the specified object.
-     *
-     * @param bucketName Name of bucket containing the target object.
-     * @param key Name of object whose access control list is being set.
-     * @param versionId Version ID of object version for which to retrieve ACL.
-     * @param acl New AccessControlList for specified object.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void setObjectAcl(String bucketName, String key, String versionId, AccessControlList acl) throws AmazonClientException {
@@ -623,13 +543,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets the canned access control list for the specified version of the specified object.
-     *
-     * @param bucketName Name of bucket containing the target object.
-     * @param key Name of object whose canned access control list is being set.
-     * @param versionId Version ID of object version for which to retrieve ACL.
-     * @param acl New CannedAccessControlList for specified object.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void setObjectAcl(String bucketName, String key, String versionId, CannedAccessControlList acl) throws AmazonClientException {
@@ -637,11 +551,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets the AccessControlList for the specified bucket.
-     *
-     * @param bucketName Bucket for which to retrieve the AccessControlList.
-     * @return AccessControlList for the specified bucket.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     *  {@inheritDoc}
      */
     @Override
     public AccessControlList getBucketAcl(String bucketName) throws AmazonClientException {
@@ -660,11 +570,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets the access control list for the specified bucket.
-     *
-     * @param setBucketAclRequest Request object containing the bucket to modify and
-     *                            new AccessControlList to set.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     *  {@inheritDoc}
      */
     @Override
     public void setBucketAcl(SetBucketAclRequest setBucketAclRequest) throws AmazonClientException {
@@ -672,12 +578,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets the AccessControlList for the specified bucket.
-     *
-     * @param getBucketAclRequest Request object containing the name of the bucket for which to
-     *                            retrieve the AccessControlList
-     * @return AccesssControlList for the specified bucket.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     *  {@inheritDoc}
      */
     @Override
     public AccessControlList getBucketAcl(GetBucketAclRequest getBucketAclRequest) throws AmazonClientException {
@@ -685,11 +586,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets the access control list for the specified bucket.
-     *
-     * @param bucketName Bucket to modify.
-     * @param acl New access control list for the specified bucket.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     *  {@inheritDoc}
      */
     @Override
     public void setBucketAcl(String bucketName, AccessControlList acl) throws AmazonClientException {
@@ -706,11 +603,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets the canned access control list for the specified bucket.
-     *
-     * @param bucketName Bucket to modify.
-     * @param acl New canned access control list for the specified bucket.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     *  {@inheritDoc}
      */
     @Override
     public void setBucketAcl(String bucketName, CannedAccessControlList acl) throws AmazonClientException {
@@ -718,13 +611,11 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Retrieves object metadata for the specified object without fetching the object itself.
-     *
-     * @param bucketName Name of the bucket containing the target object.
-     * @param key Key of the object for which to retrieve metadata.
-     * @return Appropriate metadata for specified object. Will not include certain fields, including
-     * UserMetaData, ServerSideEncryption, Header, and OngoingRestore objects.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
+     * <p>
+     * Object metadata will not include certain values, such as header, restore expiration
+     * time detail, and SSE information.
+     * </p>
      */
     @Override
     public ObjectMetadata getObjectMetadata(String bucketName, String key) throws AmazonClientException {
@@ -746,13 +637,11 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Retrieves object metadata for the specified object without fetching the object itself.
-     *
-     * @param getObjectMetadataRequest Request object specifying bucket name, key, and version ID
-     *                                 of object for which to retrieve metadata.
-     * @return Appropriate metadata for specified object. Will not include certain fields, including
-     * UserMetaData, ServerSideEncryption, Header, and OngoingRestore objects.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
+     * <p>
+     * Object metadata will not include certain values, such as header, restore expiration
+     * time detail, and SSE information.
+     * </p>
      */
     @Override
     public ObjectMetadata getObjectMetadata(GetObjectMetadataRequest getObjectMetadataRequest) throws AmazonClientException {
@@ -760,12 +649,11 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets the object stored under the specified bucket and key.
-     *
-     * @param bucketName Name of the bucket containing the target object.
-     * @param key Key under which target object is stored.
-     * @return Object stored under the specified bucket and key.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
+     * <p>
+     * Object metadata will not include certain values, such as header, restore expiration
+     * time detail, and SSE information.
+     * </p>
      */
     @Override
     public S3Object getObject(String bucketName, String key) throws AmazonClientException {
@@ -780,17 +668,21 @@ public class EcsAwsAdapter implements AmazonS3 {
             md.setCacheControl(gores.getObjectMetadata().getCacheControl());
             md.setContentDisposition(gores.getObjectMetadata().getContentDisposition());
             md.setContentEncoding(gores.getObjectMetadata().getContentEncoding());
+            md.setExpirationTime(gores.getObjectMetadata().getExpirationDate());
+            md.setExpirationTimeRuleId(gores.getObjectMetadata().getExpirationRuleId());
+            md.setContentMD5(gores.getObjectMetadata().getContentMd5());
+            md.setHttpExpiresDate(gores.getObjectMetadata().getHttpExpires());
             obj.setObjectMetadata(md);
         }
         return obj;
     }
 
     /**
-     * Gets the object stored under the specified bucket and key.
-     *
-     * @param getObjectRequest Request object containing options for object retrieval.
-     * @return Object stored under the specified bucket and key.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
+     * <p>
+     * Object metadata will not include certain values, such as header, restore expiration
+     * time detail, and SSE information.
+     * </p>
      */
     @Override
     public S3Object getObject(GetObjectRequest getObjectRequest) throws AmazonClientException {
@@ -817,19 +709,21 @@ public class EcsAwsAdapter implements AmazonS3 {
             md.setCacheControl(gores.getObjectMetadata().getCacheControl());
             md.setContentDisposition(gores.getObjectMetadata().getContentDisposition());
             md.setContentEncoding(gores.getObjectMetadata().getContentEncoding());
+            md.setExpirationTime(gores.getObjectMetadata().getExpirationDate());
+            md.setExpirationTimeRuleId(gores.getObjectMetadata().getExpirationRuleId());
+            md.setContentMD5(gores.getObjectMetadata().getContentMd5());
+            md.setHttpExpiresDate(gores.getObjectMetadata().getHttpExpires());
             obj.setObjectMetadata(md);
         }
         return obj;
     }
 
     /**
-     * Gets object metadata for the specified object and saves object contents to specified file.
-     *
-     * @param getObjectRequest Request object containing options for object retrieval.
-     * @param destinationFile File wherein to save object content.
-     * @return Appropriate metadata for specified object. Will not include certain fields, including
-     * UserMetaData, ServerSideEncryption, Header, and OngoingRestore objects.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
+     * <p>
+     * Object metadata will not include certain values, such as header, restore expiration
+     * time detail, and SSE information.
+     * </p>
      */
     @Override
     public ObjectMetadata getObject(GetObjectRequest getObjectRequest, File destinationFile) throws AmazonClientException {
@@ -853,10 +747,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes the specified bucket.
-     *
-     * @param deleteBucketRequest Request object containing all options for bucket deletion.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void deleteBucket(DeleteBucketRequest deleteBucketRequest) throws AmazonClientException {
@@ -864,10 +755,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes the specified bucket.
-     *
-     * @param bucketName Name of the bucket to delete.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void deleteBucket(String bucketName) throws AmazonClientException {
@@ -875,11 +763,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Uploads a new object to the specified bucket.
-     *
-     * @param putObjectRequest Request object containing all options for object upload.
-     * @return Result object containing all information returned by client while handling request.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public com.amazonaws.services.s3.model.PutObjectResult putObject(PutObjectRequest putObjectRequest) throws AmazonClientException {
@@ -892,13 +776,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Uploads a new object to the specified bucket.
-     *
-     * @param bucketName Name of existing bucket to which to write object.
-     * @param key Key under which to store file.
-     * @param file File containing data to be uploaded.
-     * @return Result object containing all information returned by client while handling request.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public com.amazonaws.services.s3.model.PutObjectResult putObject(String bucketName, String key, File file) throws AmazonClientException {
@@ -915,15 +793,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Uploads a new object to the specified bucket.
-     *
-     * @param bucketName Name of existing bucket to which to write object.
-     * @param key Key under which to store data.
-     * @param input Input stream containing data to be uploaded.
-     * @param metadata Additional metadata to inform data handling
-     *                 (e.g. custom user metadata, content type specification, etc.)
-     * @return Result object containing all information returned by client while handling request.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public com.amazonaws.services.s3.model.PutObjectResult putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata) throws AmazonClientException {
@@ -952,14 +822,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Copies a source object to a new destination.
-     *
-     * @param sourceBucketName Name of bucket containing source object.
-     * @param sourceKey Key under which source object is stored.
-     * @param destinationBucketName Name of bucket to which to copy object.
-     * @param destinationKey Key under which to store copied object.
-     * @return Result object containing all information returned by client while handling request.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws AmazonClientException {
@@ -977,11 +840,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Copies a source object to a new destination.
-     *
-     * @param copyObjectRequest Request object containing all options for copying object.
-     * @return Result object containing all information returned by client while handling request.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public CopyObjectResult copyObject(CopyObjectRequest copyObjectRequest) throws AmazonClientException {
@@ -990,11 +849,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Copies a cource object to a part of a multipart upload.
-     *
-     * @param copyPartRequest Request object containing all options for copying object.
-     * @return Result object containing all information returned by client while handling request.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public CopyPartResult copyPart(CopyPartRequest copyPartRequest) throws AmazonClientException {
@@ -1014,11 +869,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes the specified object from the specified bucket.
-     *
-     * @param bucketName Bucket from which to delete object.
-     * @param key Key of object to be deleted.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void deleteObject(String bucketName, String key) throws AmazonClientException {
@@ -1026,10 +877,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes the specified object from the specified bucket.
-     *
-     * @param deleteObjectRequest Request object containing all options for object deletion.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void deleteObject(DeleteObjectRequest deleteObjectRequest) throws AmazonClientException {
@@ -1037,11 +885,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes multiple object from the specified bucket.
-     *
-     * @param deleteObjectsRequest Request object contiaining all options for object deletion.
-     * @return Result object containing all information returned by client while handling request.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public DeleteObjectsResult deleteObjects(DeleteObjectsRequest deleteObjectsRequest) throws AmazonClientException {
@@ -1058,12 +902,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes specified version of specified object from specified bucket.
-     *
-     * @param bucketName Bucket from which to delete object.
-     * @param key Key of object to be deleted.
-     * @param versionId Object version to be deleted.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void deleteVersion(String bucketName, String key, String versionId) throws AmazonClientException {
@@ -1071,10 +910,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes specified version of specified object from specified bucket.
-     *
-     * @param deleteVersionRequest Request object containing all options for bucket deletion.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void deleteVersion(DeleteVersionRequest deleteVersionRequest) throws AmazonClientException {
@@ -1082,12 +918,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets logging configuraton for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to retrieve logging configuration.
-     * @return Bucket logging configuration for specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public BucketLoggingConfiguration getBucketLoggingConfiguration(String bucketName) throws UnsupportedOperationException {
@@ -1095,13 +929,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets logging configuraton for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param setBucketLoggingConfigurationRequest Request object containing all options for
-     *                                             setting bucket logging configuration.
-     * @return Bucket logging configuration for specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setBucketLoggingConfiguration(SetBucketLoggingConfigurationRequest setBucketLoggingConfigurationRequest) throws UnsupportedOperationException {
@@ -1109,12 +940,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets versioning configuraton for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to retrieve versioning configuration.
-     * @return Bucket versioning configuration for specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
      */
     @Override
     public BucketVersioningConfiguration getBucketVersioningConfiguration(String bucketName) throws AmazonClientException {
@@ -1122,12 +948,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets versioning configuraton for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param setBucketVersioningConfigurationRequest Request object containing all options for
-     *                                                setting bucket versioning configuration.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void setBucketVersioningConfiguration(SetBucketVersioningConfigurationRequest setBucketVersioningConfigurationRequest) throws AmazonClientException {
@@ -1140,12 +961,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets lifecycle configuraton for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to retrieve lifecycle configuration.
-     * @return Bucket lifecycle configuration for specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
      */
     @Override
     public BucketLifecycleConfiguration getBucketLifecycleConfiguration(String bucketName) {
@@ -1166,11 +982,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets lifecycle configuraton for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to set lifecycle configuration.
-     * @param bucketLifecycleConfiguration New bucket lifecylce configuration for target bucket.
+     * {@inheritDoc}
      */
     @Override
     public void setBucketLifecycleConfiguration(String bucketName, BucketLifecycleConfiguration bucketLifecycleConfiguration) {
@@ -1187,11 +999,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets lifecycle configuraton for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param setBucketLifecycleConfigurationRequest Request object containing name of target bucket and
-     *                                                 new bucket lifecycle configuration.
+     * {@inheritDoc}
      */
     @Override
     public void setBucketLifecycleConfiguration(SetBucketLifecycleConfigurationRequest setBucketLifecycleConfigurationRequest) {
@@ -1199,10 +1007,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes lifecycle configuraton for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to delete lifecycle configuration.
+     * {@inheritDoc}
      */
     @Override
     public void deleteBucketLifecycleConfiguration(String bucketName) {
@@ -1210,11 +1015,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes lifecycle configuraton for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param deleteBucketLifecycleConfigurationRequest Request object containing name of bucket
-     *                                                  for which to delete lifecycle configuration.
+     * {@inheritDoc}
      */
     @Override
     public void deleteBucketLifecycleConfiguration(DeleteBucketLifecycleConfigurationRequest deleteBucketLifecycleConfigurationRequest) {
@@ -1222,10 +1023,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets cross origin configuration for the specified bucket.
-     *
-     * @param bucketName Bucket for which to retreive cross origin information.
-     * @return Cross origin configuration for the specified bucket.
+     * {@inheritDoc}
      */
     @Override
     public BucketCrossOriginConfiguration getBucketCrossOriginConfiguration(String bucketName) {
@@ -1245,10 +1043,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets cross origin configuration for specified bucket.
-     *
-     * @param bucketName Name of bucket for which to set cross origin configuration.
-     * @param bucketCrossOriginConfiguration New cross origin configuration for the specified bucket.
+     * {@inheritDoc}
      */
     @Override
     public void setBucketCrossOriginConfiguration(String bucketName, BucketCrossOriginConfiguration bucketCrossOriginConfiguration) {
@@ -1271,10 +1066,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets cross origin configuration for specified bucket.
-     *
-     * @param setBucketCrossOriginConfigurationRequest Request object containing name of target bucket and
-     *                                                 new cross origin configuration.
+     * {@inheritDoc}
      */
     @Override
     public void setBucketCrossOriginConfiguration(SetBucketCrossOriginConfigurationRequest setBucketCrossOriginConfigurationRequest) {
@@ -1282,9 +1074,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes cross origin configuration for specified bucket.
-     *
-     * @param bucketName Name of bucket for which to delete cross origin configuration.
+     * {@inheritDoc}
      */
     @Override
     public void deleteBucketCrossOriginConfiguration(String bucketName) {
@@ -1292,10 +1082,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes cross origin configuration for specified bucket.
-     *
-     * @param deleteBucketCrossOriginConfigurationRequest Request object contanining name of bucket for
-     *                                                    which to delete cross origin configuration.
+     * {@inheritDoc}
      */
     @Override
     public void deleteBucketCrossOriginConfiguration(DeleteBucketCrossOriginConfigurationRequest deleteBucketCrossOriginConfigurationRequest) {
@@ -1303,12 +1090,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets bucket tagging configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to retrieve bucket tagging configuration.
-     * @return Bucket tagging configuration of the specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public BucketTaggingConfiguration getBucketTaggingConfiguration(String bucketName) throws UnsupportedOperationException {
@@ -1316,12 +1101,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets bucket tagging configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to set bucket tagging configuration.
-     * @param bucketTaggingConfiguration New bucket tagging configuration for specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setBucketTaggingConfiguration(String bucketName, BucketTaggingConfiguration bucketTaggingConfiguration) throws UnsupportedOperationException {
@@ -1329,12 +1112,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets bucket tagging configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param setBucketTaggingConfigurationRequest Request object containing name of target bucket and
-     *                                             new bucket tagging configuration.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setBucketTaggingConfiguration(SetBucketTaggingConfigurationRequest setBucketTaggingConfigurationRequest) {
@@ -1342,11 +1123,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes bucket tagging configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to delete bucket tagging configuration.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void deleteBucketTaggingConfiguration(String bucketName) throws UnsupportedOperationException {
@@ -1354,12 +1134,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes bucket tagging configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param deleteBucketTaggingConfigurationRequest Request object containing name of bucket for which to
-     *                                                delete tagging configuration.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void deleteBucketTaggingConfiguration(DeleteBucketTaggingConfigurationRequest deleteBucketTaggingConfigurationRequest) {
@@ -1367,12 +1145,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets bucket notification configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to retrieve bucket notification configuration.
-     * @return Bucket notification configuration of the specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public BucketNotificationConfiguration getBucketNotificationConfiguration(String bucketName) throws UnsupportedOperationException {
@@ -1380,12 +1156,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets bucket notification configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param setBucketNotificationConfigurationRequest Request object containing name of target bucket and
-     *                                                  new bucket notification configuration.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setBucketNotificationConfiguration(SetBucketNotificationConfigurationRequest setBucketNotificationConfigurationRequest) throws AmazonClientException, AmazonServiceException {
@@ -1393,12 +1167,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets bucket notification configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to set bucket notification configuration.
-     * @param bucketNotificationConfiguration New bucket notification configuration for specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setBucketNotificationConfiguration(String bucketName, BucketNotificationConfiguration bucketNotificationConfiguration) throws UnsupportedOperationException {
@@ -1406,12 +1178,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets bucket website configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to retrieve bucket website configuration.
-     * @return Bucket website configuration for the specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public BucketWebsiteConfiguration getBucketWebsiteConfiguration(String bucketName) throws UnsupportedOperationException {
@@ -1419,13 +1189,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets bucket website configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param getBucketWebsiteConfigurationRequest Request object containing all information on bucket
-     *                                             for which to retrieve website configuration.
-     * @return Bucket website configuration for the specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public BucketWebsiteConfiguration getBucketWebsiteConfiguration(GetBucketWebsiteConfigurationRequest getBucketWebsiteConfigurationRequest) throws UnsupportedOperationException {
@@ -1433,12 +1200,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets bucket website configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to set bucket website configuration.
-     * @param configuration New website configuration for specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setBucketWebsiteConfiguration(String bucketName, BucketWebsiteConfiguration configuration) throws UnsupportedOperationException {
@@ -1446,13 +1211,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets bucket website configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param setBucketWebsiteConfigurationRequest Request containing name of bucket for which to set
-     *                                             bucket website configuration and new website configuration
-     *                                             object for specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setBucketWebsiteConfiguration(SetBucketWebsiteConfigurationRequest setBucketWebsiteConfigurationRequest) throws UnsupportedOperationException {
@@ -1460,11 +1222,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes bucket website configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to delete bucket website configuration.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void deleteBucketWebsiteConfiguration(String bucketName) throws UnsupportedOperationException {
@@ -1472,12 +1233,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes bucket website configuration for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param deleteBucketWebsiteConfigurationRequest Request object specifying name of bucket
-     *                                                for which to delete bucket website configuration.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void deleteBucketWebsiteConfiguration(DeleteBucketWebsiteConfigurationRequest deleteBucketWebsiteConfigurationRequest) throws UnsupportedOperationException {
@@ -1485,12 +1244,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets the policy for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to retrieve policy.
-     * @return Bucket policy for the specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public BucketPolicy getBucketPolicy(String bucketName) throws UnsupportedOperationException {
@@ -1498,12 +1255,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets the policy for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param getBucketPolicyRequest Request object containing all options for bucket policy retrieval.
-     * @return Bucket policy for the specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public BucketPolicy getBucketPolicy(GetBucketPolicyRequest getBucketPolicyRequest) throws UnsupportedOperationException {
@@ -1511,12 +1266,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets bucket policy for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to set policy.
-     * @param policyText Policy to apply to the specified bucket.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setBucketPolicy(String bucketName, String policyText) throws UnsupportedOperationException {
@@ -1524,12 +1277,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Sets bucket policy for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param setBucketPolicyRequest Request object containing details of bucket
-     *                               and policy to apply.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void setBucketPolicy(SetBucketPolicyRequest setBucketPolicyRequest) throws UnsupportedOperationException {
@@ -1537,11 +1288,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes bucket policy for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket for which to delete policy.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void deleteBucketPolicy(String bucketName) throws UnsupportedOperationException {
@@ -1549,11 +1299,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Deletes bucket policy for the specified bucket.
-     * Not supported by smart client.
-     *
-     * @param deleteBucketPolicyRequest Request object containing all options for bucket policy deletion.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void deleteBucketPolicy(DeleteBucketPolicyRequest deleteBucketPolicyRequest) throws UnsupportedOperationException {
@@ -1561,60 +1310,36 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Generates a pre-signed url for accessing the specified resource.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket containing target object.
-     * @param key Key under which target object is stored.
-     * @param expiration Time at which pre-signed URL will expire.
-     * @return Pre-signed URL which expires at the specified time and can be
-     * used publicly to retrieve the specified object.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
      */
     @Override
     public URL generatePresignedUrl(String bucketName, String key, Date expiration) throws UnsupportedOperationException {
-        throw new UnsupportedOperationException();
+        return client.getPresignedUrl(bucketName, key, expiration);
     }
 
     /**
-     * Generates a pre-signed url for accessing the specified resource.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of bucket containing target object.
-     * @param key Key under which target object is stored.
-     * @param expiration Time at which pre-signed URL will expire.
-     * @param method HTTP method verb to be used.
-     * @return Pre-signed URL which expires at the specified time and can be
-     * used publicly to retrieve the specified object.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
      */
     @Override
     public URL generatePresignedUrl(String bucketName, String key, Date expiration, HttpMethod method) throws UnsupportedOperationException {
-        throw new UnsupportedOperationException();
+        PresignedUrlRequest req = new PresignedUrlRequest(Method.valueOf(method.name()), bucketName, key, expiration);
+        return client.getPresignedUrl(req);
     }
 
     /**
-     * Generates a pre-signed url for accessing the specified resource.
-     * Not supported by smart client.
-     *
-     * @param generatePresignedUrlRequest Request object containing all options for generating
-     *                                    pre-signed URL for a specified resource.
-     * @return Pre-signed URL which expires at the specified time and can be
-     * used publicly to retrieve the specified object.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
-    public URL generatePresignedUrl(GeneratePresignedUrlRequest generatePresignedUrlRequest) throws UnsupportedOperationException {
-        throw new UnsupportedOperationException();
+    public URL generatePresignedUrl(GeneratePresignedUrlRequest generatePresignedUrlRequest) throws AmazonClientException {
+        return generatePresignedUrl(generatePresignedUrlRequest.getBucketName(), generatePresignedUrlRequest.getKey(),
+                generatePresignedUrlRequest.getExpiration(), generatePresignedUrlRequest.getMethod());
     }
 
     /**
-     * Initiates a multipart upload and returns a result object containing an Upload ID.
-     * Upload ID associates all parts in the specific upload and is used in UploadPart resuests.
-     *
-     * @param request Request object specifying all options for initiating this multipart upload.
-     * @return InitiateMultipartUploadResult object for this operation.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public InitiateMultipartUploadResult initiateMultipartUpload(InitiateMultipartUploadRequest request) throws AmazonClientException {
@@ -1625,7 +1350,7 @@ public class EcsAwsAdapter implements AmazonS3 {
             S3ObjectMetadata smd = new S3ObjectMetadata();
             ObjectMetadata omd =request.getObjectMetadata();
             smd.setContentType(omd.getContentType());
-            //smd.setContentLength(omd.getContentLength());
+            smd.setContentLength(omd.getContentLength());
             smd.setContentEncoding(omd.getContentEncoding());
             smd.setCacheControl(omd.getCacheControl());
             smd.setContentMd5(omd.getContentMD5());
@@ -1659,12 +1384,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Uploads a part in a multipart upload. Multipart upload must first be initiated before
-     * any individual part may be uploaded.
-     *
-     * @param request Request object specifying all options for part upload.
-     * @return Result object containing part number and ETag of uploaded part.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public UploadPartResult uploadPart(UploadPartRequest request) throws AmazonClientException {
@@ -1688,11 +1408,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * List parts that have been uploaded for a specific multipart upload.
-     *
-     * @param request Request object specifying all options for uploading part.
-     * @return PartListing object for this operation.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public PartListing listParts(ListPartsRequest request) throws UnsupportedOperationException {
@@ -1700,11 +1419,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Aborts a multipart upload. After this operation, no additional parts may be uploaded using
-     * the specified upload ID.
-     *
-     * @param request Request object specifying all options for aborting this multipart upload.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public void abortMultipartUpload(AbortMultipartUploadRequest request) throws AmazonClientException {
@@ -1714,11 +1429,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Completes a multipart upload by assembling constituent parts.
-     *
-     * @param request Resuest object specifying all options for multipart upload conpletion.
-     * @return Result object containing ETag for completed object.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public CompleteMultipartUploadResult completeMultipartUpload(CompleteMultipartUploadRequest request) throws AmazonClientException {
@@ -1740,13 +1451,7 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Multipart uploads listing; contains all the information about the
-     * ListMultipartUploads method.
-     *
-     * @param request Multipart upload request.
-     * @return Listing of multipart uploads with metadata. List contains empty
-     * Upload objects.
-     * @throws AmazonClientException If errors are encountered in client while handling the request.
+     * {@inheritDoc}
      */
     @Override
     public MultipartUploadListing listMultipartUploads(ListMultipartUploadsRequest request) throws AmazonClientException {
@@ -1781,12 +1486,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Gets additional metadata for a pervious successful request.
-     * Not supported by smart client.
-     *
-     * @param request Originally executed request.
-     * @return Response metadata for the specified request.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public S3ResponseMetadata getCachedResponseMetadata(AmazonWebServiceRequest request) throws UnsupportedOperationException {
@@ -1794,11 +1497,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Temporarily restores an object transitioned to Glacier back into S3.
-     * Not supported by smart client.
-     *
-     * @param copyGlacierObjectRequest Request object specifying all options for object restoration.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void restoreObject(RestoreObjectRequest copyGlacierObjectRequest) throws UnsupportedOperationException {
@@ -1806,13 +1508,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Temporarily restores an object transitioned to Glacier back into S3.
-     * Not supported by smart client.
-     *
-     * @param bucketName Name of an existing bucket.
-     * @param key Key under which to store target object.
-     * @param expirationInDays Number of days after which object will expire.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void restoreObject(String bucketName, String key, int expirationInDays) throws UnsupportedOperationException {
@@ -1820,11 +1519,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Allows Amazon S3 bucket owner to enable Requester Pays option for
-     * specified bucket. Not supporeted by smart client.
-     *
-     * @param bucketName The name of the bucket being enabled for Requester Pays.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void enableRequesterPays(String bucketName) throws UnsupportedOperationException {
@@ -1832,11 +1530,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Allows Amazon S3 bucket owner to disable Requester Pays option for
-     * specified bucket. Not supporeted by smart client.
-     *
-     * @param bucketName The name of the bucket being disabled for Requester Pays.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public void disableRequesterPays(String bucketName) throws UnsupportedOperationException {
@@ -1844,12 +1541,10 @@ public class EcsAwsAdapter implements AmazonS3 {
     }
 
     /**
-     * Retrieves the Requester Pays configuration associated with the specified
-     * bucket. Not supported by smart client.
-     *
-     * @param bucketName The name of the bucket being checked for Requester Pays.
-     * @return true if the bucket is enabled for Requester Pays else false.
-     * @throws UnsupportedOperationException
+     * {@inheritDoc}
+     * <p>
+     * <b>Not supported by smart client.</b>
+     * </p>
      */
     @Override
     public boolean isRequesterPaysEnabled(String bucketName) throws UnsupportedOperationException {
