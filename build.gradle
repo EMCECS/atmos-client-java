@@ -12,7 +12,7 @@ buildscript {
 }
 
 allprojects {
-    group 'com.emc.vipr'
+    group 'com.emc.ecs'
     apply plugin: 'idea'
     apply plugin: 'eclipse'
 }
@@ -45,7 +45,7 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'cobertura'
     apply plugin: 'distribution'
-    apply plugin: 'signing'
+    //apply plugin: 'signing'
     apply plugin: 'maven'
 
     defaultTasks 'distZip'
@@ -59,6 +59,7 @@ subprojects {
 
     repositories {
         mavenCentral()
+        mavenLocal()
     }
 
     beforeEvaluate {
@@ -153,10 +154,10 @@ subprojects {
         }
     }
 
-    signing {
-        required { gradle.taskGraph.hasTask(':uploadArchives') }
-        sign configurations.archives
-    }
+//    signing {
+//        required { gradle.taskGraph.hasTask(':uploadArchives') }
+//        sign configurations.archives
+//    }
 
     uploadArchives {
         repositories {
