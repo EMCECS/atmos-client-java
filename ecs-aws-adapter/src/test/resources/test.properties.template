@@ -1,0 +1,16 @@
+###
+### Contains test configuration parameters.
+###
+
+## Your S3 Access Key
+s3.access_key=<access_key_id>
+
+## Your S3 Secret Key
+s3.secret_key=<secret_key>
+
+## Endpoint to the S3 Access Point
+s3.endpoint=<endpoint>
+
+## Optional -- HTTP proxy host and port.  Useful for debugging.
+#http.proxy.host=localhost
+#http.proxy.port=8888
