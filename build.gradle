@@ -1,216 +1,28 @@
-// ****NOTE: to generate a coverage report, run ./gradlew test followed by ./gradlew testCoberturaReport
-ext.aggregatedDocsDir = "${projectDir}/docs"
+/*
+ * Copyright 2014 EMC Corporation. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+description = 'ViPR Atmos Client for Java'
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'org.ajoberstar:gradle-git:0.9.0',
-                'com.eriwen:gradle-cobertura-plugin:1.1.1'
-    }
-}
-
-allprojects {
-    group 'com.emc.ecs'
-    apply plugin: 'idea'
-    apply plugin: 'eclipse'
-}
-
-import org.ajoberstar.grgit.*
-
-gradle.taskGraph.whenReady { taskGraph ->
-    if (taskGraph.allTasks.any { it.name == 'uploadArchives' }) {
-        def sonatypePass = new String(System.console().readPassword('\nSonatype password: '))
-        subprojects {
-            uploadArchives.repositories.mavenDeployer.repository.authentication.password = sonatypePass
-        }
-    }
-    if (taskGraph.allTasks.any { it instanceof Sign }) {
-        def signingPass = new String(System.console().readPassword('\nSigning key passphrase: '))
-        subprojects {
-            ext.'signing.password' = signingPass
-        }
-    }
-    if (taskGraph.hasTask(':publishGhPages')) {
-        githubPages.credentials.password = new String(System.console().readPassword('\nGithub password: '))
-    }
-    if (taskGraph.hasTask(':release')) {
-        def gitPassword = new String(System.console().readPassword('\nASD git password: '))
-        release.grgit = Grgit.open(project.file('.'), new Credentials(gitUsername, gitPassword))
-    }
-}
-
-subprojects {
-    apply plugin: 'java'
-    apply plugin: 'cobertura'
-    apply plugin: 'distribution'
-    //apply plugin: 'signing'
-    apply plugin: 'maven'
-
-    defaultTasks 'distZip'
-
-    [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
-
-    compileJava {
-        sourceCompatibility = 1.6
-        targetCompatibility = 1.6
-    }
-
-    repositories {
-        mavenCentral()
-        mavenLocal()
-    }
-
-    beforeEvaluate {
-        if (project.name == 'atmos-client') project.version = '2.2.2'
-        else project.version = rootProject.version
-    }
-
-    test {
-        jvmArgs '-XX:-UseSplitVerifier' // required for cobertura and Java 1.7
-    }
-
-    def projectPom = {
-        project {
-            name project.name
-            description project.description
-            url 'https://community.emc.com/community/vipr'
-
-            scm {
-                url 'https://github.com/emcvipr/dataservices-sdk-java'
-                connection 'scm:git@github.com:emcvipr/dataservices-sdk-java.git'
-                developerConnection 'scm:git@github.com:emcvipr/dataservices-sdk-java.git'
-            }
-
-            licenses {
-                license {
-                    name 'The Apache Software License, Version 2.0'
-                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    distribution 'repo'
-                }
-            }
-
-            developers {
-                developer {
-                    id 'emcvipr'
-                    name 'EMC ViPR'
-                }
-            }
-        }
-    }
-
-    task writePom {
-        ext.pomFile = file("$buildDir/pom.xml")
-        outputs.file pomFile
-        doLast {
-            pom(projectPom).writeTo pomFile
-        }
-    }
-
-    jar {
-        doFirst {
-            manifest {
-                attributes 'Implementation-Version': project.version,
-                        'Class-Path': configurations.runtime.collect { it.getName() }.join(' ')
-            }
-        }
-        into("META-INF/maven/$project.group/$project.name") {
-            from writePom
-        }
-    }
-
-    javadoc {
-        options.quiet()
-    }
-
-    task javadocJar(type: Jar) {
-        classifier = 'javadoc'
-        from "${docsDir}/javadoc"
-    }
-    javadocJar.dependsOn javadoc
-
-    task sourcesJar(type: Jar) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-    artifacts {
-        archives jar
-        archives javadocJar
-        archives sourcesJar
-    }
-
-    distributions {
-        main {
-            contents {
-                from configurations.archives.allArtifacts.files
-                from 'readme.txt'
-                from 'license.txt'
-                into('lib') {
-                    from configurations.runtime
-                }
-            }
-        }
-    }
-
-//    signing {
-//        required { gradle.taskGraph.hasTask(':uploadArchives') }
-//        sign configurations.archives
-//    }
-
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment { deployment -> signing.signPom(deployment) }
-
-                repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
-                    authentication(userName: sonatypeUsername, password: '')
-                }
-
-                pom projectPom
-            }
-        }
-    }
-
-    task aggregateDocs << {
-        copy {
-            from docsDir
-            into "${rootProject.aggregatedDocsDir}/${archivesBaseName}/latest"
-        }
-        copy {
-            from docsDir
-            into "${rootProject.aggregatedDocsDir}/${archivesBaseName}/${project.version}"
-        }
-    }
-    aggregateDocs.dependsOn javadoc
-}
-
-apply plugin: 'base'
-apply plugin: 'github-pages'
-apply plugin: 'grgit-release'
-
-githubPages {
-    repoUri = 'https://github.com/emcvipr/dataservices-sdk-java.git'
-    credentials {
-        username = githubUsername
-        password = ''
-    }
-    pages {
-        from aggregatedDocsDir
-    }
-}
-publishGhPages.dependsOn subprojects.aggregateDocs
-
-release {
-    grgit = Grgit.open(project.file('.'))
-    releaseTasks = subprojects.test + subprojects.distZip + subprojects.uploadArchives + publishGhPages
-}
-
-clean {
-    delete aggregatedDocsDir
-}
-
-task wrapper(type: Wrapper) {
-    gradleVersion = '1.11'
+dependencies {
+    compile files('lib/security-1.1.jar', 'lib/rest_model-1.0.jar'),
+            'commons-codec:commons-codec:1.10',
+            'log4j:log4j:1.2.17',
+            'com.sun.jersey:jersey-core:1.18.3',
+            'com.sun.jersey:jersey-client:1.18.3',
+            'com.sun.jersey.contribs:jersey-apache-client4:1.18.3',
+            'com.sun.jersey.contribs:jersey-multipart:1.18.3',
+            'org.jdom:jdom2:2.0.5',
+            'com.emc.vipr:vipr-object-transformations:2.0.3'
+    testCompile 'junit:junit:4.11'
 }
