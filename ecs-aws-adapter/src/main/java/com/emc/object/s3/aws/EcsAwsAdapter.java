@@ -52,6 +52,7 @@ import com.emc.object.s3.request.*;
 
 import java.io.*;
 import java.net.URL;
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -613,8 +614,8 @@ public class EcsAwsAdapter implements AmazonS3 {
     /**
      * {@inheritDoc}
      * <p>
-     * Object metadata will not include certain values, such as header, restore expiration
-     * time detail, and SSE information.
+     * Object metadata will not include certain values, restore expiration time detail
+     * and SSE information.
      * </p>
      */
     @Override
@@ -632,6 +633,7 @@ public class EcsAwsAdapter implements AmazonS3 {
         ret.setContentDisposition(md.getContentDisposition());
         ret.setContentEncoding(md.getContentEncoding());
         ret.setHttpExpiresDate(md.getHttpExpires());
+        ret.setUserMetadata(md.getUserMetadata());
 
         return ret;
     }
@@ -639,8 +641,8 @@ public class EcsAwsAdapter implements AmazonS3 {
     /**
      * {@inheritDoc}
      * <p>
-     * Object metadata will not include certain values, such as header, restore expiration
-     * time detail, and SSE information.
+     * Object metadata will not include certain values, restore expiration time detail
+     * and SSE information.
      * </p>
      */
     @Override
@@ -651,8 +653,8 @@ public class EcsAwsAdapter implements AmazonS3 {
     /**
      * {@inheritDoc}
      * <p>
-     * Object metadata will not include certain values, such as header, restore expiration
-     * time detail, and SSE information.
+     * Object metadata will not include certain values, restore expiration time detail
+     * and SSE information.
      * </p>
      */
     @Override
@@ -660,18 +662,20 @@ public class EcsAwsAdapter implements AmazonS3 {
         GetObjectResult gores = client.getObject(new com.emc.object.s3.request.GetObjectRequest(bucketName, key), InputStream.class);
         S3Object obj = new S3Object();
         obj.setObjectContent((InputStream) gores.getObject());
-        if (gores.getObjectMetadata() != null) {
+        S3ObjectMetadata oldMd = gores.getObjectMetadata();
+        if (oldMd != null) {
             ObjectMetadata md = new ObjectMetadata();
-            md.setLastModified(gores.getObjectMetadata().getLastModified());
-            md.setContentType(gores.getObjectMetadata().getContentType());
-            md.setContentLength(gores.getObjectMetadata().getContentLength());
-            md.setCacheControl(gores.getObjectMetadata().getCacheControl());
-            md.setContentDisposition(gores.getObjectMetadata().getContentDisposition());
-            md.setContentEncoding(gores.getObjectMetadata().getContentEncoding());
-            md.setExpirationTime(gores.getObjectMetadata().getExpirationDate());
-            md.setExpirationTimeRuleId(gores.getObjectMetadata().getExpirationRuleId());
-            md.setContentMD5(gores.getObjectMetadata().getContentMd5());
-            md.setHttpExpiresDate(gores.getObjectMetadata().getHttpExpires());
+            md.setLastModified(oldMd.getLastModified());
+            md.setContentType(oldMd.getContentType());
+            md.setContentLength(oldMd.getContentLength());
+            md.setCacheControl(oldMd.getCacheControl());
+            md.setContentDisposition(oldMd.getContentDisposition());
+            md.setContentEncoding(oldMd.getContentEncoding());
+            md.setExpirationTime(oldMd.getExpirationDate());
+            md.setExpirationTimeRuleId(oldMd.getExpirationRuleId());
+            md.setContentMD5(oldMd.getContentMd5());
+            md.setHttpExpiresDate(oldMd.getHttpExpires());
+            md.setUserMetadata(oldMd.getUserMetadata());
             obj.setObjectMetadata(md);
         }
         return obj;
@@ -680,8 +684,8 @@ public class EcsAwsAdapter implements AmazonS3 {
     /**
      * {@inheritDoc}
      * <p>
-     * Object metadata will not include certain values, such as header, restore expiration
-     * time detail, and SSE information.
+     * Object metadata will not include certain values, restore expiration time detail
+     * and SSE information.
      * </p>
      */
     @Override
@@ -701,18 +705,20 @@ public class EcsAwsAdapter implements AmazonS3 {
 
         S3Object obj = new S3Object();
         obj.setObjectContent((InputStream) gores.getObject());
-        if (gores.getObjectMetadata() != null) {
+        S3ObjectMetadata oldMd = gores.getObjectMetadata();
+        if (oldMd != null) {
             ObjectMetadata md = new ObjectMetadata();
-            md.setLastModified(gores.getObjectMetadata().getLastModified());
-            md.setContentType(gores.getObjectMetadata().getContentType());
-            md.setContentLength(gores.getObjectMetadata().getContentLength());
-            md.setCacheControl(gores.getObjectMetadata().getCacheControl());
-            md.setContentDisposition(gores.getObjectMetadata().getContentDisposition());
-            md.setContentEncoding(gores.getObjectMetadata().getContentEncoding());
-            md.setExpirationTime(gores.getObjectMetadata().getExpirationDate());
-            md.setExpirationTimeRuleId(gores.getObjectMetadata().getExpirationRuleId());
-            md.setContentMD5(gores.getObjectMetadata().getContentMd5());
-            md.setHttpExpiresDate(gores.getObjectMetadata().getHttpExpires());
+            md.setLastModified(oldMd.getLastModified());
+            md.setContentType(oldMd.getContentType());
+            md.setContentLength(oldMd.getContentLength());
+            md.setCacheControl(oldMd.getCacheControl());
+            md.setContentDisposition(oldMd.getContentDisposition());
+            md.setContentEncoding(oldMd.getContentEncoding());
+            md.setExpirationTime(oldMd.getExpirationDate());
+            md.setExpirationTimeRuleId(oldMd.getExpirationRuleId());
+            md.setContentMD5(oldMd.getContentMd5());
+            md.setHttpExpiresDate(oldMd.getHttpExpires());
+            md.setUserMetadata(oldMd.getUserMetadata());
             obj.setObjectMetadata(md);
         }
         return obj;
@@ -721,8 +727,8 @@ public class EcsAwsAdapter implements AmazonS3 {
     /**
      * {@inheritDoc}
      * <p>
-     * Object metadata will not include certain values, such as header, restore expiration
-     * time detail, and SSE information.
+     * Object metadata will not include certain values, restore expiration time detail
+     * and SSE information.
      * </p>
      */
     @Override
@@ -802,12 +808,16 @@ public class EcsAwsAdapter implements AmazonS3 {
 
         if (metadata != null) {
             S3ObjectMetadata md = new S3ObjectMetadata();
-            md.setLastModified(metadata.getLastModified());
             md.setContentType(metadata.getContentType());
             md.setContentLength(metadata.getContentLength());
-            md.setCacheControl(metadata.getCacheControl());
-            md.setContentDisposition(metadata.getContentDisposition());
             md.setContentEncoding(metadata.getContentEncoding());
+            md.setCacheControl(metadata.getCacheControl());
+            md.setContentMd5(metadata.getContentMD5());
+            md.setHttpExpires(metadata.getHttpExpiresDate());
+            md.setExpirationDate(metadata.getExpirationTime());
+            md.setContentDisposition(metadata.getContentDisposition());
+            md.setUserMetadata(metadata.getUserMetadata());
+            md.setExpirationRuleId(metadata.getExpirationTimeRuleId());
             por.setObjectMetadata(md);
         }
 
@@ -826,9 +836,32 @@ public class EcsAwsAdapter implements AmazonS3 {
      */
     @Override
     public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws AmazonClientException {
-        com.emc.object.s3.request.PutObjectRequest req = new com.emc.object.s3.request.PutObjectRequest(destinationBucketName,
-                destinationKey, client.readObject(sourceBucketName, sourceKey, S3Object.class));
-        req.setObjectMetadata(client.getObjectMetadata(sourceBucketName, sourceKey));
+        return copyObject(new CopyObjectRequest(sourceBucketName, sourceKey, destinationBucketName, destinationKey));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CopyObjectResult copyObject(CopyObjectRequest copyObjectRequest) throws AmazonClientException {
+        com.emc.object.s3.request.PutObjectRequest req = new com.emc.object.s3.request.PutObjectRequest(copyObjectRequest.getDestinationBucketName(),
+                copyObjectRequest.getDestinationKey(), getObject(copyObjectRequest.getSourceBucketName(), copyObjectRequest.getSourceKey()).getObjectContent());
+        ObjectMetadata oldMd = copyObjectRequest.getNewObjectMetadata();
+        if (oldMd != null) {
+            S3ObjectMetadata md = new S3ObjectMetadata();
+            md.setLastModified(oldMd.getLastModified());
+            md.setContentType(oldMd.getContentType());
+            md.setContentLength(oldMd.getContentLength());
+            md.setCacheControl(oldMd.getCacheControl());
+            md.setContentDisposition(oldMd.getContentDisposition());
+            md.setContentEncoding(oldMd.getContentEncoding());
+            md.setExpirationDate(oldMd.getExpirationTime());
+            md.setExpirationRuleId(oldMd.getExpirationTimeRuleId());
+            md.setContentMd5(oldMd.getContentMD5());
+            md.setHttpExpires(oldMd.getHttpExpiresDate());
+            md.setUserMetadata(oldMd.getUserMetadata());
+            req.setObjectMetadata(md);
+        }
         PutObjectResult res = client.putObject(req);
 
         CopyObjectResult cor = new CopyObjectResult();
@@ -837,15 +870,6 @@ public class EcsAwsAdapter implements AmazonS3 {
         cor.setVersionId(res.getVersionId());
 
         return cor;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public CopyObjectResult copyObject(CopyObjectRequest copyObjectRequest) throws AmazonClientException {
-        return copyObject(copyObjectRequest.getSourceBucketName(), copyObjectRequest.getSourceKey(),
-                copyObjectRequest.getDestinationBucketName(), copyObjectRequest.getDestinationKey());
     }
 
     /**
@@ -1356,6 +1380,7 @@ public class EcsAwsAdapter implements AmazonS3 {
             smd.setContentMd5(omd.getContentMD5());
             smd.setHttpExpires(omd.getHttpExpiresDate());
             smd.setContentDisposition(omd.getContentDisposition());
+            smd.setUserMetadata(omd.getUserMetadata());
             req.setObjectMetadata(smd);
         }
 
