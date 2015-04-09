@@ -220,7 +220,7 @@ public final class RestUtil {
 
     public static Map<String, Permission> parseAclHeader( String headerValue ) {
         Map<String, Permission> acl = new TreeMap<String, Permission>();
-        if ( headerValue == null ) return acl;
+        if ( headerValue == null || headerValue.trim().length() == 0 ) return acl;
         for ( String pair : headerValue.split( "," ) ) {
             String[] components = pair.split( "=", 2 );
             String name = components[0].trim();
