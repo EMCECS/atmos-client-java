@@ -1,1 +1,0 @@
-include 'atmos-client', 'jersey-apache-httpclient4', 'object-client', 'smart-client', 'vipr-object-transformations', 'ecs-aws-adapter'
