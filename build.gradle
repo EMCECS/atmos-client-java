@@ -26,7 +26,7 @@
  */
 description = 'EMC Atmos Client for Java - provides REST access to object data on EMC platforms using the Atmos API.'
 
-ext.githubProjectName = 'ecs-object-client-java'
+ext.githubProjectName = 'atmos-client-java'
 
 buildscript {
     ext.commonBuildVersion = '1.4.1'
@@ -38,11 +38,10 @@ apply from: "$commonBuildDir/ecs-publish.gradle"
 
 dependencies {
     compile files('lib/security-1.1.jar', 'lib/rest_model-1.0.jar'),
-            'com.sun.jersey:jersey-client:1.18.3',
-            'com.sun.jersey:jersey-core:1.18.3',
-            'com.sun.jersey.contribs:jersey-apache-client4:1.18.3',
-            'com.sun.jersey.contribs:jersey-multipart:1.18.3',
-            'commons-codec:commons-codec:1.10',
+            'com.sun.jersey:jersey-client:1.19',
+            'com.sun.jersey.contribs:jersey-apache-client4:1.19',
+            'com.sun.jersey.contribs:jersey-multipart:1.19',
+            'org.apache.httpcomponents:httpclient:4.2.6',
             'org.jdom:jdom2:2.0.5',
             'com.emc.vipr:vipr-object-transformations:2.0.3',
             'log4j:log4j:1.2.17'

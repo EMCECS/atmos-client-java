@@ -30,8 +30,8 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.filter.ClientFilter;
-import org.apache.commons.codec.binary.Base64;
 
+import javax.xml.bind.DatatypeConverter;
 import java.io.UnsupportedEncodingException;
 
 public class ProxyAuthFilter extends ClientFilter {
@@ -55,9 +55,9 @@ public class ProxyAuthFilter extends ClientFilter {
 
             String userPass64;
             try {
-                userPass64 = Base64.encodeBase64String( userPass.getBytes( "UTF-8" ) );
+                userPass64 = DatatypeConverter.printBase64Binary(userPass.getBytes("UTF-8"));
             } catch ( UnsupportedEncodingException e ) {
-                userPass64 = Base64.encodeBase64String( userPass.getBytes() );
+                userPass64 = DatatypeConverter.printBase64Binary(userPass.getBytes());
             }
 
             // Java bug: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6459815

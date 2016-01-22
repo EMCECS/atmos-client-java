@@ -27,9 +27,8 @@
 package com.emc.atmos.api;
 
 import com.emc.atmos.AbstractConfig;
-import org.apache.commons.codec.binary.Base64;
 
-import java.io.UnsupportedEncodingException;
+import javax.xml.bind.DatatypeConverter;
 import java.net.URI;
 
 /**
@@ -169,11 +168,7 @@ public class AtmosConfig extends AbstractConfig {
      * Set the secret key from a base64 encoded string (this is the format typically provided to users)
      */
     public void setSecretKey( String secretKey ) {
-        try {
-            this.secretKey = Base64.decodeBase64( secretKey.getBytes( "UTF-8" ) );
-        } catch ( UnsupportedEncodingException e ) {
-            throw new RuntimeException( "UTF-8 encoding isn't supported on this system", e ); // unrecoverable
-        }
+        this.secretKey = DatatypeConverter.parseBase64Binary(secretKey);
     }
 
     /**

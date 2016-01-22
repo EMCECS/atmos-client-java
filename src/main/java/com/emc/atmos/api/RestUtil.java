@@ -30,11 +30,11 @@ import com.emc.atmos.AtmosException;
 import com.emc.atmos.api.bean.Metadata;
 import com.emc.atmos.api.bean.Permission;
 import com.emc.util.HttpUtil;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -102,7 +102,7 @@ public final class RestUtil {
             byte[] hashBytes = mac.doFinal( input );
 
             // Encode the hash in Base64.
-            String hash = new String( Base64.encodeBase64( hashBytes ), "UTF-8" );
+            String hash = DatatypeConverter.printBase64Binary(hashBytes);
 
             l4j.debug( "Hash: " + hash );
 

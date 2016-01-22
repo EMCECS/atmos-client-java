@@ -58,7 +58,7 @@ public class AtmosClientFactory {
     public static final String PROP_ATMOS_SECRET = "atmos.secret";
     public static final String PROP_ATMOS_ENDPOINTS = "atmos.endpoints";
     public static final String PROP_ATMOS_IS_ECS = "atmos.is_ecs";
-    public static final String PROP_PROXY = "http.proxy";
+    public static final String PROP_PROXY = "http.proxyUri";
 
     public static AtmosApi getAtmosClient() {
         AtmosConfig config = getAtmosConfig();
@@ -75,7 +75,7 @@ public class AtmosClientFactory {
             String uid = TestConfig.getPropertyNotEmpty(props, PROP_ATMOS_UID);
             String secret = TestConfig.getPropertyNotEmpty(props, PROP_ATMOS_SECRET);
             String endpoints = TestConfig.getPropertyNotEmpty(props, PROP_ATMOS_ENDPOINTS);
-            String proxyUrl = props.getProperty(PROP_ATMOS_ENDPOINTS);
+            String proxyUrl = props.getProperty(PROP_PROXY);
 
             List<URI> endpointUris = new ArrayList<URI>();
             for (String endpoint : endpoints.split(",")) {

@@ -41,8 +41,8 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.AbstractHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.ProxySelectorRoutePlanner;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.SyncBasicHttpParams;
 import sun.net.spi.DefaultProxySelector;
@@ -51,7 +51,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import java.net.ProxySelector;
 import java.net.URI;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -61,7 +61,7 @@ public class JerseyApacheUtil {
     private static Pattern BOOLEAN_PATTERN = Pattern.compile("([tT][rR][uU][eE]|[fF][aA][lL][sS][eE])");
     private static Pattern DOUBLE_PATTERN = Pattern.compile("[0-9]*\\.[0-9]+");
     private static Pattern INT_PATTERN = Pattern.compile("[0-9]+");
-    private static Set<String> LONG_PARAMETERS = new TreeSet<String>(Arrays.asList(
+    private static Set<String> LONG_PARAMETERS = new TreeSet<String>(Collections.singletonList(
             "http.conn-manager.timeout"));
 
     public static Client createApacheClient(AtmosConfig config,
@@ -72,7 +72,7 @@ public class JerseyApacheUtil {
             ClientConfig clientConfig = new DefaultApacheHttpClient4Config();
 
             // make sure the apache client is thread-safe
-            ThreadSafeClientConnManager connectionManager = new ThreadSafeClientConnManager();
+            PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
             // Increase max total connection to 200
             connectionManager.setMaxTotal(200);
             // Increase default max connection per route to 200

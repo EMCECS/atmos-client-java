@@ -47,7 +47,6 @@ import com.sun.jersey.api.client.filter.ClientFilter;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.BodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -55,6 +54,7 @@ import org.junit.runner.RunWith;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.ws.rs.core.MediaType;
+import javax.xml.bind.DatatypeConverter;
 import java.io.*;
 import java.net.URI;
 import java.net.URL;
@@ -2086,7 +2086,7 @@ public class AtmosApiClientTest {
     public void testHmac() throws Exception {
         // Compute the signature hash
         String input = "Hello World";
-        byte[] secret = Base64.decodeBase64( "D7qsp4j16PBHWSiUbc/bt3lbPBY=".getBytes( "UTF-8" ) );
+        byte[] secret = DatatypeConverter.parseBase64Binary("D7qsp4j16PBHWSiUbc/bt3lbPBY=");
         Mac mac = Mac.getInstance( "HmacSHA1" );
         SecretKeySpec key = new SecretKeySpec( secret, "HmacSHA1" );
         mac.init( key );
@@ -2095,7 +2095,7 @@ public class AtmosApiClientTest {
         byte[] hashData = mac.doFinal( input.getBytes( "ISO-8859-1" ) );
 
         // Encode the hash in Base64.
-        String hashOut = new String( Base64.encodeBase64( hashData ), "UTF-8" );
+        String hashOut = DatatypeConverter.printBase64Binary(hashData);
 
         l4j.debug( "Hash: " + hashOut );
     }
