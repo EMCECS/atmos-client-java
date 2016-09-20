@@ -86,7 +86,7 @@ public final class RestUtil {
 
     private static final Logger l4j = Logger.getLogger( RestUtil.class );
 
-    private static final Pattern OBJECTID_PATTERN = Pattern.compile( "/\\w+/objects/([0-9a-f]{44,})" );
+    private static final Pattern OBJECTID_PATTERN = Pattern.compile( "/\\w+/objects/([0-9a-f-]{44,})" );
 
     public static String sign( String string, byte[] hashKey ) {
         try {
