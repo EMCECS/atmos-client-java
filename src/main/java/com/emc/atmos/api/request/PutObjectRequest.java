@@ -45,6 +45,8 @@ public abstract class PutObjectRequest<T extends PutObjectRequest<T>> extends Ob
     protected String contentType;
     protected Acl acl;
     protected Map<String, Metadata> userMetadata;
+    protected Long retentionPeriod;
+    protected String retentionPolicy;
     protected ChecksumValue wsChecksum;
     private ChecksumAlgorithm serverGeneratedChecksumAlgorithm;
 
@@ -72,6 +74,12 @@ public abstract class PutObjectRequest<T extends PutObjectRequest<T>> extends Ob
             headers.put( RestUtil.XHEADER_USER_ACL, acl.getUserAclHeader() );
             headers.put( RestUtil.XHEADER_GROUP_ACL, acl.getGroupAclHeader() );
         }
+
+        // retention period
+        if (retentionPeriod != null) RestUtil.addValue(headers, RestUtil.XHEADER_RETENTION_PERIOD, retentionPeriod);
+
+        // retention policy
+        if (retentionPolicy != null) RestUtil.addValue(headers, RestUtil.XHEADER_RETENTION_POLICY, retentionPolicy);
 
         // wschecksum
         if ( wsChecksum != null ) {
@@ -137,6 +145,22 @@ public abstract class PutObjectRequest<T extends PutObjectRequest<T>> extends Ob
     }
 
     /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public T retentionPeriod(Long retentionPeriod) {
+        setRetentionPeriod(retentionPeriod);
+        return me();
+    }
+
+    /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public T retentionPolicy(String retentionPolicy) {
+        setRetentionPolicy(retentionPolicy);
+        return me();
+    }
+
+    /**
      * Builder method for {@link #setWsChecksum(com.emc.atmos.api.ChecksumValue)}
      */
     public T wsChecksum( ChecksumValue wsChecksum ) {
@@ -185,6 +209,20 @@ public abstract class PutObjectRequest<T extends PutObjectRequest<T>> extends Ob
      */
     public Set<Metadata> getUserMetadata() {
         return new HashSet<Metadata>( userMetadata.values() );
+    }
+
+    /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public Long getRetentionPeriod() {
+        return retentionPeriod;
+    }
+
+    /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public String getRetentionPolicy() {
+        return retentionPolicy;
     }
 
     /**
@@ -239,6 +277,20 @@ public abstract class PutObjectRequest<T extends PutObjectRequest<T>> extends Ob
         for ( Metadata metadata : userMetadata ) {
             this.userMetadata.put( metadata.getName(), metadata );
         }
+    }
+
+    /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public void setRetentionPeriod(Long retentionPeriod) {
+        this.retentionPeriod = retentionPeriod;
+    }
+
+    /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public void setRetentionPolicy(String retentionPolicy) {
+        this.retentionPolicy = retentionPolicy;
     }
 
     /**

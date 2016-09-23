@@ -60,6 +60,8 @@ public final class RestUtil {
     public static final String XHEADER_OBJECTID = "x-emc-objectid";
     public static final String XHEADER_PATH = "x-emc-path";
     public static final String XHEADER_POOL = "x-emc-pool";
+    public static final String XHEADER_RETENTION_PERIOD = "x-emc-retention-period";
+    public static final String XHEADER_RETENTION_POLICY = "x-emc-retention-policy";
     public static final String XHEADER_SIGNATURE = "x-emc-signature";
     public static final String XHEADER_SUPPORT_UTF8 = "x-emc-support-utf8";
     public static final String XHEADER_SYSTEM_TAGS = "x-emc-system-tags";

@@ -35,6 +35,8 @@ public class ObjectMetadata {
     private Map<String, Metadata> metadata;
     private Acl acl;
     private String contentType;
+    private Long retentionPeriod;
+    private String retentionPolicy;
     private ChecksumValue wsChecksum;
     private ChecksumValue serverChecksum;
 
@@ -72,6 +74,34 @@ public class ObjectMetadata {
 
     public void setMetadata(Map<String, Metadata> metadata) {
         this.metadata = metadata;
+    }
+
+    /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public Long getRetentionPeriod() {
+        return retentionPeriod;
+    }
+
+    /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public void setRetentionPeriod(Long retentionPeriod) {
+        this.retentionPeriod = retentionPeriod;
+    }
+
+    /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public String getRetentionPolicy() {
+        return retentionPolicy;
+    }
+
+    /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public void setRetentionPolicy(String retentionPolicy) {
+        this.retentionPolicy = retentionPolicy;
     }
 
     /**

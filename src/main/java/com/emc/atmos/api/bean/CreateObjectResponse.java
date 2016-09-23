@@ -36,6 +36,22 @@ public class CreateObjectResponse extends BasicResponse {
         return RestUtil.parseObjectId( location );
     }
 
+    /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public Long getRetentionPeriod() {
+        String period = getFirstHeader(RestUtil.XHEADER_RETENTION_PERIOD);
+        if (period == null) return null;
+        return Long.parseLong(period);
+    }
+
+    /**
+     * Note: this feature is only available on ECS 2.2+
+     */
+    public String getRetentionPolicy() {
+        return getFirstHeader(RestUtil.XHEADER_RETENTION_POLICY);
+    }
+
     public ChecksumValue getWsChecksum() {
         return new ChecksumValueImpl( getFirstHeader( RestUtil.XHEADER_WSCHECKSUM ) );
     }

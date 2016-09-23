@@ -1598,6 +1598,52 @@ public class AtmosApiClientTest {
     }
 
     @Test
+    public void testCreateRetentionPeriod() throws Exception {
+        Assume.assumeTrue(isEcs);
+
+        byte[] data = "hello".getBytes("UTF-8");
+        Long retentionPeriod = 20L;
+
+        try {
+            CreateObjectRequest request = new CreateObjectRequest().content(data).contentType("text/plain");
+            request.retentionPeriod(retentionPeriod);
+
+            CreateObjectResponse response = this.api.createObject(request);
+            cleanup.add(response.getObjectId());
+
+            ReadObjectResponse response1 = this.api.readObject(new ReadObjectRequest().identifier(response.getObjectId()),
+                    byte[].class);
+            Assert.assertNotNull("Null object ID returned", response1.getObject());
+            Assert.assertEquals("Retention period doesn't match", retentionPeriod, response1.getMetadata().getRetentionPeriod());
+        } finally {
+            Thread.sleep(retentionPeriod * 1000); // let retention expire
+        }
+    }
+
+    // NOTE: this test requires a retention policy be configured named "atmos-client-test", with retention period set to 10 seconds
+    @Test
+    public void testCreateRetentionPolicy() throws Exception {
+        Assume.assumeTrue(isEcs);
+        byte[] data = "hello".getBytes("UTF-8");
+        String retentionPolicy = "atmos-client-test";
+
+        try {
+            CreateObjectRequest request = new CreateObjectRequest().content(data).contentType("text/plain");
+            request.retentionPolicy(retentionPolicy);
+
+            CreateObjectResponse response = this.api.createObject(request);
+            cleanup.add(response.getObjectId());
+
+            ReadObjectResponse response1 = this.api.readObject(new ReadObjectRequest().identifier(response.getObjectId()),
+                    byte[].class);
+            Assert.assertNotNull("Null object ID returned", response1.getObject());
+            Assert.assertEquals("Retention policy doesn't match", retentionPolicy, response1.getMetadata().getRetentionPolicy());
+        } finally {
+            Thread.sleep(10000); // let retention expire
+        }
+    }
+
+    @Test
     public void testCreateChecksum() throws Exception {
         byte[] data = "hello".getBytes( "UTF-8" );
         RunningChecksum ck = new RunningChecksum(ChecksumAlgorithm.SHA1);

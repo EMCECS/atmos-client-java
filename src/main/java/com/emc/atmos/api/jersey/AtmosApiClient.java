@@ -408,10 +408,14 @@ public class AtmosApiClient extends AbstractAtmosApi {
         ChecksumValue wsChecksum = wsChecksumHeader == null ? null : new ChecksumValueImpl( wsChecksumHeader );
         String serverChecksumHeader = response.getHeaders().getFirst( RestUtil.XHEADER_CONTENT_CHECKSUM );
         ChecksumValue serverChecksum = serverChecksumHeader == null ? null : new ChecksumValueImpl( serverChecksumHeader );
+        String retentionPeriod = response.getHeaders().getFirst(RestUtil.XHEADER_RETENTION_PERIOD);
 
         response.close();
 
-        return new ObjectMetadata( metaMap, acl, response.getType().toString(), wsChecksum, serverChecksum );
+        ObjectMetadata metadata = new ObjectMetadata(metaMap, acl, response.getType().toString(), wsChecksum, serverChecksum);
+        if (retentionPeriod != null) metadata.setRetentionPeriod(Long.parseLong(retentionPeriod));
+        metadata.setRetentionPolicy(response.getHeaders().getFirst(RestUtil.XHEADER_RETENTION_POLICY));
+        return metadata;
     }
 
     @Override

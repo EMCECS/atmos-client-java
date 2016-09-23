@@ -67,8 +67,11 @@ public class ReadObjectResponse<T> extends BasicResponse {
             String serverChecksumHeader = getFirstHeader( RestUtil.XHEADER_CONTENT_CHECKSUM );
             ChecksumValue serverChecksum = serverChecksumHeader == null ? null :
                                            new ChecksumValueImpl( getFirstHeader( RestUtil.XHEADER_CONTENT_CHECKSUM ) );
+            String retentionPeriod = getFirstHeader(RestUtil.XHEADER_RETENTION_PERIOD);
 
             metadata = new ObjectMetadata( metaMap, acl, getContentType(), wsChecksum, serverChecksum );
+            if (retentionPeriod != null) metadata.setRetentionPeriod(Long.parseLong(retentionPeriod));
+            metadata.setRetentionPolicy(getFirstHeader(RestUtil.XHEADER_RETENTION_POLICY));
         }
         return metadata;
     }
