@@ -57,12 +57,14 @@ public final class RestUtil {
     public static final String XHEADER_LISTABLE_META = "x-emc-listable-meta";
     public static final String XHEADER_LISTABLE_TAGS = "x-emc-listable-tags";
     public static final String XHEADER_META = "x-emc-meta";
+    public static final String XHEADER_OBJECT_ID = "x-emc-object-id";
     public static final String XHEADER_OBJECTID = "x-emc-objectid";
     public static final String XHEADER_PATH = "x-emc-path";
     public static final String XHEADER_POOL = "x-emc-pool";
     public static final String XHEADER_RETENTION_PERIOD = "x-emc-retention-period";
     public static final String XHEADER_RETENTION_POLICY = "x-emc-retention-policy";
     public static final String XHEADER_SIGNATURE = "x-emc-signature";
+    public static final String XHEADER_SUBTENANT_ID = "x-emc-subtenant-id";
     public static final String XHEADER_SUPPORT_UTF8 = "x-emc-support-utf8";
     public static final String XHEADER_SYSTEM_TAGS = "x-emc-system-tags";
     public static final String XHEADER_TAGS = "x-emc-tags";
@@ -73,7 +75,6 @@ public final class RestUtil {
     public static final String XHEADER_UTF8 = "x-emc-utf8";
     public static final String XHEADER_VERSION_OID = "x-emc-version-oid";
     public static final String XHEADER_WSCHECKSUM = "x-emc-wschecksum";
-    public static final String XHEADER_PROJECT = "x-emc-project-id";
     public static final String XHEADER_OBJECT_VPOOL = "x-emc-vpool";
 
     public static final String TYPE_MULTIPART = "multipart";

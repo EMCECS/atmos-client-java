@@ -34,11 +34,11 @@ import java.util.Map;
 import com.emc.atmos.api.RestUtil;
 
 /**
- * Represents a request to create a new Atmos Subtenant in EMC ViPR.
+ * Represents a request to create a new Atmos Subtenant in EMC ECS.
  */
 public class CreateSubtenantRequest extends Request {
-    private String projectId;
     private String objectVirtualPoolId;
+    private String customSubtenantId;
 
     public CreateSubtenantRequest() {
     }
@@ -56,32 +56,15 @@ public class CreateSubtenantRequest extends Request {
     @Override
     public Map<String, List<Object>> generateHeaders() {
         Map<String, List<Object>> headers = new HashMap<String, List<Object>>();
-        if(projectId != null) {
-            headers.put(RestUtil.XHEADER_PROJECT, Arrays.asList(new Object[]{ projectId }));
-        }
         if(objectVirtualPoolId != null) {
             headers.put(RestUtil.XHEADER_OBJECT_VPOOL, 
                     Arrays.asList(new Object[]{ objectVirtualPoolId }));
             
         }
+        if(customSubtenantId != null) {
+            headers.put(RestUtil.XHEADER_SUBTENANT_ID, Arrays.asList(new Object[]{ customSubtenantId }));
+        }
         return headers;
-    }
-
-    /**
-     * Gets the ViPR Project ID for this request.  May be null.
-     */
-    public String getProjectId() {
-        return projectId;
-    }
-
-    /**
-     * Sets the ViPR Project ID for the new subtenant.  If null, the default project
-     * for the current tenant's namespace will be used.  If null and the namespace does
-     * not have a default project the request will fail.
-     * @param project the ID (a URN) of the project for the new subtenant.
-     */
-    public void setProjectId(String project) {
-        this.projectId = project;
     }
 
     /**
@@ -92,8 +75,8 @@ public class CreateSubtenantRequest extends Request {
     }
 
     /**
-     * Sets the ViPR Object Virtual Pool ID for the new namespace.  If null, the default
-     * object virtual pool for the current tenant's namespace will be used.
+     * Sets the ECS Object Virtual Pool ID for the new subtenant.  If null, the default
+     * object virtual pool for the user's namespace will be used.
      * @param objectVirtualPoolId the ID (a URN) of the Object Virtual Pool for the new 
      * subtenant.
      */
@@ -101,4 +84,18 @@ public class CreateSubtenantRequest extends Request {
         this.objectVirtualPoolId = objectVirtualPoolId;
     }
 
+    /**
+     * Gets the custom subtenant ID for this request.  May be null.
+     */
+    public String getCustomSubtenantId() {
+        return customSubtenantId;
+    }
+
+    /**
+     * Sets a custom subtenant ID for the new subtenant.  Used to migrate legacy Atmos subtenants from an existing
+     * installation.  Do not use unless migrating from a legacy subtenant!
+     */
+    public void setCustomSubtenantId(String customSubtenantId) {
+        this.customSubtenantId = customSubtenantId;
+    }
 }

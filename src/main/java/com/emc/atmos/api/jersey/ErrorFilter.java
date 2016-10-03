@@ -39,11 +39,13 @@ import org.jdom2.input.SAXBuilder;
 public class ErrorFilter extends ClientFilter {
     private static final Logger log = Logger.getLogger( ErrorFilter.class );
 
+    public static final String NO_EXCEPTIONS = "ErrorFilter.noExceptions";
+
     @Override
     public ClientResponse handle( ClientRequest clientRequest ) throws ClientHandlerException {
         ClientResponse response = getNext().handle( clientRequest );
 
-        if ( response.getStatus() > 299 ) {
+        if ( response.getStatus() > 299 && shouldThrowExceptions( clientRequest ) ) {
 
             // JAXB will expect a namespace if we try to unmarshall, but some error responses don't include
             // a namespace. In lieu of writing a SAXFilter to apply a default namespace in-line, this works just as well.
@@ -74,5 +76,10 @@ public class ErrorFilter extends ClientFilter {
         }
 
         return response;
+    }
+
+    private boolean shouldThrowExceptions( ClientRequest request ) {
+        Boolean noExceptions = (Boolean) request.getProperties().get( NO_EXCEPTIONS );
+        return !( noExceptions != null && noExceptions );
     }
 }

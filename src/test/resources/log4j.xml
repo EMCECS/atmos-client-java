@@ -10,6 +10,11 @@
  	<logger name="org.apache">
  		<level value="WARN"></level>
  	</logger>
+    <!--
+    <logger name="org.apache.http.wire">
+        <level value="DEBUG"></level>
+    </logger>
+    -->
 
 	<root>
 		<priority value="WARN" />

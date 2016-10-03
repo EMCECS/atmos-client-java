@@ -4,14 +4,14 @@
 
 Configuration
 -------------
-Before running the testcases, a file named vipr.properties must be either put on the
+Before running the testcases, a file named test.properties must be either put on the
 classpath (e.g. src/test/resources) or present in your home directory.  The file should
 contain the following configuration keys:
 
 Atmos:
-vipr.atmos.uid - Atmos full token uid (e.g. 123daba33425413251/user1)
-vipr.atmos.secret_key - Shared secret key for the uid
-vipr.atmos.endpoints - Comma separated list of endpoint URIs (more than one is optional)
+atmos.uid - Atmos full token uid (e.g. 123daba33425413251/user1)
+atmos.secret - Shared secret key for the uid
+atmos.endpoints - Comma separated list of endpoint URIs (more than one is optional)
 
 ACDP:
 acdp.admin.endpoint - ACDP admin endpoint, usually http://admin_node:8080/

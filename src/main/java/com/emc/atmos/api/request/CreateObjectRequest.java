@@ -26,14 +26,31 @@
  */
 package com.emc.atmos.api.request;
 
+import com.emc.atmos.api.RestUtil;
+
+import java.util.List;
+import java.util.Map;
+
 /**
  * Represents a create object request.
  */
 public class CreateObjectRequest extends PutObjectRequest<CreateObjectRequest> {
+    private String customObjectId;
+
     @Override
     public String getServiceRelativePath() {
         if ( identifier == null ) return "objects";
         else return identifier.getRelativeResourcePath();
+    }
+
+    @Override
+    public Map<String, List<Object>> generateHeaders() {
+        Map<String, List<Object>> headers = super.generateHeaders();
+
+        // custom object ID
+        if ( getCustomObjectId() != null ) RestUtil.addValue( headers, RestUtil.XHEADER_OBJECT_ID, customObjectId );
+
+        return headers;
     }
 
     @Override
@@ -43,6 +60,22 @@ public class CreateObjectRequest extends PutObjectRequest<CreateObjectRequest> {
 
     @Override
     protected CreateObjectRequest me() {
+        return this;
+    }
+
+    public String getCustomObjectId() {
+        return customObjectId;
+    }
+
+    public void setCustomObjectId(String customObjectId) {
+        this.customObjectId = customObjectId;
+    }
+
+    /**
+     * Builder method for {@link #setCustomObjectId(String)}
+     */
+    public CreateObjectRequest customObjectId( String customObjectId ) {
+        setCustomObjectId( customObjectId );
         return this;
     }
 }

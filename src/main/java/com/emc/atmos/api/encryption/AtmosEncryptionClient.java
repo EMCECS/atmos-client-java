@@ -1133,12 +1133,20 @@ public class AtmosEncryptionClient implements AtmosApi {
         throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    /*
+    /**
      * @see com.emc.atmos.api.AtmosApi#createSubtenant(com.emc.atmos.api.request.CreateSubtenantRequest)
      */
     @Override
     public String createSubtenant(CreateSubtenantRequest request) {
         return delegate.createSubtenant(request);
+    }
+
+    /**
+     * @see com.emc.atmos.api.AtmosApi#deleteSubtenant(String)
+     */
+    @Override
+    public void deleteSubtenant( String subtenantId ) {
+        delegate.deleteSubtenant( subtenantId );
     }
 
     /**
