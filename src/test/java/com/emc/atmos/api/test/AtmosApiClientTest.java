@@ -68,20 +68,20 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(ConcurrentJunitRunner.class)
 public class AtmosApiClientTest {
-    public static Logger l4j = Logger.getLogger( AtmosApiClientTest.class );
+    private static final Logger l4j = Logger.getLogger( AtmosApiClientTest.class );
 
     /**
      * Use this as a prefix for namespace object paths and you won't have to clean up after yourself.
      * This also keeps all test objects under one folder, which is easy to delete should something go awry.
      */
-    protected static final String TEST_DIR_PREFIX = "/test_" + AtmosApiClientTest.class.getSimpleName();
+    private static final String TEST_DIR_PREFIX = "/test_" + AtmosApiClientTest.class.getSimpleName();
 
-    protected AtmosConfig config;
+    private AtmosConfig config;
     protected AtmosApi api;
-    protected boolean isEcs = false;
+    private boolean isEcs = false;
 
-    protected List<ObjectIdentifier> cleanup = Collections.synchronizedList( new ArrayList<ObjectIdentifier>() );
-    protected List<ObjectPath> cleanupDirs = Collections.synchronizedList( new ArrayList<ObjectPath>() );
+    private List<ObjectIdentifier> cleanup = Collections.synchronizedList( new ArrayList<ObjectIdentifier>() );
+    private List<ObjectPath> cleanupDirs = Collections.synchronizedList( new ArrayList<ObjectPath>() );
 
     public AtmosApiClientTest() throws Exception {
         config = AtmosClientFactory.getAtmosConfig();
@@ -127,7 +127,7 @@ public class AtmosApiClientTest {
         }
     }
 
-    protected void deleteRecursively( ObjectPath path ) {
+    private void deleteRecursively( ObjectPath path ) {
         if ( path.isDirectory() ) {
             ListDirectoryRequest request = new ListDirectoryRequest().path( path );
             do {
@@ -139,7 +139,7 @@ public class AtmosApiClientTest {
         this.api.delete( path );
     }
 
-    protected ObjectPath createTestDir( String name ) {
+    private ObjectPath createTestDir( String name ) {
         if (!name.endsWith("/")) name = name + "/";
         ObjectPath path = new ObjectPath( TEST_DIR_PREFIX + "_" + name );
         this.api.createDirectory( path );
@@ -1372,8 +1372,6 @@ public class AtmosApiClientTest {
 
     /**
      * This method tests various legal and illegal pathnames
-     *
-     * @throws Exception
      */
     @Test
     public void testPathNaming() throws Exception {
@@ -1397,8 +1395,6 @@ public class AtmosApiClientTest {
 
     /**
      * Tests dot directories (you should be able to create them even though they break the URL specification.)
-     *
-     * @throws Exception
      */
     @Test
     public void testDotDirectories() throws Exception {
@@ -1441,8 +1437,6 @@ public class AtmosApiClientTest {
 
     /**
      * Tests the 'get all metadata' call using a path
-     *
-     * @throws Exception
      */
     @Test
     public void testGetAllMetadataByPath() throws Exception {
@@ -1526,6 +1520,7 @@ public class AtmosApiClientTest {
      */
     @Test
     public void testGetObjectReplicaInfo() throws Exception {
+        Assume.assumeFalse(isEcs);
         ObjectId id = this.api.createObject( "hello".getBytes( "UTF-8" ), "text/plain" );
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -1537,7 +1532,6 @@ public class AtmosApiClientTest {
 
     @Test
     public void testGetShareableUrl() throws Exception {
-        Assume.assumeFalse(isEcs);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectId id = this.api.createObject( str.getBytes( "UTF-8" ), "text/plain" );
@@ -1561,7 +1555,6 @@ public class AtmosApiClientTest {
 
     @Test
     public void testGetShareableUrlWithPath() throws Exception {
-        Assume.assumeFalse(isEcs);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectPath op = new ObjectPath( "/" + rand8char() + ".txt" );
@@ -1586,7 +1579,6 @@ public class AtmosApiClientTest {
 
     @Test
     public void testExpiredSharableUrl() throws Exception {
-        Assume.assumeFalse(isEcs);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectId id = this.api.createObject( str.getBytes( "UTF-8" ), "text/plain" );
@@ -1696,8 +1688,6 @@ public class AtmosApiClientTest {
 
     /**
      * Note, to test read checksums, see comment in testReadChecksum
-     *
-     * @throws Exception
      */
     @Test
     public void testUploadDownloadChecksum() throws Exception {
@@ -2003,8 +1993,6 @@ public class AtmosApiClientTest {
     /**
      * Tests renaming a path to UTF-8 multi-byte characters.  This is a separate test from create as the characters are
      * passed in the headers instead of the URL itself.
-     *
-     * @throws Exception
      */
     @Test
     public void testUtf8Rename() throws Exception {
@@ -2067,7 +2055,7 @@ public class AtmosApiClientTest {
         api.getObjectMetadata(sha1Id);
         api.getObjectInfo(sha0Id);
         api.readObject(md5Id, new Range(1, 8), byte[].class);
-        api.listVersions(new ListVersionsRequest().objectId(sha1Id));
+        if (!isEcs) api.listVersions(new ListVersionsRequest().objectId(sha1Id));
         api.getAcl(sha0Id);
 
         Assert.assertTrue("object stream is not a ChecksummedInputStream",
@@ -2090,8 +2078,6 @@ public class AtmosApiClientTest {
      * Tests readback with checksum verification.  In order to test this, create a policy
      * with erasure coding and then set a policy selector with "policy=erasure" to invoke
      * the erasure coding policy.
-     *
-     * @throws Exception
      */
     @Test
     public void testReadChecksum() throws Exception {
@@ -2150,10 +2136,12 @@ public class AtmosApiClientTest {
         ObjectInfo oi = this.api.getObjectInfo( id );
         Assert.assertNotNull( "ObjectInfo null", oi );
         Assert.assertNotNull( "ObjectInfo objectid null", oi.getObjectId() );
-        Assert.assertTrue( "ObjectInfo numReplicas is 0", oi.getNumReplicas() > 0 );
-        Assert.assertNotNull( "ObjectInfo replicas null", oi.getReplicas() );
-        Assert.assertNotNull( "ObjectInfo selection null", oi.getSelection() );
-        Assert.assertTrue( "ObjectInfo should have at least one replica", oi.getReplicas().size() > 0 );
+        if (!isEcs) {
+            Assert.assertTrue("ObjectInfo numReplicas is 0", oi.getNumReplicas() > 0);
+            Assert.assertNotNull("ObjectInfo replicas null", oi.getReplicas());
+            Assert.assertNotNull("ObjectInfo selection null", oi.getSelection());
+            Assert.assertTrue("ObjectInfo should have at least one replica", oi.getReplicas().size() > 0);
+        }
 
         // only run these tests if the policy configuration is valid
         Map<String, Metadata> sysmeta = this.api.getSystemMetadata(id);
@@ -2250,7 +2238,6 @@ public class AtmosApiClientTest {
 
     @Test
     public void testGetShareableUrlAndDisposition() throws Exception {
-        Assume.assumeFalse(isEcs);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectId id = this.api.createObject( str.getBytes( "UTF-8" ), "text/plain" );
@@ -2276,7 +2263,6 @@ public class AtmosApiClientTest {
 
     @Test
     public void testGetShareableUrlWithPathAndDisposition() throws Exception {
-        Assume.assumeFalse(isEcs);
         // Create an object with content.
         String str = "Four score and twenty years ago";
         ObjectPath op = new ObjectPath( "/" + rand8char() + ".txt" );
@@ -2304,7 +2290,6 @@ public class AtmosApiClientTest {
     @Test
     public void testGetShareableUrlWithPathAndUTF8Disposition() throws Exception {
         // Create an object with content.
-        Assume.assumeFalse(isEcs);
         String str = "Four score and twenty years ago";
         ObjectPath op = new ObjectPath( "/" + rand8char() + ".txt" );
         ObjectId id = this.api.createObject( op, str.getBytes( "UTF-8" ), "text/plain" );
@@ -2536,8 +2521,8 @@ public class AtmosApiClientTest {
         expiration.add( Calendar.MINUTE, 5 ); // 5 minutes from now
 
         AccessTokenPolicy.Source source = new AccessTokenPolicy.Source();
-        source.setAllowList( Arrays.asList( "10.0.0.0/8" ) );
-        source.setDenyList( Arrays.asList( "1.1.1.1" ) );
+        source.setAllowList(Collections.singletonList("10.0.0.0/8"));
+        source.setDenyList(Collections.singletonList("1.1.1.1"));
 
         AccessTokenPolicy.ContentLengthRange range = new AccessTokenPolicy.ContentLengthRange();
         range.setFrom( 0 );
@@ -2586,8 +2571,8 @@ public class AtmosApiClientTest {
         expiration.add( Calendar.MINUTE, 10 ); // 10 minutes from now
 
         AccessTokenPolicy.Source source = new AccessTokenPolicy.Source();
-        source.setAllowList( Arrays.asList( "10.0.0.0/8" ) );
-        source.setDenyList( Arrays.asList( "1.1.1.1" ) );
+        source.setAllowList(Collections.singletonList("10.0.0.0/8"));
+        source.setDenyList(Collections.singletonList("1.1.1.1"));
 
         AccessTokenPolicy.ContentLengthRange range = new AccessTokenPolicy.ContentLengthRange();
         range.setFrom( 0 );
@@ -2674,8 +2659,8 @@ public class AtmosApiClientTest {
         expiration.add( Calendar.MINUTE, 5 ); // 5 minutes from now
 
         AccessTokenPolicy.Source source = new AccessTokenPolicy.Source();
-        source.setAllowList( Arrays.asList( "10.0.0.0/8" ) );
-        source.setDenyList( Arrays.asList( "1.1.1.1" ) );
+        source.setAllowList(Collections.singletonList("10.0.0.0/8"));
+        source.setDenyList(Collections.singletonList("1.1.1.1"));
 
         AccessTokenPolicy.ContentLengthRange range = new AccessTokenPolicy.ContentLengthRange();
         range.setFrom( 0 );
@@ -2910,6 +2895,7 @@ public class AtmosApiClientTest {
 
     @Test
     public void testRetention() throws Exception {
+        Assume.assumeFalse(isEcs);
         Metadata retention = new Metadata("retentionperiod", "1year", false);
         CreateObjectRequest request = new CreateObjectRequest().content(null).userMetadata(retention);
         ObjectId oid = api.createObject(request.contentType("text/plain")).getObjectId();
@@ -2942,7 +2928,7 @@ public class AtmosApiClientTest {
         api.setUserMetadata(oid, new Metadata("user.maui.retentionEnable", "false", false));
     }
 
-    protected String rand8char() {
+    private String rand8char() {
         Random r = new Random();
         StringBuilder sb = new StringBuilder( 8 );
         for ( int i = 0; i < 8; i++ ) {
@@ -2953,8 +2939,8 @@ public class AtmosApiClientTest {
 
     private AccessTokenPolicy createTestTokenPolicy( String allow, String deny ) {
         AccessTokenPolicy.Source source = new AccessTokenPolicy.Source();
-        source.setAllowList( Arrays.asList( allow ) );
-        source.setDenyList( Arrays.asList( deny ) );
+        source.setAllowList(Collections.singletonList(allow));
+        source.setDenyList(Collections.singletonList(deny));
         AccessTokenPolicy policy = new AccessTokenPolicy();
         policy.setExpiration( new Date( 1355897000000L ) );
         policy.setMaxDownloads( 5 );
@@ -2964,13 +2950,13 @@ public class AtmosApiClientTest {
     }
 
     private class RetryInputStream extends InputStream {
-        protected int callCount = 0;
+        int callCount = 0;
         private long now;
         private long lastTime;
         private AtmosConfig config;
         private String flagMessage;
 
-        public RetryInputStream( AtmosConfig config, String flagMessage ) {
+        RetryInputStream( AtmosConfig config, String flagMessage ) {
             this.config = config;
             this.flagMessage = flagMessage;
         }
@@ -3021,10 +3007,10 @@ public class AtmosApiClientTest {
         private Class<T> objectType;
         private List<Throwable> errorList;
 
-        public ObjectTestThread( T content,
-                                 String contentType,
-                                 Class<T> objectType,
-                                 List<Throwable> errorList ) {
+        ObjectTestThread( T content,
+                          String contentType,
+                          Class<T> objectType,
+                          List<Throwable> errorList ) {
             this.content = content;
             this.contentType = contentType;
             this.objectType = objectType;

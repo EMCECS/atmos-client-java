@@ -39,7 +39,7 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
-@Consumes("multipart/byteranges")
+@Consumes({"multipart/byteranges", "multipart/mixed"})
 public class MultipartReader implements MessageBodyReader<MultipartEntity> {
     @Override
     public boolean isReadable( Class<?> type, Type genericType, Annotation annotations[], MediaType mediaType ) {

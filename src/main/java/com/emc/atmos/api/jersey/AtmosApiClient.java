@@ -175,7 +175,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public long calculateServerClockSkew() {
-        ClientResponse response = client.resource( config.resolvePath( "", null ) ).get( ClientResponse.class );
+        WebResource resource = client.resource( config.resolvePath( "", null ) );
+        resource.setProperty( ErrorFilter.NO_EXCEPTIONS, true );
+        ClientResponse response = resource.get( ClientResponse.class );
 
         if ( response.getResponseDate() == null )
             throw new AtmosException( "Response date is null", response.getStatus() );

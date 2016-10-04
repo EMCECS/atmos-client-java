@@ -40,12 +40,10 @@ import java.net.URISyntaxException;
 public class AbstractConfig {
     private static final Logger l4j = Logger.getLogger( AbstractConfig.class );
 
-    protected String context;
-    protected URI[] endpoints;
-    protected boolean disableSslValidation = false;
-    protected int resolveCount = 0;
-    protected LoadBalancingAlgorithm loadBalancingAlgorithm = new RoundRobinAlgorithm();
-    protected ThreadLocal<URI> threadEndpoint = new ThreadLocal<URI>();
+    private String context;
+    private URI[] endpoints;
+    private boolean disableSslValidation = false;
+    private LoadBalancingAlgorithm loadBalancingAlgorithm = new RoundRobinAlgorithm();
 
     public AbstractConfig( String context, URI... endpoints ) {
         this.context = context;
