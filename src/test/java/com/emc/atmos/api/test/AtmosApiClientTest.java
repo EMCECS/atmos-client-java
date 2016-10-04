@@ -175,6 +175,31 @@ public class AtmosApiClientTest {
                              oneByteCharacters + twoByteEscaped + fourByteEscaped );
     }
 
+    @Test
+    public void testCreateSubtenant() throws Exception {
+        Assume.assumeTrue(isEcs);
+
+        String subtenantId = this.api.createSubtenant(new CreateSubtenantRequest());
+        l4j.warn("Subtenant ID: " + subtenantId);
+        Assert.assertNotNull(subtenantId);
+
+        this.api.deleteSubtenant(subtenantId);
+    }
+
+    @Test
+    public void testCreateSubtenantWithCustomId() throws Exception {
+        Assume.assumeTrue(isEcs);
+
+        String customId = "15f570b8be2942c0b400a6b7cbfa03b5";
+        CreateSubtenantRequest request = new CreateSubtenantRequest();
+        request.setCustomSubtenantId(customId);
+
+        String subtenantId = this.api.createSubtenant(request);
+        this.api.deleteSubtenant(subtenantId);
+
+        Assert.assertEquals(customId, subtenantId);
+    }
+
     /**
      * Test creating one empty object.  No metadata, no content.
      */
@@ -208,6 +233,17 @@ public class AtmosApiClientTest {
         Assert.assertEquals( "object content wrong when reading by id", "", content );
     }
 
+    @Test
+    public void testCreateEmptyObjectWithCustomId() throws Exception {
+        Assume.assumeTrue(isEcs);
+
+        String oid = "574e49dea38dc7990574e55963a183057e59f370da57";
+        CreateObjectResponse response = this.api.createObject(new CreateObjectRequest().customObjectId(oid).content(""));
+        cleanup.add(response.getObjectId());
+        Assert.assertEquals(oid, response.getObjectId().getId());
+
+        this.api.getObjectMetadata(new ObjectId(oid)); // will throw an error if the ID doesn't exist
+    }
 
     /**
      * Tests using some extended characters when creating on a path.  This particular test

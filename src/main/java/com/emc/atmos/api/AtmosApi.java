@@ -505,11 +505,17 @@ public interface AtmosApi {
             throws URISyntaxException;
     
     /**
-     * Creates a new Atmos Subtenant in EMC ViPR.  This operation is not supported on
+     * Creates a new Atmos Subtenant in ECS.  This operation is not supported on
      * pure Atmos systems.
      * @param request The {@link CreateSubtenantRequest} containing the parameters for
      * the new subtenant.
      * @return The ID of the new subtenant, e.g. "75077194912140aaa95911c237103695"
      */
     String createSubtenant(CreateSubtenantRequest request);
+
+    /**
+     * Deletes an Atmos Subtenant in ECS.  This operation is not supported on pure Atmos systems.
+     * Note: the subtenant must be completely empty before deleting.
+     */
+    void deleteSubtenant(String subtenantId);
 }

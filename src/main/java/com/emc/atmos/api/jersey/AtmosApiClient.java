@@ -729,4 +729,8 @@ public class AtmosApiClient extends AbstractAtmosApi {
         return response.getHeaders().get("subtenantID").get(0);
     }
 
+    @Override
+    public void deleteSubtenant( String subtenantId ) {
+        client.resource( config.resolvePath( "subtenant/" + subtenantId, null ) ).delete();
+    }
 }
