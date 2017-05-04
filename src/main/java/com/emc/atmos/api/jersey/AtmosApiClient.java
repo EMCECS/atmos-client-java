@@ -288,8 +288,10 @@ public class AtmosApiClient extends AbstractAtmosApi {
     public void move( ObjectPath oldPath, ObjectPath newPath, boolean overwrite ) {
         WebResource resource = client.resource( config.resolvePath( oldPath.getRelativeResourcePath(), "rename" ) );
         WebResource.Builder builder = resource.getRequestBuilder();
-        builder.header( RestUtil.XHEADER_UTF8, "true" )
-               .header( RestUtil.XHEADER_PATH, HttpUtil.encodeUtf8( newPath.getPath() ) );
+        builder.header( RestUtil.XHEADER_PATH,
+                       config.isEncodeUtf8() ? HttpUtil.encodeUtf8( newPath.getPath() ) : newPath.getPath() );
+        if ( config.isEncodeUtf8() ) builder.header( RestUtil.XHEADER_UTF8, "true" );
+
         if ( overwrite ) builder.header( RestUtil.XHEADER_FORCE, "true" );
 
         // workaround for clients that set a default content-type for POSTs
@@ -305,20 +307,22 @@ public class AtmosApiClient extends AbstractAtmosApi {
         if ( identifier instanceof ObjectKey )
             builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
 
-        ClientResponse response = builder.header( RestUtil.XHEADER_UTF8, "true" ).get( ClientResponse.class );
+        if ( config.isEncodeUtf8() ) builder.header( RestUtil.XHEADER_UTF8, "true" );
+
+        ClientResponse response = builder.get( ClientResponse.class );
 
         Map<String, Boolean> metaNames = new TreeMap<String, Boolean>();
 
         String nameString = response.getHeaders().getFirst( RestUtil.XHEADER_TAGS );
         if ( nameString != null ) {
             for ( String name : nameString.split( "," ) )
-                metaNames.put( HttpUtil.decodeUtf8( name.trim() ), false );
+                metaNames.put( config.isEncodeUtf8() ? HttpUtil.decodeUtf8( name.trim() ) : name.trim(), false );
         }
 
         nameString = response.getHeaders().getFirst( RestUtil.XHEADER_LISTABLE_TAGS );
         if ( nameString != null ) {
             for ( String name : nameString.split( "," ) )
-                metaNames.put( HttpUtil.decodeUtf8( name.trim() ), true );
+                metaNames.put( config.isEncodeUtf8() ? HttpUtil.decodeUtf8( name.trim() ) : name.trim(), true );
         }
 
         response.close();
@@ -336,17 +340,20 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
         if ( metadataNames != null ) {
             for ( String name : metadataNames ) {
-                builder.header( RestUtil.XHEADER_TAGS, HttpUtil.encodeUtf8( name ) );
+                if ( config.isEncodeUtf8() ) name = HttpUtil.encodeUtf8( name );
+                builder.header( RestUtil.XHEADER_TAGS, name );
             }
         }
 
-        ClientResponse response = builder.header( RestUtil.XHEADER_UTF8, "true" ).get( ClientResponse.class );
+        if ( config.isEncodeUtf8() ) builder.header( RestUtil.XHEADER_UTF8, "true" );
+
+        ClientResponse response = builder.get( ClientResponse.class );
 
         Map<String, Metadata> metaMap = new TreeMap<String, Metadata>();
         metaMap.putAll( RestUtil.parseMetadataHeader( response.getHeaders().getFirst( RestUtil.XHEADER_META ),
-                                                      false ) );
+                                                      false, config.isEncodeUtf8() ) );
         metaMap.putAll( RestUtil.parseMetadataHeader( response.getHeaders().getFirst( RestUtil.XHEADER_LISTABLE_META ),
-                                                      true ) );
+                                                      true, config.isEncodeUtf8() ) );
 
         response.close();
 
@@ -363,15 +370,19 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
         if ( metadataNames != null ) {
             for ( String name : metadataNames ) {
-                builder.header( RestUtil.XHEADER_TAGS, HttpUtil.encodeUtf8( name ) );
+                if ( config.isEncodeUtf8() ) name = HttpUtil.encodeUtf8( name );
+                builder.header( RestUtil.XHEADER_TAGS, name );
             }
         }
 
-        ClientResponse response = builder.header( RestUtil.XHEADER_UTF8, "true" ).get( ClientResponse.class );
+        if ( config.isEncodeUtf8() ) builder.header( RestUtil.XHEADER_UTF8, "true" );
+
+        ClientResponse response = builder.get( ClientResponse.class );
 
         response.close();
 
-        return RestUtil.parseMetadataHeader( response.getHeaders().getFirst( RestUtil.XHEADER_META ), false );
+        return RestUtil.parseMetadataHeader( response.getHeaders().getFirst( RestUtil.XHEADER_META ),
+                false, config.isEncodeUtf8() );
     }
 
     @Override
@@ -393,7 +404,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
         if ( identifier instanceof ObjectKey )
             builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
 
-        ClientResponse response = builder.header( RestUtil.XHEADER_UTF8, "true" ).head();
+        if ( config.isEncodeUtf8() ) builder.header( RestUtil.XHEADER_UTF8, "true" );
+
+        ClientResponse response = builder.head();
 
         Acl acl = new Acl( RestUtil.parseAclHeader( response.getHeaders().getFirst( RestUtil.XHEADER_USER_ACL ) ),
                            RestUtil.parseAclHeader( response.getHeaders()
@@ -401,10 +414,10 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
         Map<String, Metadata> metaMap = new TreeMap<String, Metadata>();
         metaMap.putAll( RestUtil.parseMetadataHeader( response.getHeaders().getFirst( RestUtil.XHEADER_META ),
-                                                      false ) );
+                                                      false, config.isEncodeUtf8() ) );
         metaMap.putAll( RestUtil.parseMetadataHeader( response.getHeaders()
                                                               .getFirst( RestUtil.XHEADER_LISTABLE_META ),
-                                                      true ) );
+                                                      true, config.isEncodeUtf8() ) );
 
         String wsChecksumHeader = response.getHeaders().getFirst( RestUtil.XHEADER_WSCHECKSUM );
         ChecksumValue wsChecksum = wsChecksumHeader == null ? null : new ChecksumValueImpl( wsChecksumHeader );
@@ -429,14 +442,19 @@ public class AtmosApiClient extends AbstractAtmosApi {
             builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
 
         for ( Metadata oneMetadata : metadata ) {
-            if ( oneMetadata.isListable() )
-                builder.header( RestUtil.XHEADER_LISTABLE_META, oneMetadata.toASCIIString() );
-            else builder.header( RestUtil.XHEADER_META, oneMetadata.toASCIIString() );
+            if ( oneMetadata.isListable() ) {
+                builder.header( RestUtil.XHEADER_LISTABLE_META,
+                        config.isEncodeUtf8() ? oneMetadata.toASCIIString() : oneMetadata.toString() );
+            } else {
+                builder.header( RestUtil.XHEADER_META,
+                        config.isEncodeUtf8() ? oneMetadata.toASCIIString() : oneMetadata.toString() );
+            }
         }
 
         // workaround for clients that set a default content-type for POSTs
         builder.type( RestUtil.TYPE_DEFAULT );
-        builder.header( RestUtil.XHEADER_UTF8, "true" ).post();
+        if ( config.isEncodeUtf8() ) builder.header( RestUtil.XHEADER_UTF8, "true" );
+        builder.post();
     }
 
     @Override
@@ -448,10 +466,13 @@ public class AtmosApiClient extends AbstractAtmosApi {
             builder.header( RestUtil.XHEADER_POOL, ((ObjectKey) identifier).getBucket() );
 
         for ( String name : names ) {
-            builder.header( RestUtil.XHEADER_TAGS, HttpUtil.encodeUtf8( name ) );
+            if ( config.isEncodeUtf8() ) name = HttpUtil.encodeUtf8( name );
+            builder.header( RestUtil.XHEADER_TAGS, name );
         }
 
-        builder.header( RestUtil.XHEADER_UTF8, "true" ).delete();
+        if ( config.isEncodeUtf8() ) builder.header( RestUtil.XHEADER_UTF8, "true" );
+
+        builder.delete();
     }
 
     @Override
@@ -460,15 +481,17 @@ public class AtmosApiClient extends AbstractAtmosApi {
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( metadataName != null )
-            builder.header( RestUtil.XHEADER_TAGS, HttpUtil.encodeUtf8( metadataName ) );
+            builder.header( RestUtil.XHEADER_TAGS,
+                    config.isEncodeUtf8() ? HttpUtil.encodeUtf8( metadataName ) : metadataName );
+        if ( config.isEncodeUtf8() ) builder.header( RestUtil.XHEADER_UTF8, "true" );
 
-        ClientResponse response = builder.header( RestUtil.XHEADER_UTF8, "true" ).get( ClientResponse.class );
+        ClientResponse response = builder.get( ClientResponse.class );
         String headerValue = response.getHeaders().getFirst( RestUtil.XHEADER_LISTABLE_TAGS );
 
         Set<String> names = new TreeSet<String>();
         if ( headerValue == null ) return names;
         for ( String name : headerValue.split( "," ) )
-            names.add( HttpUtil.decodeUtf8( name.trim() ) );
+            names.add( config.isEncodeUtf8() ? HttpUtil.decodeUtf8( name.trim() ) : name.trim() );
 
         response.close();
 
@@ -679,7 +702,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
             builder.type( RestUtil.TYPE_DEFAULT );
         }
 
-        return addHeaders( builder, request.generateHeaders() );
+        return addHeaders( builder, request.generateHeaders( config.isEncodeUtf8() ) );
     }
 
     protected WebResource.Builder addHeaders( WebResource.Builder builder, Map<String, List<Object>> headers ) {

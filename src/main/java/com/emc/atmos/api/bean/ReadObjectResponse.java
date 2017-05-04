@@ -53,14 +53,20 @@ public class ReadObjectResponse<T> extends BasicResponse {
         this.object = object;
     }
 
-    public synchronized ObjectMetadata getMetadata() {
+    public ObjectMetadata getMetadata() {
+        return getMetadata( true );
+    }
+
+    public synchronized ObjectMetadata getMetadata( boolean decodeUtf8 ) {
         if ( metadata == null ) {
             Acl acl = new Acl( RestUtil.parseAclHeader( getFirstHeader( RestUtil.XHEADER_USER_ACL ) ),
                                RestUtil.parseAclHeader( getFirstHeader( RestUtil.XHEADER_GROUP_ACL ) ) );
 
             Map<String, Metadata> metaMap = new TreeMap<String, Metadata>();
-            metaMap.putAll( RestUtil.parseMetadataHeader( getFirstHeader( RestUtil.XHEADER_META ), false ) );
-            metaMap.putAll( RestUtil.parseMetadataHeader( getFirstHeader( RestUtil.XHEADER_LISTABLE_META ), true ) );
+            metaMap.putAll( RestUtil.parseMetadataHeader( getFirstHeader( RestUtil.XHEADER_META ),
+                    false, decodeUtf8 ) );
+            metaMap.putAll( RestUtil.parseMetadataHeader( getFirstHeader( RestUtil.XHEADER_LISTABLE_META ),
+                    true, decodeUtf8 ) );
 
             String wsChecksumHeader = getFirstHeader( RestUtil.XHEADER_WSCHECKSUM );
             ChecksumValue wsChecksum = wsChecksumHeader == null ? null : new ChecksumValueImpl( wsChecksumHeader );

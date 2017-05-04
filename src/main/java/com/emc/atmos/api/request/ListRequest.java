@@ -54,10 +54,10 @@ public abstract class ListRequest<T extends ListRequest<T>> extends Request {
     protected abstract T me();
 
     @Override
-    public Map<String, List<Object>> generateHeaders() {
+    public Map<String, List<Object>> generateHeaders( boolean encodeUtf8 ) {
         Map<String, List<Object>> headers = new TreeMap<String, List<Object>>();
 
-        RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
+        if ( encodeUtf8 ) RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
 
         if ( limit > 0 ) RestUtil.addValue( headers, RestUtil.XHEADER_LIMIT, limit );
 

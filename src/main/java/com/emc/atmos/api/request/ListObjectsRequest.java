@@ -49,10 +49,11 @@ public class ListObjectsRequest extends ListMetadataRequest<ListObjectsRequest> 
     }
 
     @Override
-    public Map<String, List<Object>> generateHeaders() {
-        Map<String, List<Object>> headers = super.generateHeaders();
+    public Map<String, List<Object>> generateHeaders( boolean encodeUtf8 ) {
+        Map<String, List<Object>> headers = super.generateHeaders( encodeUtf8 );
 
-        RestUtil.addValue( headers, RestUtil.XHEADER_TAGS, HttpUtil.encodeUtf8( metadataName ) );
+        RestUtil.addValue( headers, RestUtil.XHEADER_TAGS,
+                encodeUtf8 ? HttpUtil.encodeUtf8( metadataName ) : metadataName );
 
         return headers;
     }

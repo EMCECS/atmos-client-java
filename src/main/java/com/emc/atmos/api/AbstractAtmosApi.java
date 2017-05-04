@@ -126,7 +126,7 @@ public abstract class AbstractAtmosApi implements AtmosApi {
     @Override
     public PreSignedRequest preSignRequest( Request request, Date expiration ) throws MalformedURLException {
         URI uri = config.resolvePath( request.getServiceRelativePath(), request.getQuery() );
-        Map<String, List<Object>> headers = request.generateHeaders();
+        Map<String, List<Object>> headers = request.generateHeaders( config.isEncodeUtf8() );
 
         String contentType = null;
         if ( request instanceof ContentRequest ) contentType = ((ContentRequest) request).getContentType();

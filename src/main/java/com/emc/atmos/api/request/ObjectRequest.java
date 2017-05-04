@@ -53,7 +53,7 @@ public abstract class ObjectRequest<T extends ObjectRequest<T>> extends Request 
     protected abstract T me();
 
     @Override
-    public Map<String, List<Object>> generateHeaders() {
+    public Map<String, List<Object>> generateHeaders( boolean encodeUtf8 ) {
         Map<String, List<Object>> headers = new TreeMap<String, List<Object>>();
 
         if ( identifier != null && identifier instanceof ObjectKey ) {

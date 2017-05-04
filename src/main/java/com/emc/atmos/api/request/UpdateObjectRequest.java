@@ -49,8 +49,8 @@ public class UpdateObjectRequest extends PutObjectRequest<UpdateObjectRequest> {
     }
 
     @Override
-    public Map<String, List<Object>> generateHeaders() {
-        Map<String, List<Object>> headers = super.generateHeaders();
+    public Map<String, List<Object>> generateHeaders( boolean encodeUtf8 ) {
+        Map<String, List<Object>> headers = super.generateHeaders( encodeUtf8 );
 
         if ( range != null )
             RestUtil.addValue( headers, RestUtil.HEADER_RANGE, "bytes=" + range );

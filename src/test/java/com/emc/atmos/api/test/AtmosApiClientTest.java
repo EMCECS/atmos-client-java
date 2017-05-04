@@ -59,6 +59,7 @@ import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -1686,6 +1687,48 @@ public class AtmosApiClientTest {
         Assert.assertEquals( "Checksum doesn't match", ck, response.getWsChecksum() );
     }
 
+    @Test
+    public void testCreateEmptyChecksum() throws Exception {
+        RunningChecksum ck = new RunningChecksum(ChecksumAlgorithm.SHA1);
+        CreateObjectRequest request = new CreateObjectRequest().wsChecksum(ck);
+
+        CreateObjectResponse response = this.api.createObject(request);
+        cleanup.add(response.getObjectId());
+        Assert.assertNotNull("Null object ID returned", response.getObjectId());
+        Assert.assertEquals("Checksum doesn't match", ck, response.getWsChecksum());
+    }
+
+    @Test
+    public void testRecreateCustomOidWithChecksum() throws Exception {
+        Assume.assumeTrue(isEcs);
+        String oid = "54ec7281c39f229a054ecb2339c02605804951fc61c6";
+
+        RunningChecksum ck = new RunningChecksum(ChecksumAlgorithm.SHA1);
+        CreateObjectRequest request = new CreateObjectRequest().wsChecksum(ck);
+        request.setCustomObjectId(oid);
+
+        CreateObjectResponse response = this.api.createObject(request);
+        cleanup.add(response.getObjectId());
+        Assert.assertEquals(oid, response.getObjectId().getId());
+        Assert.assertNotNull("Null object ID returned", response.getObjectId());
+        Assert.assertEquals("Checksum doesn't match", ck, response.getWsChecksum());
+
+        this.api.delete(new ObjectId(oid));
+        Assert.assertFalse(this.api.objectExists(new ObjectId(oid)));
+
+        response = this.api.createObject(request);
+        Assert.assertEquals(oid, response.getObjectId().getId());
+        Assert.assertNotNull("Null object ID returned", response.getObjectId());
+        Assert.assertEquals("Checksum doesn't match", ck, response.getWsChecksum());
+
+        byte[] data = "Hello Recreated Checksum Object".getBytes(Charset.forName("UTF-8"));
+        ck.update(data, 0, data.length);
+        UpdateObjectRequest uRequest = new UpdateObjectRequest()
+                .identifier(new ObjectId(oid)).range(new Range(0, data.length - 1)).content(data).wsChecksum(ck);
+        this.api.updateObject(uRequest);
+        Assert.assertEquals("Checksum doesn't match", ck, this.api.getObjectMetadata(new ObjectId(oid)).getWsChecksum());
+    }
+
     /**
      * Note, to test read checksums, see comment in testReadChecksum
      */
@@ -1934,6 +1977,7 @@ public class AtmosApiClientTest {
 
         Map<String, Metadata> metaMap = this.api.getUserMetadata( id );
         Metadata meta = metaMap.get( stringWithComma );
+        Assert.assertNotNull( meta );
         Assert.assertEquals( "key does not match", meta.getName(), stringWithComma );
         Assert.assertTrue( "metadata is not listable", meta.isListable() );
 

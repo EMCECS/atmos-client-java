@@ -51,10 +51,10 @@ public class ReadObjectRequest extends ObjectRequest<ReadObjectRequest> {
     }
 
     @Override
-    public Map<String, List<Object>> generateHeaders() {
-        Map<String, List<Object>> headers = super.generateHeaders();
+    public Map<String, List<Object>> generateHeaders( boolean encodeUtf8 ) {
+        Map<String, List<Object>> headers = super.generateHeaders( encodeUtf8 );
 
-        RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
+        if ( encodeUtf8 ) RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
 
         if ( ranges != null && !ranges.isEmpty() )
             RestUtil.addValue( headers, RestUtil.HEADER_RANGE, "bytes=" + RestUtil.join( ranges, "," ) );

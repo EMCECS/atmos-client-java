@@ -55,18 +55,21 @@ public abstract class PutObjectRequest<T extends PutObjectRequest<T>> extends Ob
     }
 
     @Override
-    public Map<String, List<Object>> generateHeaders() {
-        Map<String, List<Object>> headers = super.generateHeaders();
+    public Map<String, List<Object>> generateHeaders( boolean encodeUtf8 ) {
+        Map<String, List<Object>> headers = super.generateHeaders( encodeUtf8 );
 
         // enable UTF-8
-        if ( !getUserMetadata().isEmpty() ) RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
+        if ( !getUserMetadata().isEmpty() && encodeUtf8 )
+            RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
 
         // metadata
         for ( Metadata metadata : getUserMetadata() ) {
             if ( metadata.isListable() )
-                RestUtil.addValue( headers, RestUtil.XHEADER_LISTABLE_META, metadata.toASCIIString() );
+                RestUtil.addValue( headers, RestUtil.XHEADER_LISTABLE_META,
+                        encodeUtf8 ? metadata.toASCIIString() : metadata.toString() );
             else
-                RestUtil.addValue( headers, RestUtil.XHEADER_META, metadata.toASCIIString() );
+                RestUtil.addValue( headers, RestUtil.XHEADER_META,
+                        encodeUtf8 ? metadata.toASCIIString() : metadata.toString() );
         }
 
         // acl

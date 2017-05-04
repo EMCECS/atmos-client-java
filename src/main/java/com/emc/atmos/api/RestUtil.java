@@ -219,14 +219,16 @@ public final class RestUtil {
             throw new AtmosException( "Cannot find object ID in path" + path );
     }
 
-    public static Map<String, Metadata> parseMetadataHeader( String headerValue, boolean listable ) {
+    public static Map<String, Metadata> parseMetadataHeader( String headerValue, boolean listable, boolean decodeUtf8 ) {
         Map<String, Metadata> metadataMap = new TreeMap<String, Metadata>();
         if ( headerValue == null ) return metadataMap;
         String[] pairs = headerValue.split( ",(?=[^,]+=)" ); // comma with key as look-ahead (not part of match)
         for ( String pair : pairs ) {
             String[] components = pair.split( "=", 2 );
-            String name = HttpUtil.decodeUtf8( components[0].trim() );
-            String value = components.length > 1 ? HttpUtil.decodeUtf8( components[1] ) : null;
+            String name = components[0].trim();
+            if ( decodeUtf8 ) name = HttpUtil.decodeUtf8( name );
+            String value = components.length > 1 ? components[1] : null;
+            if ( decodeUtf8 ) value = HttpUtil.decodeUtf8( value );
             Metadata metadata = new Metadata( name, value, listable );
             metadataMap.put( name, metadata );
         }

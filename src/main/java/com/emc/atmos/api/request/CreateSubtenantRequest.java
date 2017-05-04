@@ -54,7 +54,7 @@ public class CreateSubtenantRequest extends Request {
     }
 
     @Override
-    public Map<String, List<Object>> generateHeaders() {
+    public Map<String, List<Object>> generateHeaders( boolean encodeUtf8 ) {
         Map<String, List<Object>> headers = new HashMap<String, List<Object>>();
         if(objectVirtualPoolId != null) {
             headers.put(RestUtil.XHEADER_OBJECT_VPOOL, 
