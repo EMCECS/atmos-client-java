@@ -228,7 +228,7 @@ public final class RestUtil {
             String name = components[0].trim();
             if ( decodeUtf8 ) name = HttpUtil.decodeUtf8( name );
             String value = components.length > 1 ? components[1] : null;
-            if ( decodeUtf8 ) value = HttpUtil.decodeUtf8( value );
+            if ( value != null && decodeUtf8 ) value = HttpUtil.decodeUtf8( value );
             Metadata metadata = new Metadata( name, value, listable );
             metadataMap.put( name, metadata );
         }
