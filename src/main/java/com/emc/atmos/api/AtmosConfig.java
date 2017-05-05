@@ -48,6 +48,7 @@ public class AtmosConfig extends AbstractConfig {
     private URI proxyUri;
     private String proxyUser;
     private String proxyPassword;
+    private boolean encodeUtf8 = true;
 
     /**
      * Creates a new instance with default parameters. tokenId, secretKey and at least one endpoint must be provided
@@ -241,5 +242,20 @@ public class AtmosConfig extends AbstractConfig {
      */
     public void setProxyPassword( String proxyPassword ) {
         this.proxyPassword = proxyPassword;
+    }
+
+    /**
+     * Gets whether UTF-8 encoding is enabled
+     */
+    public boolean isEncodeUtf8() {
+        return encodeUtf8;
+    }
+
+    /**
+     * Sets whether to encode metadata and keys using HTTP UTF-8 escape sequences to allow extended character use.
+     * Default is true.
+     */
+    public void setEncodeUtf8(boolean encodeUtf8) {
+        this.encodeUtf8 = encodeUtf8;
     }
 }

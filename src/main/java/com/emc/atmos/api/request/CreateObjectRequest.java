@@ -44,8 +44,8 @@ public class CreateObjectRequest extends PutObjectRequest<CreateObjectRequest> {
     }
 
     @Override
-    public Map<String, List<Object>> generateHeaders() {
-        Map<String, List<Object>> headers = super.generateHeaders();
+    public Map<String, List<Object>> generateHeaders( boolean encodeUtf8 ) {
+        Map<String, List<Object>> headers = super.generateHeaders( encodeUtf8 );
 
         // custom object ID
         if ( getCustomObjectId() != null ) RestUtil.addValue( headers, RestUtil.XHEADER_OBJECT_ID, customObjectId );

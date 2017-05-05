@@ -56,7 +56,7 @@ public abstract class Request {
      * Returns the HTTP headers to send in this request, to be generated from other request properties immediately
      * before sending.
      */
-    public abstract Map<String, List<Object>> generateHeaders();
+    public abstract Map<String, List<Object>> generateHeaders( boolean encodeUtf8 );
 
     /**
      * Override and return true if this request supports the Expect: 100-continue header. Typically only object write

@@ -45,8 +45,8 @@ public abstract class ListMetadataRequest<T extends ListMetadataRequest<T>> exte
     protected boolean includeMetadata;
 
     @Override
-    public Map<String, List<Object>> generateHeaders() {
-        Map<String, List<Object>> headers = super.generateHeaders();
+    public Map<String, List<Object>> generateHeaders( boolean encodeUtf8 ) {
+        Map<String, List<Object>> headers = super.generateHeaders( encodeUtf8 );
 
         if ( includeMetadata ) {
             RestUtil.addValue( headers, RestUtil.XHEADER_INCLUDE_META, 1 );

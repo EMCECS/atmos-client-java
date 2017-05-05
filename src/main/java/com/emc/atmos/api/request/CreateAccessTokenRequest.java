@@ -35,7 +35,6 @@ import com.emc.util.HttpUtil;
 
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Represents a request to create an anonymous access token.
@@ -55,8 +54,8 @@ public class CreateAccessTokenRequest extends ObjectRequest<CreateAccessTokenReq
     }
 
     @Override
-    public Map<String, List<Object>> generateHeaders() {
-        Map<String, List<Object>> headers = super.generateHeaders();
+    public Map<String, List<Object>> generateHeaders( boolean encodeUtf8 ) {
+        Map<String, List<Object>> headers = super.generateHeaders( encodeUtf8 );
 
         // target object
         if ( identifier != null ) {
@@ -64,8 +63,9 @@ public class CreateAccessTokenRequest extends ObjectRequest<CreateAccessTokenReq
                 RestUtil.addValue( headers, RestUtil.XHEADER_OBJECTID, identifier );
             else if ( identifier instanceof ObjectPath ) {
                 // enable UTF-8
-                RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
-                RestUtil.addValue( headers, RestUtil.XHEADER_PATH, HttpUtil.encodeUtf8( identifier.toString() ) );
+                if ( encodeUtf8 ) RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
+                RestUtil.addValue( headers, RestUtil.XHEADER_PATH,
+                        encodeUtf8 ? HttpUtil.encodeUtf8( identifier.toString() ) : identifier.toString() );
             } else
                 throw new UnsupportedOperationException(
                         "Only object ID and path are currently supported in access tokens" );
