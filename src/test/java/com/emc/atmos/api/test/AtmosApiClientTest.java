@@ -85,14 +85,19 @@ public class AtmosApiClientTest {
     private List<ObjectPath> cleanupDirs = Collections.synchronizedList( new ArrayList<ObjectPath>() );
 
     public AtmosApiClientTest() throws Exception {
-        config = AtmosClientFactory.getAtmosConfig();
+        config = createAtmosConfig();
+        api = new AtmosApiClient( config );
+        isEcs = AtmosClientFactory.atmosIsEcs();
+    }
+
+    private AtmosConfig createAtmosConfig() throws Exception {
+        AtmosConfig config = AtmosClientFactory.getAtmosConfig();
         Assume.assumeTrue("Could not load Atmos configuration", config != null);
         config.setDisableSslValidation( false );
         config.setEnableExpect100Continue( false );
         config.setEnableRetry( false );
         config.setLoadBalancingAlgorithm( new StickyThreadAlgorithm() );
-        api = new AtmosApiClient( config );
-        isEcs = AtmosClientFactory.atmosIsEcs();
+        return config;
     }
 
     @After
@@ -438,12 +443,10 @@ public class AtmosApiClientTest {
         Metadata listable2 = new Metadata( "listable2", "foo2 foo2", true );
         Metadata unlistable2 = new Metadata( "unlistable2", "bar2 bar2", false );
         Metadata listable3 = new Metadata( "listable3", null, true );
-        Metadata quotes = new Metadata( "ST_modalities", "\\US\\", false );
-        //Metadata withCommas = new Metadata( "withcommas", "I, Robot", false );
-        //Metadata withEquals = new Metadata( "withequals", "name=value", false );
-        request.userMetadata( listable, unlistable, listable2, unlistable2, listable3, quotes );
-        //request.addUserMetadata( withCommas );
-        //request.addUserMetadata( withEquals );
+        Metadata quotes = new Metadata( "ST_modalities", "\\\"US\"\\", false );
+        Metadata withCommas = new Metadata( "withcommas", "I, Robot", false );
+        Metadata withEquals = new Metadata( "withequals", "name=value", false );
+        request.userMetadata( listable, unlistable, listable2, unlistable2, listable3, quotes, withCommas, withEquals );
         ObjectId id = this.api.createObject( request ).getObjectId();
         Assert.assertNotNull( "null ID returned", id );
         cleanup.add( id );
@@ -460,8 +463,8 @@ public class AtmosApiClientTest {
         Assert.assertTrue( "Value of listable3 should be empty",
                            meta.get( "listable3" ).getValue() == null
                            || meta.get( "listable3" ).getValue().length() == 0 );
-        //Assert.assertEquals( "Value of withcommas wrong", "I, Robot", meta.get( "withcommas" ).getValue() );
-        //Assert.assertEquals( "Value of withequals wrong", "name=value", meta.get( "withequals" ).getValue() );
+        Assert.assertEquals( "Value of withcommas wrong", "I, Robot", meta.get( "withcommas" ).getValue() );
+        Assert.assertEquals( "Value of withequals wrong", "name=value", meta.get( "withequals" ).getValue() );
 
         // Check listable flags
         Assert.assertEquals( "'listable' is not listable", true, meta.get( "listable" ).isListable() );
@@ -2970,6 +2973,41 @@ public class AtmosApiClientTest {
 
         // disable retention so we can delete (won't work on compliant subtenants!)
         api.setUserMetadata(oid, new Metadata("user.maui.retentionEnable", "false", false));
+    }
+
+    @Test
+    public void testUtf8Unencoded() throws Exception {
+        AtmosConfig uConfig = createAtmosConfig();
+        uConfig.setEncodeUtf8(false);
+        AtmosApi uApi = new AtmosApiClient(uConfig);
+
+        CreateObjectRequest request = new CreateObjectRequest();
+        Metadata listable = new Metadata( "list\\able", "foo", true );
+        Metadata unlistable = new Metadata( "un\\listØable", "bar", false );
+        Metadata listable3 = new Metadata( "listable/3", null, true );
+        Metadata backslashes = new Metadata( "backslashes", "\\US\\", false );
+        request.userMetadata( listable, unlistable, listable3, backslashes );
+        ObjectId id = this.api.createObject( request ).getObjectId();
+        Assert.assertNotNull( "null ID returned", id );
+        cleanup.add( id );
+
+        // Read and validate the metadata unencoded
+        Map<String, Metadata> meta = uApi.getUserMetadata( id );
+        Assert.assertNotNull( "list\\able missing", meta.get( "list\\able" ) );
+        Assert.assertEquals( "value of 'list\\able' wrong", "foo", meta.get( "list\\able" ).getValue() );
+        Assert.assertNotNull( "un\\listØable missing", meta.get( "un\\listØable" ) );
+        Assert.assertEquals( "value of 'un\\listØable' wrong", "bar", meta.get( "un\\listØable" ).getValue() );
+        Assert.assertNotNull( "listable/3 missing", meta.get( "listable/3" ) );
+        Assert.assertTrue( "Value of listable3 should be empty",
+                meta.get( "listable/3" ).getValue() == null
+                        || meta.get( "listable/3" ).getValue().length() == 0 );
+        Assert.assertEquals( "value of 'un\\listØable' wrong", "bar", meta.get( "un\\listØable" ).getValue() );
+        Assert.assertEquals( "value of 'backslashes' wrong", "\\US\\", meta.get( "backslashes" ).getValue() );
+
+        // Check listable flags
+        Assert.assertEquals( "'list\\able' is not listable", true, meta.get( "list\\able" ).isListable() );
+        Assert.assertEquals( "'listable/3' is not listable", true, meta.get( "listable/3" ).isListable() );
+        Assert.assertEquals( "'un\\listØable' is listable", false, meta.get( "un\\listØable" ).isListable() );
     }
 
     private String rand8char() {
