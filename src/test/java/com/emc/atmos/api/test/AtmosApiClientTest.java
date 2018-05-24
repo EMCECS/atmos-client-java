@@ -872,6 +872,7 @@ public class AtmosApiClientTest {
 
     /**
      * Test listing objects by a tag that doesn't exist
+     * ECS#STORAGE-16117
      */
     @Test
     public void testListObjectsNoExist() {
@@ -1230,6 +1231,9 @@ public class AtmosApiClientTest {
                            directoryContains( dirList, dirPath2.getFilename() ) );
     }
 
+    /**
+     * ECS#STORAGE-20415
+     */
     @Test
     public void testListDirectoryPaged() throws Exception {
         String dir = rand8char();
@@ -1399,6 +1403,7 @@ public class AtmosApiClientTest {
 
     /**
      * Tests dot directories (you should be able to create them even though they break the URL specification.)
+     * ECS#STORAGE-15124
      */
     @Test
     public void testDotDirectories() throws Exception {
@@ -1652,7 +1657,10 @@ public class AtmosApiClientTest {
         }
     }
 
-    // NOTE: this test requires a retention policy be configured named "atmos-client-test", with retention period set to 10 seconds
+    /**
+     * NOTE: this test requires a retention policy be configured named "atmos-client-test", with retention period set to 10 seconds
+     * ECS#STORAGE-16049
+     */
     @Test
     public void testCreateRetentionPolicy() throws Exception {
         Assume.assumeTrue(isEcs);
@@ -1835,6 +1843,9 @@ public class AtmosApiClientTest {
         Assert.assertEquals(data, api.readObject(path, String.class));
     }
 
+    /**
+     * ECS#STORAGE-19776
+     */
     @Test
     public void testSemicolonName() throws Exception {
         ObjectPath path = new ObjectPath("hey;semicolon.txt");
@@ -1846,6 +1857,9 @@ public class AtmosApiClientTest {
         Assert.assertEquals(data, api.readObject(path, String.class));
     }
 
+    /**
+     * ECS#STORAGE-19776
+     */
     @Test
     public void testRenameSemicolon() throws Exception {
         ObjectPath oldPath = new ObjectPath("hey-semicolon-rename.txt");
