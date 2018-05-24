@@ -29,7 +29,6 @@ package com.emc.atmos.api.test;
 import com.emc.atmos.api.Range;
 import com.emc.atmos.api.multipart.MultipartEntity;
 import com.emc.atmos.api.multipart.MultipartException;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -176,6 +175,43 @@ public class MultipartEntityTest {
         Assert.assertEquals( "Part 5 range is wrong", entity.get( 4 ).getContentRange(), new Range( 27, 29 ) );
         Assert.assertTrue( "Part 5 data is wrong",
                            Arrays.equals( entity.get( 4 ).getData(), "ago".getBytes( "UTF-8" ) ) );
+    }
+
+    @Test
+    public void testNoPrefixEol() throws Exception {
+        String eol = "\r\n";
+        String partString =
+                BOUNDARY + eol +
+                "Content-Type: text/plain" + eol +
+                "Content-Range: bytes 27-28/30" + eol +
+                eol +
+                "ag" + eol +
+                BOUNDARY + eol +
+                "Content-Type: text/plain" + eol +
+                "Content-Range: bytes 9-9/30" + eol +
+                eol +
+                "e" + eol +
+                BOUNDARY + eol +
+                "Content-Type: text/plain" + eol +
+                "Content-Range: bytes 5-5/30" + eol +
+                eol +
+                "s" + eol +
+                BOUNDARY + "--" + eol;
+        MultipartEntity entity = MultipartEntity.fromStream( new ByteArrayInputStream( partString.getBytes( "UTF-8" ) ),
+                BOUNDARY );
+        Assert.assertEquals( "Wrong number of parts", entity.size(), 3 );
+        Assert.assertEquals( "Part 1 content type is wrong", entity.get( 0 ).getContentType(), "text/plain" );
+        Assert.assertEquals( "Part 1 range is wrong", entity.get( 0 ).getContentRange(), new Range( 27, 28 ) );
+        Assert.assertTrue( "Part 1 data is wrong",
+                Arrays.equals( entity.get( 0 ).getData(), "ag".getBytes( "UTF-8" ) ) );
+        Assert.assertEquals( "Part 2 content type is wrong", entity.get( 1 ).getContentType(), "text/plain" );
+        Assert.assertEquals( "Part 2 range is wrong", entity.get( 1 ).getContentRange(), new Range( 9, 9 ) );
+        Assert.assertTrue( "Part 2 data is wrong",
+                Arrays.equals( entity.get( 1 ).getData(), "e".getBytes( "UTF-8" ) ) );
+        Assert.assertEquals( "Part 3 content type is wrong", entity.get( 2 ).getContentType(), "text/plain" );
+        Assert.assertEquals( "Part 3 range is wrong", entity.get( 2 ).getContentRange(), new Range( 5, 5 ) );
+        Assert.assertTrue( "Part 3 data is wrong",
+                Arrays.equals( entity.get( 2 ).getData(), "s".getBytes( "UTF-8" ) ) );
     }
 
     @Test
