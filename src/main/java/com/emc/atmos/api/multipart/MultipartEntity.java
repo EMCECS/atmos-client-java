@@ -57,11 +57,10 @@ public class MultipartEntity extends ArrayList<MultipartPart> {
 
         try {
             while ( true ) {
-
-                // first, we expect a boundary ( EOL + '--' + <boundary_string> + EOL )
-                if ( !"".equals( StreamUtil.readLine( is ) ) )
-                    throw new MultipartException( "Parse error: expected EOL before boundary" );
                 String line = StreamUtil.readLine( is );
+
+                // there *may* be an additional CRLF before the first boundary
+                if ( "".equals( line ) ) line = StreamUtil.readLine( is );
 
                 // two dashes after the boundary means EOS
                 if ( ("--" + boundary + "--").equals( line ) ) break;
@@ -106,6 +105,10 @@ public class MultipartEntity extends ArrayList<MultipartPart> {
                 }
 
                 parts.add( new MultipartPart( contentType, new Range( start, end ), data ) );
+
+                // after each data block there should be a CRLF
+                if ( !"".equals( StreamUtil.readLine( is ) ) )
+                    throw new MultipartException( "Parse error: expected EOL before boundary" );
             }
         } finally {
             is.close();

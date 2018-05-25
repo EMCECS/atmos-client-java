@@ -872,6 +872,7 @@ public class AtmosApiClientTest {
 
     /**
      * Test listing objects by a tag that doesn't exist
+     * ECS#STORAGE-16117
      */
     @Test
     public void testListObjectsNoExist() {
@@ -1230,6 +1231,9 @@ public class AtmosApiClientTest {
                            directoryContains( dirList, dirPath2.getFilename() ) );
     }
 
+    /**
+     * ECS#STORAGE-20415
+     */
     @Test
     public void testListDirectoryPaged() throws Exception {
         String dir = rand8char();
@@ -1399,6 +1403,7 @@ public class AtmosApiClientTest {
 
     /**
      * Tests dot directories (you should be able to create them even though they break the URL specification.)
+     * ECS#STORAGE-15124
      */
     @Test
     public void testDotDirectories() throws Exception {
@@ -1652,7 +1657,10 @@ public class AtmosApiClientTest {
         }
     }
 
-    // NOTE: this test requires a retention policy be configured named "atmos-client-test", with retention period set to 10 seconds
+    /**
+     * NOTE: this test requires a retention policy be configured named "atmos-client-test", with retention period set to 10 seconds
+     * ECS#STORAGE-16049
+     */
     @Test
     public void testCreateRetentionPolicy() throws Exception {
         Assume.assumeTrue(isEcs);
@@ -1822,6 +1830,55 @@ public class AtmosApiClientTest {
         Assert.assertEquals( "UTF8 value does not match",
                              utf8String + "2",
                              metaMap.get( "newKey" ).getValue() );
+    }
+
+    @Test
+    public void testSpaceInName() throws Exception {
+        ObjectPath path = new ObjectPath("hello i have spaces.txt");
+        String data = "Hello Space Test!";
+        cleanup.add(path);
+
+        api.createObject(path, data, "text/plain");
+
+        Assert.assertEquals(data, api.readObject(path, String.class));
+    }
+
+    /**
+     * ECS#STORAGE-19776
+     */
+    @Test
+    public void testSemicolonName() throws Exception {
+        ObjectPath path = new ObjectPath("hey;semicolon.txt");
+        String data = "Hello Semicolon Test!";
+        cleanup.add(path);
+
+        api.createObject(path, data, "text/plain");
+
+        Assert.assertEquals(data, api.readObject(path, String.class));
+    }
+
+    /**
+     * ECS#STORAGE-19776
+     */
+    @Test
+    public void testRenameSemicolon() throws Exception {
+        ObjectPath oldPath = new ObjectPath("hey-semicolon-rename.txt");
+        ObjectPath newPath = new ObjectPath("hey;semicolon-rename.txt");
+        String data = "Hello Semicolon RenameTest!";
+
+        api.createObject(oldPath, data, "text/plain");
+        try {
+            Assert.assertEquals(data, api.readObject(oldPath, String.class));
+
+            // rename to path with semicolon
+            api.move(oldPath, newPath, false);
+            cleanup.add(newPath);
+        } catch (Exception e) {
+            cleanup.add(oldPath);
+            throw e;
+        }
+
+        Assert.assertEquals(data, api.readObject(newPath, String.class));
     }
 
     @Test
@@ -2196,7 +2253,7 @@ public class AtmosApiClientTest {
         Assume.assumeTrue("policyname != retaindelete", "retaindelete".equals(sysmeta.get("policyname").getValue()));
         Assert.assertNotNull( "ObjectInfo expiration null", oi.getExpiration().getEndAt() );
         Assert.assertNotNull( "ObjectInfo retention null", oi.getRetention().getEndAt() );
-        api.setUserMetadata( id, new Metadata( "user.maui.retentionEnable", "false", false ) );
+        api.setUserMetadata( id, new Metadata( RestUtil.METADATA_KEY_RETENTION_ENABLE, "false", false ) );
     }
 
     @Test
@@ -2554,6 +2611,34 @@ public class AtmosApiClientTest {
 
         // verify checksum
         Assert.assertEquals( md5.toString( false ), readResponse.getServerGeneratedChecksum().toString( false ) );
+    }
+
+    @Test
+    public void testETag() throws Exception {
+        Assume.assumeTrue(isEcs);
+        byte[] data = "hello".getBytes("UTF-8");
+
+        // generate our own checksum
+        RunningChecksum md5 = new RunningChecksum(ChecksumAlgorithm.MD5);
+        md5.update(data, 0, data.length);
+
+        CreateObjectRequest request = new CreateObjectRequest().content(data).contentType("text/plain");
+        CreateObjectResponse response = this.api.createObject(request);
+        Assert.assertNotNull("null ID returned", response.getObjectId());
+        cleanup.add(response.getObjectId());
+
+        // verify ETag from HEAD
+        ObjectMetadata metadata = api.getObjectMetadata(response.getObjectId());
+        Assert.assertEquals(md5.getValue(), metadata.getETag());
+
+        // Read back the content
+        ReadObjectRequest readRequest = new ReadObjectRequest().identifier(response.getObjectId());
+        ReadObjectResponse<byte[]> readResponse = api.readObject(readRequest, byte[].class);
+        String content = new String(readResponse.getObject(), "UTF-8");
+        Assert.assertEquals("object content wrong", "hello", content);
+
+        // verify ETag from GET
+        Assert.assertEquals(md5.getValue(), readResponse.getMetadata().getETag());
     }
 
     @Ignore("Blocked by Bug 30073")
@@ -2957,7 +3042,6 @@ public class AtmosApiClientTest {
         newEnd.setTime(info.getRetainedUntil());
 
         DateFormat iso8601Format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        String retentionEnd = "user.maui.retentionEnd";
 
         newEnd.set(Calendar.HOUR, 0);
         newEnd.set(Calendar.MINUTE, 0);
@@ -2965,14 +3049,14 @@ public class AtmosApiClientTest {
         newEnd.set(Calendar.MILLISECOND, 0);
         newEnd.add(Calendar.DATE, -1);
         try {
-            api.setUserMetadata(oid, new Metadata(retentionEnd, iso8601Format.format(newEnd.getTime()), false));
+            api.setUserMetadata(oid, new Metadata(RestUtil.METADATA_KEY_RETENTION_END, iso8601Format.format(newEnd.getTime()), false));
             Assert.fail("should not be able to shorten retention period");
         } catch (AtmosException e) {
             Assert.assertEquals("Wrong error code", 1002, e.getErrorCode());
         }
 
         // disable retention so we can delete (won't work on compliant subtenants!)
-        api.setUserMetadata(oid, new Metadata("user.maui.retentionEnable", "false", false));
+        api.setUserMetadata(oid, new Metadata(RestUtil.METADATA_KEY_RETENTION_ENABLE, "false", false));
     }
 
     @Test
