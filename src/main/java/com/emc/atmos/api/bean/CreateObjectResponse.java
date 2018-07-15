@@ -30,6 +30,7 @@ import com.emc.atmos.api.ChecksumValue;
 import com.emc.atmos.api.ChecksumValueImpl;
 import com.emc.atmos.api.ObjectId;
 import com.emc.atmos.api.RestUtil;
+import com.emc.util.BasicResponse;
 
 public class CreateObjectResponse extends BasicResponse {
     public ObjectId getObjectId() {

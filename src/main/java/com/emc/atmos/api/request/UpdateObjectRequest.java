@@ -28,6 +28,7 @@ package com.emc.atmos.api.request;
 
 import com.emc.atmos.api.Range;
 import com.emc.atmos.api.RestUtil;
+import com.emc.util.HttpUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,7 @@ public class UpdateObjectRequest extends PutObjectRequest<UpdateObjectRequest> {
         Map<String, List<Object>> headers = super.generateHeaders( encodeUtf8 );
 
         if ( range != null )
-            RestUtil.addValue( headers, RestUtil.HEADER_RANGE, "bytes=" + range );
+            RestUtil.addValue( headers, HttpUtil.HEADER_RANGE, "bytes=" + range );
 
         return headers;
     }

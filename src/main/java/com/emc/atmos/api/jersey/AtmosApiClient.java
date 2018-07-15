@@ -37,6 +37,7 @@ import com.emc.atmos.api.*;
 import com.emc.atmos.api.bean.*;
 import com.emc.atmos.api.multipart.MultipartEntity;
 import com.emc.atmos.api.request.*;
+import com.emc.util.BasicResponse;
 import com.emc.util.HttpUtil;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -436,7 +437,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
         ObjectMetadata metadata = new ObjectMetadata( metaMap, acl, response.getType().toString(), wsChecksum, serverChecksum );
         if ( retentionPeriod != null ) metadata.setRetentionPeriod( Long.parseLong( retentionPeriod ) );
         metadata.setRetentionPolicy( response.getHeaders().getFirst( RestUtil.XHEADER_RETENTION_POLICY ) );
-        metadata.setETag( response.getHeaders().getFirst( RestUtil.HEADER_ETAG ) );
+        metadata.setETag( response.getHeaders().getFirst( HttpUtil.HEADER_ETAG ) );
 
         return metadata;
     }
@@ -720,28 +721,6 @@ public class AtmosApiClient extends AbstractAtmosApi {
             }
         }
         return builder;
-    }
-
-    /**
-     * Populates a response object with data from the ClientResponse.
-     */
-    protected <T extends BasicResponse> T fillResponse( T response, ClientResponse clientResponse ) {
-        Response.StatusType statusType = clientResponse.getStatusInfo();
-        MediaType type = clientResponse.getType();
-        URI location = clientResponse.getLocation();
-        response.setHttpStatus( clientResponse.getStatus() );
-        response.setHttpMessage( statusType == null ? null : statusType.getReasonPhrase() );
-        response.setHeaders( clientResponse.getHeaders() );
-        response.setContentType( type == null ? null : type.toString() );
-        response.setContentLength( clientResponse.getLength() );
-        response.setLocation( location == null ? null : location.toString() );
-        if ( clientResponse.getHeaders() != null ) {
-            // workaround for Github Issue #3
-            response.setDate( HttpUtil.safeHeaderParse( clientResponse.getHeaders().getFirst( RestUtil.HEADER_DATE ) ) );
-            response.setLastModified( HttpUtil.safeHeaderParse( clientResponse.getHeaders().getFirst( RestUtil.HEADER_LAST_MODIFIED ) ) );
-            response.setETag( clientResponse.getHeaders().getFirst( RestUtil.HEADER_ETAG ) );
-        }
-        return response;
     }
 
     protected Object getContent( ContentRequest request ) {

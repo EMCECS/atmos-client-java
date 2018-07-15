@@ -24,19 +24,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.emc.atmos.mgmt.api.jersey;
+package com.emc.atmos.mgmt.jersey;
 
 import com.emc.acdp.AcdpException;
 import com.emc.atmos.api.jersey.ErrorFilter;
-import com.emc.atmos.mgmt.AtmosMgmtConfig;
+import com.emc.atmos.mgmt.AbstractMgmtConfig;
 import com.emc.util.SslUtil;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.api.client.filter.LoggingFilter;
 import com.sun.jersey.client.urlconnection.HTTPSProperties;
 
 public class JerseyUtil {
-    public static Client createClient( AtmosMgmtConfig config ) {
+    public static Client createClient(AbstractMgmtConfig config) {
         try {
             ClientConfig clientConfig = new DefaultClientConfig();
 
@@ -60,7 +61,9 @@ public class JerseyUtil {
      * Note that this method cannot disable SSL validation, so that configuration option is ignored here. You are
      * responsible for configuring the client with any proxy, ssl or other options prior to calling this constructor.
      */
-    public static void configureClient( Client client, AtmosMgmtConfig config ) {
+    public static void configureClient(Client client, AbstractMgmtConfig config) {
+        // uncomment for header logs
+//        client.addFilter( new LoggingFilter( System.out ) );
         client.addFilter( new ErrorFilter() );
         client.addFilter( new AuthFilter( config ) );
     }

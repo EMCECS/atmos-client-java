@@ -48,6 +48,13 @@ import java.util.TimeZone;
 public final class HttpUtil {
     private static final Logger log = Logger.getLogger( HttpUtil.class );
 
+    public static final String HEADER_CONTENT_TYPE = "Content-Type";
+    public static final String HEADER_DATE = "Date";
+    public static final String HEADER_EXPECT = "Expect";
+    public static final String HEADER_RANGE = "Range";
+    public static final String HEADER_ETAG = "ETag";
+    public static final String HEADER_LAST_MODIFIED = "Last-Modified";
+
     private static final String HEADER_FORMAT = "EEE, d MMM yyyy HH:mm:ss z";
     private static final ThreadLocal<DateFormat> headerFormat = new ThreadLocal<DateFormat>();
 

@@ -45,14 +45,10 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * @see HttpUtil
+ */
 public final class RestUtil {
-    public static final String HEADER_CONTENT_TYPE = "Content-Type";
-    public static final String HEADER_DATE = "Date";
-    public static final String HEADER_EXPECT = "Expect";
-    public static final String HEADER_RANGE = "Range";
-    public static final String HEADER_ETAG = "ETag";
-    public static final String HEADER_LAST_MODIFIED = "Last-Modified";
-
     public static final String XHEADER_CONTENT_CHECKSUM = "x-emc-content-checksum";
     public static final String XHEADER_DATE = "x-emc-date";
     public static final String XHEADER_EXPIRES = "x-emc-expires";
@@ -143,7 +139,7 @@ public final class RestUtil {
 
         // Add date header
         Date serverTime = new Date( System.currentTimeMillis() - serverClockSkew );
-        headers.put( HEADER_DATE, Arrays.asList( (Object) HttpUtil.headerFormat( serverTime ) ) );
+        headers.put( HttpUtil.HEADER_DATE, Arrays.asList( (Object) HttpUtil.headerFormat( serverTime ) ) );
         headers.put( XHEADER_DATE, Arrays.asList( (Object) HttpUtil.headerFormat( serverTime ) ) );
 
         // Add uid to headers
@@ -156,9 +152,9 @@ public final class RestUtil {
         builder.append( method ).append( "\n" );
 
         // Add the following header values or blank lines if they aren't present
-        builder.append( generateHashLine( headers, HEADER_CONTENT_TYPE ) );
-        builder.append( generateHashLine( headers, HEADER_RANGE ) );
-        builder.append( generateHashLine( headers, HEADER_DATE ) );
+        builder.append( generateHashLine( headers, HttpUtil.HEADER_CONTENT_TYPE ) );
+        builder.append( generateHashLine( headers, HttpUtil.HEADER_RANGE ) );
+        builder.append( generateHashLine( headers, HttpUtil.HEADER_DATE ) );
 
         // Add the resource
         builder.append( path.toLowerCase() );

@@ -24,7 +24,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.emc.atmos.mgmt.api;
+package com.emc.atmos.mgmt.jersey;
 
-public interface TenantMgmtApi {
+import com.emc.atmos.AbstractClient;
+import com.emc.atmos.mgmt.TenantMgmtApi;
+import com.emc.atmos.mgmt.TenantMgmtConfig;
+import com.sun.jersey.api.client.Client;
+
+public class TenantMgmtClient extends AbstractClient implements TenantMgmtApi {
+    private TenantMgmtConfig config;
+    private Client client;
+
+    public TenantMgmtClient(TenantMgmtConfig config) {
+        this.config = config;
+        this.client = JerseyUtil.createClient(config);
+    }
+
 }

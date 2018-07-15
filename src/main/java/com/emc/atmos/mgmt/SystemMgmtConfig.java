@@ -26,5 +26,25 @@
  */
 package com.emc.atmos.mgmt;
 
-public class SystemMgmtConfig {
+import com.sun.jersey.core.header.OutBoundHeaders;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+
+public class SystemMgmtConfig extends AbstractMgmtConfig {
+    public SystemMgmtConfig(String username, String password, URI... endpoints) {
+        super(username, password, endpoints);
+    }
+
+    @Override
+    public Map<String, List<Object>> getAuthenticationHeaders() {
+        OutBoundHeaders authHeaders = new OutBoundHeaders();
+
+        authHeaders.putSingle(MgmtConstants.XHEADER_SYSTEM_ADMIN, getUsername());
+        authHeaders.putSingle(MgmtConstants.XHEADER_SYSTEM_ADMIN_PASSWORD, getPassword());
+        authHeaders.putSingle(MgmtConstants.XHEADER_AUTH_TYPE, MgmtConstants.AUTHTYPE_PASSWORD);
+
+        return authHeaders;
+    }
 }

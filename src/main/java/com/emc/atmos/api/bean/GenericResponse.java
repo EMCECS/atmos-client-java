@@ -26,6 +26,8 @@
  */
 package com.emc.atmos.api.bean;
 
+import com.emc.util.BasicResponse;
+
 public class GenericResponse<T> extends BasicResponse {
     T content;
 

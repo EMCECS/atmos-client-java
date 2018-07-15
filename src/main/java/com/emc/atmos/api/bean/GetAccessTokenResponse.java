@@ -28,6 +28,7 @@ package com.emc.atmos.api.bean;
 
 import com.emc.atmos.api.Acl;
 import com.emc.atmos.api.RestUtil;
+import com.emc.util.BasicResponse;
 
 public class GetAccessTokenResponse extends BasicResponse {
     AccessToken token;

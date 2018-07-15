@@ -30,6 +30,7 @@ import com.emc.atmos.api.ChecksumValue;
 import com.emc.atmos.api.ChecksumValueImpl;
 import com.emc.atmos.api.ChecksummedInputStream;
 import com.emc.atmos.api.RestUtil;
+import com.emc.util.HttpUtil;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
@@ -47,7 +48,7 @@ public class ChecksumFilter extends ClientFilter {
             ClientResponse response = getNext().handle(request);
 
             String checksumHeader = response.getHeaders().getFirst(RestUtil.XHEADER_WSCHECKSUM);
-            Object rangeHeader = request.getHeaders().getFirst(RestUtil.HEADER_RANGE);
+            Object rangeHeader = request.getHeaders().getFirst(HttpUtil.HEADER_RANGE);
 
             // only verify checksum if this is a GET complete object request and there is a ws-checksum header in the
             // response

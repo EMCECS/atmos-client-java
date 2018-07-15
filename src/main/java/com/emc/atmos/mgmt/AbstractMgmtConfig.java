@@ -32,17 +32,13 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-public abstract class AtmosMgmtConfig extends AbstractConfig {
+public abstract class AbstractMgmtConfig extends AbstractConfig {
     private static final String DEFAULT_CONTEXT = "/sysmgmt";
 
     private String username;
     private String password;
 
-    public AtmosMgmtConfig() {
-        super( DEFAULT_CONTEXT );
-    }
-
-    public AtmosMgmtConfig( String username, String password, URI... endpoints ) {
+    public AbstractMgmtConfig(String username, String password, URI... endpoints) {
         super( DEFAULT_CONTEXT, endpoints );
         this.username = username;
         this.password = password;

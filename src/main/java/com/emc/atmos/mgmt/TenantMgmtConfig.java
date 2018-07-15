@@ -26,5 +26,36 @@
  */
 package com.emc.atmos.mgmt;
 
-public class TenantMgmtConfig {
+import com.sun.jersey.core.header.OutBoundHeaders;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+
+public class TenantMgmtConfig extends AbstractMgmtConfig {
+    private String tenant;
+
+    public TenantMgmtConfig(String tenant, String username, String password, URI... endpoints) {
+        super(username, password, endpoints);
+        this.tenant = tenant;
+    }
+
+    @Override
+    public Map<String, List<Object>> getAuthenticationHeaders() {
+        OutBoundHeaders authHeaders = new OutBoundHeaders();
+
+        authHeaders.putSingle(MgmtConstants.XHEADER_TENANT_ADMIN, getUsername());
+        authHeaders.putSingle(MgmtConstants.XHEADER_TENANT_ADMIN_PASSWORD, getPassword());
+        authHeaders.putSingle(MgmtConstants.XHEADER_AUTH_TYPE, MgmtConstants.AUTHTYPE_PASSWORD);
+
+        return authHeaders;
+    }
+
+    public String getTenant() {
+        return tenant;
+    }
+
+    public void setTenant(String tenant) {
+        this.tenant = tenant;
+    }
 }

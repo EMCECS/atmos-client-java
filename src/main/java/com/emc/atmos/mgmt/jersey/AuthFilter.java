@@ -24,18 +24,18 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.emc.atmos.mgmt.api.jersey;
+package com.emc.atmos.mgmt.jersey;
 
-import com.emc.atmos.mgmt.AtmosMgmtConfig;
+import com.emc.atmos.mgmt.AbstractMgmtConfig;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.filter.ClientFilter;
 
 public class AuthFilter extends ClientFilter {
-    private AtmosMgmtConfig config;
+    private AbstractMgmtConfig config;
 
-    public AuthFilter( AtmosMgmtConfig config ) {
+    public AuthFilter( AbstractMgmtConfig config ) {
         this.config = config;
     }
 
