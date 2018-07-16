@@ -32,36 +32,17 @@
  */
 package com.emc.atmos.mgmt.jersey;
 
-import com.emc.atmos.AbstractClient;
 import com.emc.atmos.mgmt.SystemMgmtApi;
 import com.emc.atmos.mgmt.SystemMgmtConfig;
 import com.emc.atmos.mgmt.bean.ListRmgsResponse;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 
-import java.net.URI;
-
-public class SystemMgmtClient extends AbstractClient implements SystemMgmtApi {
-    private SystemMgmtConfig config;
-    private Client client;
-
+public class SystemMgmtClient extends AbstractJerseyMgmtClient implements SystemMgmtApi {
     public SystemMgmtClient(SystemMgmtConfig config) {
-        this.config = config;
-        this.client = JerseyUtil.createClient(config);
+        super(config);
     }
 
     @Override
     public ListRmgsResponse listRmgs() {
-        URI uri = config.resolvePath("/rmgs", null);
-        WebResource.Builder builder = client.resource(uri).getRequestBuilder();
-
-        ClientResponse response = builder.get(ClientResponse.class);
-
-        ListRmgsResponse ret = response.getEntity(ListRmgsResponse.class);
-
-        response.close();
-
-        return fillResponse(ret, response);
+        return executeAndClose("/rmgs", null, ListRmgsResponse.class);
     }
 }

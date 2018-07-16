@@ -30,10 +30,63 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import java.util.ArrayList;
+import java.util.List;
 
-public interface TenantMgmtApi {
-    ListSubtenantsResponse listSubtenants();
+public class Subtenant {
+    private String name;
+    private String id;
+    private AuthenticationSource authenticationSource;
+    private SubtenantStatus status;
+    private List<String> subtenantAdminList = new ArrayList<String>();
+
+    @XmlElement
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @XmlElement
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    @XmlElement
+    public AuthenticationSource getAuthenticationSource() {
+        return authenticationSource;
+    }
+
+    public void setAuthenticationSource(AuthenticationSource authenticationSource) {
+        this.authenticationSource = authenticationSource;
+    }
+
+    @XmlElement
+    public SubtenantStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(SubtenantStatus status) {
+        this.status = status;
+    }
+
+    @XmlElementWrapper
+    @XmlElement(name = "subtenantAdmin")
+    public List<String> getSubtenantAdminList() {
+        return subtenantAdminList;
+    }
+
+    public void setSubtenantAdminList(List<String> subtenantAdminList) {
+        this.subtenantAdminList = subtenantAdminList;
+    }
 }

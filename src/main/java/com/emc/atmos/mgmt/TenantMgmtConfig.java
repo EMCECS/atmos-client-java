@@ -33,11 +33,9 @@ import java.util.List;
 import java.util.Map;
 
 public class TenantMgmtConfig extends AbstractMgmtConfig {
-    private String tenant;
-
     public TenantMgmtConfig(String tenant, String username, String password, URI... endpoints) {
         super(username, password, endpoints);
-        this.tenant = tenant;
+        setContext(getContext() + "/tenants/" + tenant);
     }
 
     @Override
@@ -49,13 +47,5 @@ public class TenantMgmtConfig extends AbstractMgmtConfig {
         authHeaders.putSingle(MgmtConstants.XHEADER_AUTH_TYPE, MgmtConstants.AUTHTYPE_PASSWORD);
 
         return authHeaders;
-    }
-
-    public String getTenant() {
-        return tenant;
-    }
-
-    public void setTenant(String tenant) {
-        this.tenant = tenant;
     }
 }

@@ -32,10 +32,10 @@
  */
 package com.emc.atmos.mgmt.test;
 
-import com.emc.atmos.mgmt.SystemMgmtApi;
-import com.emc.atmos.mgmt.SystemMgmtConfig;
-import com.emc.atmos.mgmt.bean.ListRmgsResponse;
-import com.emc.atmos.mgmt.jersey.SystemMgmtClient;
+import com.emc.atmos.mgmt.TenantMgmtApi;
+import com.emc.atmos.mgmt.TenantMgmtConfig;
+import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import com.emc.atmos.mgmt.jersey.TenantMgmtClient;
 import com.emc.util.TestConfig;
 import com.emc.util.TestConstants;
 import org.apache.log4j.Logger;
@@ -51,25 +51,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-public class SystemMgmtClientTest {
-    private static final Logger l4j = Logger.getLogger(SystemMgmtClientTest.class);
+public class TenantMgmtClientTest {
+    private static final Logger l4j = Logger.getLogger(TenantMgmtClientTest.class);
 
-    protected SystemMgmtApi client;
+    protected TenantMgmtApi client;
 
     @Before
     public void setup() {
-        SystemMgmtConfig config = createSystemMgmtConfig();
+        TenantMgmtConfig config = createTenantMgmtConfig();
         Assume.assumeNotNull(config);
-        client = new SystemMgmtClient(config);
+        client = new TenantMgmtClient(config);
     }
 
-    private SystemMgmtConfig createSystemMgmtConfig() {
+    private TenantMgmtConfig createTenantMgmtConfig() {
         try {
             Properties props = TestConfig.getProperties();
 
             String endpoints = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_ENDPOINTS);
-            String user = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_SYSADMIN_USER);
-            String password = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_SYSADMIN_PASS);
+            String tenant = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_TENANT);
+            String user = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_TENANTADMIN_USER);
+            String password = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_TENANTADMIN_PASS);
             String proxyUrl = props.getProperty(TestConstants.PROP_PROXY);
 
             List<URI> endpointUris = new ArrayList<URI>();
@@ -77,7 +78,7 @@ public class SystemMgmtClientTest {
                 endpointUris.add(new URI(endpoint));
             }
 
-            SystemMgmtConfig config = new SystemMgmtConfig(user, password, endpointUris.toArray(new URI[0]));
+            TenantMgmtConfig config = new TenantMgmtConfig(tenant, user, password, endpointUris.toArray(new URI[0]));
             config.setDisableSslValidation(true);
 
             if (proxyUrl != null) {
@@ -101,15 +102,21 @@ public class SystemMgmtClientTest {
     }
 
     @Test
-    public void testListRmgs() {
-        ListRmgsResponse result = client.listRmgs();
+    public void testListSubtenants() {
+        ListSubtenantsResponse result = client.listSubtenants();
         Assert.assertNotNull(result);
-        Assert.assertNotNull(result.getRmgs());
-        Assert.assertTrue(result.getRmgs().size() > 0);
-        Assert.assertNotNull(result.getRmgs().get(0).getName());
-        Assert.assertTrue(result.getRmgs().get(0).getName().trim().length() > 0);
-        Assert.assertNotNull(result.getRmgs().get(0).getLocalTime());
-        Assert.assertTrue(result.getRmgs().get(0).getLocalTime().trim().length() > 0);
-        Assert.assertTrue(result.getRmgs().get(0).getNodesUp() > 0);
+        Assert.assertNotNull(result.getSubtenants());
+        Assert.assertTrue(result.getSubtenants().size() > 0);
+        Assert.assertNotNull(result.getSubtenants().get(0).getName());
+        Assert.assertTrue(result.getSubtenants().get(0).getName().trim().length() > 0);
+        Assert.assertNotNull(result.getSubtenants().get(0).getId());
+        Assert.assertTrue(result.getSubtenants().get(0).getId().trim().length() > 0);
+        Assert.assertNotNull(result.getSubtenants().get(0).getAuthenticationSource());
+        Assert.assertNotNull(result.getSubtenants().get(0).getStatus());
+        Assert.assertNotNull(result.getSubtenants().get(0).getSubtenantAdminList());
+        if (result.getSubtenants().get(0).getSubtenantAdminList().size() > 0) {
+            Assert.assertNotNull(result.getSubtenants().get(0).getSubtenantAdminList().get(0));
+            Assert.assertTrue(result.getSubtenants().get(0).getSubtenantAdminList().get(0).trim().length() > 0);
+        }
     }
 }

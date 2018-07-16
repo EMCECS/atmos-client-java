@@ -30,10 +30,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import javax.xml.bind.annotation.XmlEnum;
 
-public interface TenantMgmtApi {
-    ListSubtenantsResponse listSubtenants();
+@XmlEnum
+public enum AuthenticationSource {
+    Local
+    // TODO: find the other possible values of this enum
 }
