@@ -30,13 +30,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import com.emc.util.BasicResponse;
 
-public interface TenantMgmtApi {
-    ListSubtenantsResponse listSubtenants();
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.util.ArrayList;
+import java.util.List;
 
-    GetSubtenantResponse getSubtenant(String subtenantName);
+@XmlRootElement(name = "nodeList")
+public class ListRmgNodesResponse extends BasicResponse {
+    private List<Node> nodes = new ArrayList<Node>();
+
+    @XmlElement(name = "node")
+    public List<Node> getNodes() {
+        return nodes;
+    }
+
+    public void setNodes(List<Node> nodes) {
+        this.nodes = nodes;
+    }
 }

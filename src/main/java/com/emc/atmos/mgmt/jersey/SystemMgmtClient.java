@@ -34,6 +34,7 @@ package com.emc.atmos.mgmt.jersey;
 
 import com.emc.atmos.mgmt.SystemMgmtApi;
 import com.emc.atmos.mgmt.SystemMgmtConfig;
+import com.emc.atmos.mgmt.bean.ListRmgNodesResponse;
 import com.emc.atmos.mgmt.bean.ListRmgsResponse;
 
 public class SystemMgmtClient extends AbstractJerseyMgmtClient implements SystemMgmtApi {
@@ -44,5 +45,10 @@ public class SystemMgmtClient extends AbstractJerseyMgmtClient implements System
     @Override
     public ListRmgsResponse listRmgs() {
         return executeAndClose("/rmgs", null, ListRmgsResponse.class);
+    }
+
+    @Override
+    public ListRmgNodesResponse listRmgNodes(String rmgName) {
+        return executeAndClose("/rmgs/" + rmgName + "/nodes", null, ListRmgNodesResponse.class);
     }
 }

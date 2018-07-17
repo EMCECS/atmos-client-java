@@ -30,13 +30,49 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import javax.xml.bind.annotation.XmlAttribute;
 
-public interface TenantMgmtApi {
-    ListSubtenantsResponse listSubtenants();
+public class Node {
+    private String name;
+    private String mgmtIp;
+    private boolean up;
+    private String location;
 
-    GetSubtenantResponse getSubtenant(String subtenantName);
+    @XmlAttribute
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @XmlAttribute
+    public String getMgmtIp() {
+        return mgmtIp;
+    }
+
+    public void setMgmtIp(String mgmtIp) {
+        this.mgmtIp = mgmtIp;
+    }
+
+    @XmlAttribute
+    public boolean getUp() {
+        return up;
+    }
+
+    public void setUp(boolean up) {
+        this.up = up;
+    }
+
+    @XmlAttribute
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
 }

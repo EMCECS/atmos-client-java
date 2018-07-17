@@ -34,6 +34,7 @@ package com.emc.atmos.mgmt.test;
 
 import com.emc.atmos.mgmt.SystemMgmtApi;
 import com.emc.atmos.mgmt.SystemMgmtConfig;
+import com.emc.atmos.mgmt.bean.ListRmgNodesResponse;
 import com.emc.atmos.mgmt.bean.ListRmgsResponse;
 import com.emc.atmos.mgmt.jersey.SystemMgmtClient;
 import com.emc.util.TestConfig;
@@ -111,5 +112,27 @@ public class SystemMgmtClientTest {
         Assert.assertNotNull(result.getRmgs().get(0).getLocalTime());
         Assert.assertTrue(result.getRmgs().get(0).getLocalTime().trim().length() > 0);
         Assert.assertTrue(result.getRmgs().get(0).getNodesUp() > 0);
+    }
+
+    @Test
+    public void testListRmgNodes() {
+        ListRmgsResponse rmgResult = client.listRmgs();
+        Assert.assertNotNull(rmgResult);
+        Assert.assertNotNull(rmgResult.getRmgs());
+        Assert.assertTrue(rmgResult.getRmgs().size() > 0);
+        Assert.assertNotNull(rmgResult.getRmgs().get(0).getName());
+        String rmgName = rmgResult.getRmgs().get(0).getName().trim();
+
+        ListRmgNodesResponse result = client.listRmgNodes(rmgName);
+        Assert.assertNotNull(result);
+        Assert.assertNotNull(result.getNodes());
+        Assert.assertTrue(result.getNodes().size() > 0);
+        Assert.assertNotNull(result.getNodes().get(0).getName());
+        Assert.assertTrue(result.getNodes().get(0).getName().trim().length() > 0);
+        Assert.assertNotNull(result.getNodes().get(0).getMgmtIp());
+        Assert.assertTrue(result.getNodes().get(0).getMgmtIp().trim().length() > 0);
+        Assert.assertNotNull(result.getNodes().get(0).getUp());
+        Assert.assertNotNull(result.getNodes().get(0).getLocation());
+        Assert.assertTrue(result.getNodes().get(0).getLocation().trim().length() > 0);
     }
 }

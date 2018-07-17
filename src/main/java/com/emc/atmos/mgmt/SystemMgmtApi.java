@@ -32,8 +32,10 @@
  */
 package com.emc.atmos.mgmt;
 
+import com.emc.atmos.mgmt.bean.ListRmgNodesResponse;
 import com.emc.atmos.mgmt.bean.ListRmgsResponse;
 
 public interface SystemMgmtApi {
     ListRmgsResponse listRmgs();
+    ListRmgNodesResponse listRmgNodes(String rmgName);
 }
