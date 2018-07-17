@@ -28,7 +28,10 @@ package com.emc.atmos.mgmt.jersey;
 
 import com.emc.atmos.mgmt.TenantMgmtApi;
 import com.emc.atmos.mgmt.TenantMgmtConfig;
+import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
 import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import com.emc.atmos.mgmt.bean.SubtenantDetails;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class TenantMgmtClient extends AbstractJerseyMgmtClient implements TenantMgmtApi {
     public TenantMgmtClient(TenantMgmtConfig config) {
@@ -38,5 +41,18 @@ public class TenantMgmtClient extends AbstractJerseyMgmtClient implements Tenant
     @Override
     public ListSubtenantsResponse listSubtenants() {
         return executeAndClose("/subtenants", null, ListSubtenantsResponse.class);
+    }
+
+    @Override
+    public GetSubtenantResponse getSubtenant(String subtenantName) {
+        ClientResponse response = execute("/subtenants/" + subtenantName, null);
+
+        GetSubtenantResponse subtenantResponse = new GetSubtenantResponse();
+        subtenantResponse.setSubtenant(response.getEntity(SubtenantDetails.class));
+        response.close();
+
+        fillResponse(subtenantResponse, response);
+
+        return subtenantResponse;
     }
 }

@@ -30,41 +30,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt.jersey;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.AbstractClient;
-import com.emc.atmos.mgmt.AbstractMgmtConfig;
-import com.emc.util.BasicResponse;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+public class AdminUser {
+    private String name;
+    private AuthenticationSource authenticationSource;
 
-import java.net.URI;
-
-public abstract class AbstractJerseyMgmtClient extends AbstractClient {
-    AbstractMgmtConfig config;
-    private Client client;
-
-    public AbstractJerseyMgmtClient(AbstractMgmtConfig config) {
-        this.config = config;
-        this.client = JerseyUtil.createClient(config);
+    public String getName() {
+        return name;
     }
 
-    protected <R extends BasicResponse> R executeAndClose(String relativePath, String query, Class<R> responseType) {
-        ClientResponse response = execute(relativePath, query);
-
-        R ret = response.getEntity(responseType);
-
-        response.close();
-
-        return fillResponse(ret, response);
+    public void setName(String name) {
+        this.name = name;
     }
 
-    protected ClientResponse execute(String relativePath, String query) {
-        URI uri = config.resolvePath(relativePath, query);
+    public AuthenticationSource getAuthenticationSource() {
+        return authenticationSource;
+    }
 
-        WebResource.Builder builder = client.resource(uri).getRequestBuilder();
-
-        return builder.get(ClientResponse.class);
+    public void setAuthenticationSource(AuthenticationSource authenticationSource) {
+        this.authenticationSource = authenticationSource;
     }
 }

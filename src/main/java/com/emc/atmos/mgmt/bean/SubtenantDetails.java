@@ -30,41 +30,54 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt.jersey;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.AbstractClient;
-import com.emc.atmos.mgmt.AbstractMgmtConfig;
-import com.emc.util.BasicResponse;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.util.List;
 
-import java.net.URI;
+@XmlRootElement(name = "subtenant")
+public class SubtenantDetails extends Subtenant {
+    private int capacity;
+    private String defaultPolicySpec;
+    private List<ObjectUser> objectUsers;
+    private boolean secCompliant;
 
-public abstract class AbstractJerseyMgmtClient extends AbstractClient {
-    AbstractMgmtConfig config;
-    private Client client;
-
-    public AbstractJerseyMgmtClient(AbstractMgmtConfig config) {
-        this.config = config;
-        this.client = JerseyUtil.createClient(config);
+    @XmlElement
+    public int getCapacity() {
+        return capacity;
     }
 
-    protected <R extends BasicResponse> R executeAndClose(String relativePath, String query, Class<R> responseType) {
-        ClientResponse response = execute(relativePath, query);
-
-        R ret = response.getEntity(responseType);
-
-        response.close();
-
-        return fillResponse(ret, response);
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
     }
 
-    protected ClientResponse execute(String relativePath, String query) {
-        URI uri = config.resolvePath(relativePath, query);
+    @XmlElement
+    public String getDefaultPolicySpec() {
+        return defaultPolicySpec;
+    }
 
-        WebResource.Builder builder = client.resource(uri).getRequestBuilder();
+    public void setDefaultPolicySpec(String defaultPolicySpec) {
+        this.defaultPolicySpec = defaultPolicySpec;
+    }
 
-        return builder.get(ClientResponse.class);
+    @XmlElementWrapper(name = "uidSecretList")
+    @XmlElement(name = "uidSecret")
+    public List<ObjectUser> getObjectUsers() {
+        return objectUsers;
+    }
+
+    public void setObjectUsers(List<ObjectUser> objectUsers) {
+        this.objectUsers = objectUsers;
+    }
+
+    @XmlElement
+    public boolean isSecCompliant() {
+        return secCompliant;
+    }
+
+    public void setSecCompliant(boolean secCompliant) {
+        this.secCompliant = secCompliant;
     }
 }

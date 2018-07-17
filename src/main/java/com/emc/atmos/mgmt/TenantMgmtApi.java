@@ -32,8 +32,12 @@
  */
 package com.emc.atmos.mgmt;
 
+import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
 import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
 
 public interface TenantMgmtApi {
     ListSubtenantsResponse listSubtenants();
+
+    GetSubtenantResponse getSubtenant(String subtenantName);
+    //ListUidsResponse listUids(String subtenantName);
 }

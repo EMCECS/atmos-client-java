@@ -34,7 +34,7 @@ package com.emc.atmos.mgmt.test;
 
 import com.emc.atmos.mgmt.TenantMgmtApi;
 import com.emc.atmos.mgmt.TenantMgmtConfig;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import com.emc.atmos.mgmt.bean.*;
 import com.emc.atmos.mgmt.jersey.TenantMgmtClient;
 import com.emc.util.TestConfig;
 import com.emc.util.TestConstants;
@@ -103,20 +103,51 @@ public class TenantMgmtClientTest {
 
     @Test
     public void testListSubtenants() {
-        ListSubtenantsResponse result = client.listSubtenants();
-        Assert.assertNotNull(result);
-        Assert.assertNotNull(result.getSubtenants());
-        Assert.assertTrue(result.getSubtenants().size() > 0);
-        Assert.assertNotNull(result.getSubtenants().get(0).getName());
-        Assert.assertTrue(result.getSubtenants().get(0).getName().trim().length() > 0);
-        Assert.assertNotNull(result.getSubtenants().get(0).getId());
-        Assert.assertTrue(result.getSubtenants().get(0).getId().trim().length() > 0);
-        Assert.assertNotNull(result.getSubtenants().get(0).getAuthenticationSource());
-        Assert.assertNotNull(result.getSubtenants().get(0).getStatus());
-        Assert.assertNotNull(result.getSubtenants().get(0).getSubtenantAdminList());
-        if (result.getSubtenants().get(0).getSubtenantAdminList().size() > 0) {
-            Assert.assertNotNull(result.getSubtenants().get(0).getSubtenantAdminList().get(0));
-            Assert.assertTrue(result.getSubtenants().get(0).getSubtenantAdminList().get(0).trim().length() > 0);
-        }
+        ListSubtenantsResponse response = client.listSubtenants();
+        Assert.assertNotNull(response);
+        Assert.assertNotNull(response.getSubtenants());
+        Assert.assertTrue(response.getSubtenants().size() > 0);
+        checkSubtenant(response.getSubtenants().get(0));
+    }
+
+    private void checkSubtenant(Subtenant subtenant) {
+        Assert.assertNotNull(subtenant);
+        Assert.assertNotNull(subtenant.getName());
+        Assert.assertTrue(subtenant.getName().trim().length() > 0);
+        Assert.assertNotNull(subtenant.getId());
+        Assert.assertTrue(subtenant.getId().trim().length() > 0);
+        Assert.assertNotNull(subtenant.getAuthenticationSource());
+        Assert.assertNotNull(subtenant.getStatus());
+        Assert.assertNotNull(subtenant.getSubtenantAdminList());
+        Assert.assertTrue(subtenant.getSubtenantAdminList().size() > 0);
+        checkAdminUser(subtenant.getSubtenantAdminList().get(0));
+    }
+
+    private void checkAdminUser(AdminUser adminUser) {
+        Assert.assertNotNull(adminUser);
+        Assert.assertNotNull(adminUser.getName());
+        Assert.assertNotNull(adminUser.getAuthenticationSource());
+    }
+
+    private void checkObjectUser(ObjectUser objectUser) {
+        Assert.assertNotNull(objectUser);
+        Assert.assertNotNull(objectUser.getUid());
+        Assert.assertTrue(objectUser.getUid().trim().length() > 0);
+        Assert.assertNotNull(objectUser.getSharedSecret());
+        Assert.assertTrue(objectUser.getSharedSecret().trim().length() > 0);
+        Assert.assertNotNull(objectUser.getStatus());
+    }
+
+    @Test
+    public void testGetSubtenantDetails() {
+        ListSubtenantsResponse listResult = client.listSubtenants();
+        GetSubtenantResponse response = client.getSubtenant(listResult.getSubtenants().get(0).getName());
+        Assert.assertNotNull(response);
+        checkSubtenant(response.getSubtenant());
+        Assert.assertNotNull(response.getSubtenant().getDefaultPolicySpec());
+        Assert.assertTrue(response.getSubtenant().getDefaultPolicySpec().trim().length() > 0);
+        Assert.assertNotNull(response.getSubtenant().getObjectUsers());
+        Assert.assertTrue(response.getSubtenant().getObjectUsers().size() > 0);
+        checkObjectUser(response.getSubtenant().getObjectUsers().get(0));
     }
 }
