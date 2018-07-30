@@ -26,7 +26,7 @@
  */
 package com.emc.atmos.api;
 
-import com.emc.atmos.AbstractClient;
+import com.emc.atmos.AbstractJerseyClient;
 import com.emc.atmos.api.bean.GetAccessTokenResponse;
 import com.emc.atmos.api.request.*;
 import com.emc.util.HttpUtil;
@@ -40,13 +40,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-public abstract class AbstractAtmosApi extends AbstractClient implements AtmosApi {
+public abstract class AbstractAtmosApi extends AbstractJerseyClient<AtmosConfig> implements AtmosApi {
     public static final String DEFAULT_CONTENT_TYPE = "application/octet-stream";
 
-    protected AtmosConfig config;
-
     public AbstractAtmosApi( AtmosConfig config ) {
-        this.config = config;
+        super( config );
     }
 
     @Override

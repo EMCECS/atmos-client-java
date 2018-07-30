@@ -26,16 +26,23 @@
  */
 package com.emc.atmos.mgmt.jersey;
 
+import com.emc.atmos.AbstractJerseyClient;
 import com.emc.atmos.mgmt.TenantMgmtApi;
 import com.emc.atmos.mgmt.TenantMgmtConfig;
 import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
 import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
 import com.emc.atmos.mgmt.bean.SubtenantDetails;
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class TenantMgmtClient extends AbstractJerseyMgmtClient implements TenantMgmtApi {
+public class TenantMgmtClient extends AbstractJerseyClient<TenantMgmtConfig> implements TenantMgmtApi {
     public TenantMgmtClient(TenantMgmtConfig config) {
         super(config);
+    }
+
+    @Override
+    protected Client createClient(TenantMgmtConfig config) {
+        return JerseyUtil.createClient(config);
     }
 
     @Override

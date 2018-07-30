@@ -30,28 +30,53 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt.jersey;
+package com.emc.atmos;
 
-import com.emc.atmos.AbstractClient;
-import com.emc.atmos.mgmt.AbstractMgmtConfig;
 import com.emc.util.BasicResponse;
+import com.emc.util.HttpUtil;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.net.URI;
 
-public abstract class AbstractJerseyMgmtClient extends AbstractClient {
-    AbstractMgmtConfig config;
-    private Client client;
+public abstract class AbstractJerseyClient<C extends AbstractConfig> {
+    protected C config;
+    protected Client client;
 
-    public AbstractJerseyMgmtClient(AbstractMgmtConfig config) {
+    public AbstractJerseyClient(C config) {
         this.config = config;
-        this.client = JerseyUtil.createClient(config);
+        this.client = createClient(config);
     }
 
-    protected <R extends BasicResponse> R executeAndClose(String relativePath, String query, Class<R> responseType) {
-        ClientResponse response = execute(relativePath, query);
+    protected abstract Client createClient(C config);
+
+    /**
+     * Populates a response object with data from the ClientResponse.
+     */
+    protected <T extends BasicResponse> T fillResponse(T response, ClientResponse clientResponse) {
+        Response.StatusType statusType = clientResponse.getStatusInfo();
+        MediaType type = clientResponse.getType();
+        URI location = clientResponse.getLocation();
+        response.setHttpStatus(clientResponse.getStatus());
+        response.setHttpMessage(statusType == null ? null : statusType.getReasonPhrase());
+        response.setHeaders(clientResponse.getHeaders());
+        response.setContentType(type == null ? null : type.toString());
+        response.setContentLength(clientResponse.getLength());
+        response.setLocation(location == null ? null : location.toString());
+        if (clientResponse.getHeaders() != null) {
+            // workaround for Github Issue #3
+            response.setDate(HttpUtil.safeHeaderParse(clientResponse.getHeaders().getFirst(HttpUtil.HEADER_DATE)));
+            response.setLastModified(HttpUtil.safeHeaderParse(clientResponse.getHeaders().getFirst(HttpUtil.HEADER_LAST_MODIFIED)));
+            response.setETag(clientResponse.getHeaders().getFirst(HttpUtil.HEADER_ETAG));
+        }
+        return response;
+    }
+
+    protected <R extends BasicResponse> R executeAndClose(String pathWithinContext, String query, Class<R> responseType) {
+        ClientResponse response = execute(pathWithinContext, query);
 
         R ret = response.getEntity(responseType);
 
@@ -60,8 +85,8 @@ public abstract class AbstractJerseyMgmtClient extends AbstractClient {
         return fillResponse(ret, response);
     }
 
-    protected ClientResponse execute(String relativePath, String query) {
-        URI uri = config.resolvePath(relativePath, query);
+    protected ClientResponse execute(String pathWithinContext, String query) {
+        URI uri = config.resolvePath(pathWithinContext, query);
 
         WebResource.Builder builder = client.resource(uri).getRequestBuilder();
 

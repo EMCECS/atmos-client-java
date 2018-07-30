@@ -45,8 +45,6 @@ import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.filter.ClientFilter;
 import org.apache.log4j.Logger;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import java.io.IOException;
@@ -148,6 +146,11 @@ public class AtmosApiClient extends AbstractAtmosApi {
         // without writing our own client implementation, the only way to discriminate requests that enable
         // Expect: 100-continue behavior is to have two clients; one with the feature enabled and one without.
         this.client100 = client100;
+    }
+
+    @Override
+    protected Client createClient( AtmosConfig config ) {
+        return null; // we do not call any super.execute*() methods from this class or its children
     }
 
     /**

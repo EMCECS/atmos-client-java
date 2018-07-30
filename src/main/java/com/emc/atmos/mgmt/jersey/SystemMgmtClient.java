@@ -32,14 +32,21 @@
  */
 package com.emc.atmos.mgmt.jersey;
 
+import com.emc.atmos.AbstractJerseyClient;
 import com.emc.atmos.mgmt.SystemMgmtApi;
 import com.emc.atmos.mgmt.SystemMgmtConfig;
 import com.emc.atmos.mgmt.bean.ListRmgNodesResponse;
 import com.emc.atmos.mgmt.bean.ListRmgsResponse;
+import com.sun.jersey.api.client.Client;
 
-public class SystemMgmtClient extends AbstractJerseyMgmtClient implements SystemMgmtApi {
+public class SystemMgmtClient extends AbstractJerseyClient<SystemMgmtConfig> implements SystemMgmtApi {
     public SystemMgmtClient(SystemMgmtConfig config) {
         super(config);
+    }
+
+    @Override
+    protected Client createClient(SystemMgmtConfig config) {
+        return JerseyUtil.createClient(config);
     }
 
     @Override
