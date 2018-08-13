@@ -164,7 +164,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public ServiceInformation getServiceInformation() {
-        ClientResponse response = client.resource( config.resolvePath( "service", null ) ).get( ClientResponse.class );
+        ClientResponse response = client.resource( config.resolveHostAndPath( "service", null ) ).get( ClientResponse.class );
         ServiceInformation serviceInformation = response.getEntity( ServiceInformation.class );
 
         String featureString = response.getHeaders().getFirst( RestUtil.XHEADER_FEATURES );
@@ -185,7 +185,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public long calculateServerClockSkew() {
-        WebResource resource = client.resource( config.resolvePath( "", null ) );
+        WebResource resource = client.resource( config.resolveHostAndPath( "", null ) );
         resource.setProperty( ErrorFilter.NO_EXCEPTIONS, true );
         ClientResponse response = resource.get( ClientResponse.class );
 
@@ -241,7 +241,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public void delete( ObjectIdentifier identifier ) {
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), null );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), null );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( identifier instanceof ObjectKey )
@@ -296,7 +296,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public void move( ObjectPath oldPath, ObjectPath newPath, boolean overwrite ) {
-        WebResource resource = client.resource( config.resolvePath( oldPath.getRelativeResourcePath(), "rename" ) );
+        WebResource resource = client.resource( config.resolveHostAndPath( oldPath.getRelativeResourcePath(), "rename" ) );
         WebResource.Builder builder = resource.getRequestBuilder();
         builder.header( RestUtil.XHEADER_PATH,
                        config.isEncodeUtf8() ? HttpUtil.encodeUtf8( newPath.getPath() ) : newPath.getPath() );
@@ -311,7 +311,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public Map<String, Boolean> getUserMetadataNames( ObjectIdentifier identifier ) {
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "metadata/tags" );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), "metadata/tags" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( identifier instanceof ObjectKey )
@@ -342,7 +342,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public Map<String, Metadata> getUserMetadata( ObjectIdentifier identifier, String... metadataNames ) {
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "metadata/user" );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), "metadata/user" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( identifier instanceof ObjectKey )
@@ -372,7 +372,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public Map<String, Metadata> getSystemMetadata( ObjectIdentifier identifier, String... metadataNames ) {
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "metadata/system" );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), "metadata/system" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( identifier instanceof ObjectKey )
@@ -408,7 +408,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public ObjectMetadata getObjectMetadata( ObjectIdentifier identifier ) {
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), null );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), null );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( identifier instanceof ObjectKey )
@@ -447,7 +447,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public void setUserMetadata( ObjectIdentifier identifier, Metadata... metadata ) {
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "metadata/user" );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), "metadata/user" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( identifier instanceof ObjectKey )
@@ -471,7 +471,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public void deleteUserMetadata( ObjectIdentifier identifier, String... names ) {
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "metadata/user" );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), "metadata/user" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( identifier instanceof ObjectKey )
@@ -489,7 +489,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public Set<String> listMetadata( String metadataName ) {
-        URI uri = config.resolvePath( "objects", "listabletags" );
+        URI uri = config.resolveHostAndPath( "objects", "listabletags" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( metadataName != null )
@@ -540,7 +540,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public Acl getAcl( ObjectIdentifier identifier ) {
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "acl" );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), "acl" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( identifier instanceof ObjectKey )
@@ -559,7 +559,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public void setAcl( ObjectIdentifier identifier, Acl acl ) {
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "acl" );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), "acl" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( identifier instanceof ObjectKey )
@@ -577,7 +577,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public ObjectInfo getObjectInfo( ObjectIdentifier identifier ) {
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "info" );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), "info" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( identifier instanceof ObjectKey )
@@ -588,7 +588,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public ObjectId createVersion( ObjectIdentifier identifier ) {
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), "versions" );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), "versions" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         if ( identifier instanceof ObjectKey )
@@ -620,7 +620,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public void restoreVersion( ObjectId objectId, ObjectId versionId ) {
-        URI uri = config.resolvePath( objectId.getRelativeResourcePath(), "versions" );
+        URI uri = config.resolveHostAndPath( objectId.getRelativeResourcePath(), "versions" );
         WebResource.Builder builder = client.resource( uri ).getRequestBuilder();
 
         builder.header( RestUtil.XHEADER_VERSION_OID, versionId ).put();
@@ -628,14 +628,14 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public void deleteVersion( ObjectId versionId ) {
-        client.resource( config.resolvePath( versionId.getRelativeResourcePath(), "versions" ) ).delete();
+        client.resource( config.resolveHostAndPath( versionId.getRelativeResourcePath(), "versions" ) ).delete();
     }
 
     @Override
     public CreateAccessTokenResponse createAccessToken( CreateAccessTokenRequest request )
             throws MalformedURLException {
         ClientResponse response = build( request ).post( ClientResponse.class, request.getPolicy() );
-        URI tokenUri = config.resolvePath( response.getLocation().getPath(), response.getLocation().getQuery() );
+        URI tokenUri = config.resolveHostAndPath( response.getLocation().getPath(), response.getLocation().getQuery() );
 
         response.close();
 
@@ -644,7 +644,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public GetAccessTokenResponse getAccessToken( String accessTokenId ) {
-        URI uri = config.resolvePath( "accesstokens/" + accessTokenId, "info" );
+        URI uri = config.resolveHostAndPath( "accesstokens/" + accessTokenId, "info" );
         ClientResponse response = client.resource( uri ).get( ClientResponse.class );
 
         GetAccessTokenResponse ret = new GetAccessTokenResponse( response.getEntity( AccessToken.class ) );
@@ -656,7 +656,7 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public void deleteAccessToken( String accessTokenId ) {
-        client.resource( config.resolvePath( "accesstokens/" + accessTokenId, null ) ).delete();
+        client.resource( config.resolveHostAndPath( "accesstokens/" + accessTokenId, null ) ).delete();
     }
 
     @Override
@@ -698,9 +698,9 @@ public class AtmosApiClient extends AbstractAtmosApi {
         if ( request.supports100Continue() && config.isEnableExpect100Continue() && client100 != null ) {
             // use client with Expect: 100-continue
             l4j.debug( "Expect: 100-continue is enabled for this request" );
-            resource = client100.resource( config.resolvePath( request.getServiceRelativePath(), request.getQuery() ) );
+            resource = client100.resource( config.resolveHostAndPath( request.getServiceRelativePath(), request.getQuery() ) );
         } else {
-            resource = client.resource( config.resolvePath( request.getServiceRelativePath(), request.getQuery() ) );
+            resource = client.resource( config.resolveHostAndPath( request.getServiceRelativePath(), request.getQuery() ) );
         }
 
         WebResource.Builder builder = resource.getRequestBuilder();
@@ -750,6 +750,6 @@ public class AtmosApiClient extends AbstractAtmosApi {
 
     @Override
     public void deleteSubtenant( String subtenantId ) {
-        client.resource( config.resolvePath( "subtenant/" + subtenantId, null ) ).delete();
+        client.resource( config.resolveHostAndPath( "subtenant/" + subtenantId, null ) ).delete();
     }
 }

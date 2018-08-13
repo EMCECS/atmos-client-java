@@ -54,6 +54,7 @@ public final class HttpUtil {
     public static final String HEADER_RANGE = "Range";
     public static final String HEADER_ETAG = "ETag";
     public static final String HEADER_LAST_MODIFIED = "Last-Modified";
+    public static final String HEADER_COOKIE = "Cookie";
 
     private static final String HEADER_FORMAT = "EEE, d MMM yyyy HH:mm:ss z";
     private static final ThreadLocal<DateFormat> headerFormat = new ThreadLocal<DateFormat>();

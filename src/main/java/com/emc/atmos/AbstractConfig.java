@@ -51,29 +51,40 @@ public class AbstractConfig {
     }
 
     /**
+     * @deprecated Please use {@link #resolveHostAndPath(String, String)} instead
+     */
+    public URI resolvePath( String relativePath, String query ) {
+        return resolveHostAndPath(relativePath, query);
+    }
+
+    /**
      * Resolves a path relative to the API context. The returned URI will be of the format
      * scheme://host[:port]/context/relativePath?query. The scheme, host and port (endpoint) to use is delegated to the
      * configured loadBalancingAlgorithm to balance load across multiple endpoints.
      */
-    public URI resolvePath( String relativePath, String query ) {
+    public URI resolveHostAndPath(String relativePath, String query) {
         String path = relativePath;
 
         // make sure we have a root path
-        if ( path.length() == 0 || path.charAt( 0 ) != '/' ) path = '/' + path;
+        if (path.length() == 0 || path.charAt(0) != '/') path = '/' + path;
 
         // don't add the context if it's already there
-        if ( !path.startsWith( context ) ) path = context + path;
+        if (!path.startsWith(context)) path = context + path;
 
-        URI endpoint = loadBalancingAlgorithm.getNextEndpoint( endpoints );
+        return resolveHost(path, query);
+    }
+
+    public URI resolveHost(String absolutePath, String query) {
+        URI endpoint = loadBalancingAlgorithm.getNextEndpoint(endpoints);
 
         try {
-            URI uri = new URI( endpoint.getScheme(), null, endpoint.getHost(), endpoint.getPort(),
-                               path, query, null );
-            l4j.debug( "raw path & query: " + path + "?" + query );
-            l4j.debug( "encoded URI: " + uri );
+            URI uri = new URI(endpoint.getScheme(), null, endpoint.getHost(), endpoint.getPort(),
+                    absolutePath, query, null);
+            l4j.debug("raw path & query: " + absolutePath + "?" + query);
+            l4j.debug("encoded URI: " + uri);
             return uri;
-        } catch ( URISyntaxException e ) {
-            throw new RuntimeException( "Invalid URI syntax", e );
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Invalid URI syntax", e);
         }
     }
 

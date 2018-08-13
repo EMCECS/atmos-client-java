@@ -41,8 +41,8 @@ public class Subtenant {
     private String name;
     private String id;
     private AuthenticationSource authenticationSource;
-    private SubtenantStatus status;
-    private List<AdminUser> subtenantAdminList = new ArrayList<AdminUser>();
+    private Status status;
+    private List<? extends AdminUser> subtenantAdminList = new ArrayList<AdminUser>();
 
     @XmlElement
     public String getName() {
@@ -72,21 +72,21 @@ public class Subtenant {
     }
 
     @XmlElement
-    public SubtenantStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(SubtenantStatus status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 
     @XmlElementWrapper
     @XmlElement(name = "subtenantAdmin")
-    public List<AdminUser> getSubtenantAdminList() {
+    public List<? extends AdminUser> getSubtenantAdminList() {
         return subtenantAdminList;
     }
 
-    public void setSubtenantAdminList(List<AdminUser> subtenantAdminList) {
+    public void setSubtenantAdminList(List<? extends AdminUser> subtenantAdminList) {
         this.subtenantAdminList = subtenantAdminList;
     }
 }

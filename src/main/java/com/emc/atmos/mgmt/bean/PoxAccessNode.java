@@ -30,16 +30,65 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.GetTenantInfoResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import javax.xml.bind.annotation.XmlElement;
 
-public interface TenantMgmtApi {
-    GetTenantInfoResponse getTenantInfo();
+public class PoxAccessNode {
+    private String name;
+    private String id;
+    private String publicIp;
+    private String webservice;
+    private String filesystem;
+    private String multiSubtenantAccess;
 
-    ListSubtenantsResponse listSubtenants();
+    public String getName() {
+        return name;
+    }
 
-    GetSubtenantResponse getSubtenant(String subtenantName);
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    @XmlElement(name = "public_ip")
+    public String getPublicIp() {
+        return publicIp;
+    }
+
+    public void setPublicIp(String publicIp) {
+        this.publicIp = publicIp;
+    }
+
+    public String getWebservice() {
+        return webservice;
+    }
+
+    public void setWebservice(String webservice) {
+        this.webservice = webservice;
+    }
+
+    public String getFilesystem() {
+        return filesystem;
+    }
+
+    public void setFilesystem(String filesystem) {
+        this.filesystem = filesystem;
+    }
+
+    @XmlElement(name = "multi_subtenant_access")
+    public String getMultiSubtenantAccess() {
+        return multiSubtenantAccess;
+    }
+
+    public void setMultiSubtenantAccess(String multiSubtenantAccess) {
+        this.multiSubtenantAccess = multiSubtenantAccess;
+    }
 }

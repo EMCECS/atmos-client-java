@@ -37,6 +37,7 @@ public abstract class AbstractMgmtConfig extends AbstractConfig {
 
     private String username;
     private String password;
+    private volatile String sessionCookie;
 
     public AbstractMgmtConfig(String username, String password, URI... endpoints) {
         super( DEFAULT_CONTEXT, endpoints );
@@ -44,7 +45,11 @@ public abstract class AbstractMgmtConfig extends AbstractConfig {
         this.password = password;
     }
 
-    public abstract Map<String, List<Object>> getAuthenticationHeaders();
+    public abstract Map<String, List<Object>> getRestAuthenticationHeaders();
+
+    public abstract String getPoxLoginPath();
+
+    public abstract Map<String, String> getPoxLoginParams();
 
     public String getUsername() {
         return username;
@@ -60,5 +65,13 @@ public abstract class AbstractMgmtConfig extends AbstractConfig {
 
     public void setPassword( String password ) {
         this.password = password;
+    }
+
+    public String getSessionCookie() {
+        return sessionCookie;
+    }
+
+    public void setSessionCookie(String sessionCookie) {
+        this.sessionCookie = sessionCookie;
     }
 }

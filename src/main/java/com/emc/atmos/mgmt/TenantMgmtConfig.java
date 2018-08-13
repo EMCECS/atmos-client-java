@@ -29,17 +29,25 @@ package com.emc.atmos.mgmt;
 import com.sun.jersey.core.header.OutBoundHeaders;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class TenantMgmtConfig extends AbstractMgmtConfig {
+    private static final String PARAM_TENANT_NAME = "tenant_name";
+    private static final String PARAM_USERNAME = "username";
+    private static final String PARAM_PASSWORD = "password";
+
+    private String tenant;
+
     public TenantMgmtConfig(String tenant, String username, String password, URI... endpoints) {
         super(username, password, endpoints);
+        this.tenant = tenant;
         setContext(getContext() + "/tenants/" + tenant);
     }
 
     @Override
-    public Map<String, List<Object>> getAuthenticationHeaders() {
+    public Map<String, List<Object>> getRestAuthenticationHeaders() {
         OutBoundHeaders authHeaders = new OutBoundHeaders();
 
         authHeaders.putSingle(MgmtConstants.XHEADER_TENANT_ADMIN, getUsername());
@@ -47,5 +55,23 @@ public class TenantMgmtConfig extends AbstractMgmtConfig {
         authHeaders.putSingle(MgmtConstants.XHEADER_AUTH_TYPE, MgmtConstants.AUTHTYPE_PASSWORD);
 
         return authHeaders;
+    }
+
+    @Override
+    public String getPoxLoginPath() {
+        return "/user/verify";
+    }
+
+    @Override
+    public Map<String, String> getPoxLoginParams() {
+        Map<String, String> loginParams = new HashMap<String, String>();
+        loginParams.put(PARAM_TENANT_NAME, getTenant());
+        loginParams.put(PARAM_USERNAME, getUsername());
+        loginParams.put(PARAM_PASSWORD, getPassword());
+        return loginParams;
+    }
+
+    public String getTenant() {
+        return tenant;
     }
 }

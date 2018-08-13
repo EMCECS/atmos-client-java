@@ -30,16 +30,46 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.GetTenantInfoResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import javax.xml.bind.annotation.XmlElement;
 
-public interface TenantMgmtApi {
-    GetTenantInfoResponse getTenantInfo();
+public class PoxPolicySelector {
+    private String name;
+    private String expression;
+    private String onEvent;
+    private String spec;
 
-    ListSubtenantsResponse listSubtenants();
+    public String getName() {
+        return name;
+    }
 
-    GetSubtenantResponse getSubtenant(String subtenantName);
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getExpression() {
+        return expression;
+    }
+
+    public void setExpression(String expression) {
+        this.expression = expression;
+    }
+
+    @XmlElement(name = "on_event")
+    public String getOnEvent() {
+        return onEvent;
+    }
+
+    public void setOnEvent(String onEvent) {
+        this.onEvent = onEvent;
+    }
+
+    public String getSpec() {
+        return spec;
+    }
+
+    public void setSpec(String spec) {
+        this.spec = spec;
+    }
 }

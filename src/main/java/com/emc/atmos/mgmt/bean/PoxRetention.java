@@ -30,16 +30,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.GetTenantInfoResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+public class PoxRetention {
+    private String delay;
+    private String period;
 
-public interface TenantMgmtApi {
-    GetTenantInfoResponse getTenantInfo();
+    public String getDelay() {
+        return delay;
+    }
 
-    ListSubtenantsResponse listSubtenants();
+    public void setDelay(String delay) {
+        this.delay = delay;
+    }
 
-    GetSubtenantResponse getSubtenant(String subtenantName);
+    public String getPeriod() {
+        return period;
+    }
+
+    public void setPeriod(String period) {
+        this.period = period;
+    }
 }

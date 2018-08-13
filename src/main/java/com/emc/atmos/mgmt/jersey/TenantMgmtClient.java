@@ -29,11 +29,12 @@ package com.emc.atmos.mgmt.jersey;
 import com.emc.atmos.AbstractJerseyClient;
 import com.emc.atmos.mgmt.TenantMgmtApi;
 import com.emc.atmos.mgmt.TenantMgmtConfig;
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
-import com.emc.atmos.mgmt.bean.SubtenantDetails;
+import com.emc.atmos.mgmt.bean.*;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+
+import java.net.URI;
 
 public class TenantMgmtClient extends AbstractJerseyClient<TenantMgmtConfig> implements TenantMgmtApi {
     public TenantMgmtClient(TenantMgmtConfig config) {
@@ -46,13 +47,31 @@ public class TenantMgmtClient extends AbstractJerseyClient<TenantMgmtConfig> imp
     }
 
     @Override
+    public GetTenantInfoResponse getTenantInfo() {
+        URI uri = config.resolveHost("/tenant_admin/get_tenant_info", null);
+
+        WebResource resource = client.resource(uri);
+        resource.setProperty(AuthFilter.PROP_POX_REQUEST, Boolean.TRUE);
+
+        ClientResponse response = resource.get(ClientResponse.class);
+
+        GetTenantInfoResponse tenantResponse = new GetTenantInfoResponse();
+        tenantResponse.setTenant(response.getEntity(PoxTenant.class));
+        response.close();
+
+        fillResponse(tenantResponse, response);
+
+        return tenantResponse;
+    }
+
+    @Override
     public ListSubtenantsResponse listSubtenants() {
-        return executeAndClose("/subtenants", null, ListSubtenantsResponse.class);
+        return executeAndClose(buildRequest("/subtenants", null), ListSubtenantsResponse.class);
     }
 
     @Override
     public GetSubtenantResponse getSubtenant(String subtenantName) {
-        ClientResponse response = execute("/subtenants/" + subtenantName, null);
+        ClientResponse response = buildRequest("/subtenants/" + subtenantName, null).get(ClientResponse.class);
 
         GetSubtenantResponse subtenantResponse = new GetSubtenantResponse();
         subtenantResponse.setSubtenant(response.getEntity(SubtenantDetails.class));

@@ -51,11 +51,11 @@ public class SystemMgmtClient extends AbstractJerseyClient<SystemMgmtConfig> imp
 
     @Override
     public ListRmgsResponse listRmgs() {
-        return executeAndClose("/rmgs", null, ListRmgsResponse.class);
+        return executeAndClose(buildRequest("/rmgs", null), ListRmgsResponse.class);
     }
 
     @Override
     public ListRmgNodesResponse listRmgNodes(String rmgName) {
-        return executeAndClose("/rmgs/" + rmgName + "/nodes", null, ListRmgNodesResponse.class);
+        return executeAndClose(buildRequest("/rmgs/" + rmgName + "/nodes", null), ListRmgNodesResponse.class);
     }
 }

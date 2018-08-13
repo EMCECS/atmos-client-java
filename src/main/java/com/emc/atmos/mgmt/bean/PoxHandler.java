@@ -30,16 +30,47 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.GetTenantInfoResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import javax.xml.bind.annotation.XmlElement;
 
-public interface TenantMgmtApi {
-    GetTenantInfoResponse getTenantInfo();
+public class PoxHandler {
+    private String handle;
+    private String expression;
+    private String handleId;
+    private String onEvent;
 
-    ListSubtenantsResponse listSubtenants();
+    public String getHandle() {
+        return handle;
+    }
 
-    GetSubtenantResponse getSubtenant(String subtenantName);
+    public void setHandle(String handle) {
+        this.handle = handle;
+    }
+
+    public String getExpression() {
+        return expression;
+    }
+
+    public void setExpression(String expression) {
+        this.expression = expression;
+    }
+
+    @XmlElement(name = "handle_id")
+    public String getHandleId() {
+        return handleId;
+    }
+
+    public void setHandleId(String handleId) {
+        this.handleId = handleId;
+    }
+
+    @XmlElement(name = "on_event")
+    public String getOnEvent() {
+        return onEvent;
+    }
+
+    public void setOnEvent(String onEvent) {
+        this.onEvent = onEvent;
+    }
 }

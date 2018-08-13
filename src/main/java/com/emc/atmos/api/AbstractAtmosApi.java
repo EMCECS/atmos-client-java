@@ -90,7 +90,7 @@ public abstract class AbstractAtmosApi extends AbstractJerseyClient<AtmosConfig>
         if ( identifier instanceof ObjectKey )
             throw new IllegalArgumentException( "You cannot create shareable URLs using a key; try using the object ID" );
 
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), null );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), null );
         String path = uri.getPath().toLowerCase();
         long expiresTime = expirationDate.getTime() / 1000;
 
@@ -124,7 +124,7 @@ public abstract class AbstractAtmosApi extends AbstractJerseyClient<AtmosConfig>
 
     @Override
     public PreSignedRequest preSignRequest( Request request, Date expiration ) throws MalformedURLException {
-        URI uri = config.resolvePath( request.getServiceRelativePath(), request.getQuery() );
+        URI uri = config.resolveHostAndPath( request.getServiceRelativePath(), request.getQuery() );
         Map<String, List<Object>> headers = request.generateHeaders( config.isEncodeUtf8() );
 
         String contentType = null;

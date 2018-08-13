@@ -102,6 +102,30 @@ public class TenantMgmtClientTest {
     }
 
     @Test
+    public void testGetTenantInfo() {
+        GetTenantInfoResponse result = client.getTenantInfo();
+        Assert.assertNotNull(result);
+        Assert.assertNotNull(result.getTenant());
+        checkTenant(result.getTenant());
+    }
+
+    private void checkTenant(PoxTenant tenant) {
+        Assert.assertNotNull(tenant);
+        Assert.assertNotNull(tenant.getName());
+        Assert.assertTrue(tenant.getName().trim().length() > 0);
+        Assert.assertNotNull(tenant.getId());
+        Assert.assertTrue(tenant.getId().trim().length() > 0);
+
+        Assert.assertNotNull(tenant.getTenantAdminList());
+        Assert.assertTrue(tenant.getTenantAdminList().size() > 0);
+        checkAdminUser(tenant.getTenantAdminList().get(0));
+
+        Assert.assertNotNull(tenant.getSubtenantList());
+        Assert.assertTrue(tenant.getSubtenantList().size() > 0);
+        checkSubtenant(tenant.getSubtenantList().get(0));
+    }
+
+    @Test
     public void testListSubtenants() {
         ListSubtenantsResponse response = client.listSubtenants();
         Assert.assertNotNull(response);
@@ -119,8 +143,8 @@ public class TenantMgmtClientTest {
         Assert.assertNotNull(subtenant.getAuthenticationSource());
         Assert.assertNotNull(subtenant.getStatus());
         Assert.assertNotNull(subtenant.getSubtenantAdminList());
-        Assert.assertTrue(subtenant.getSubtenantAdminList().size() > 0);
-        checkAdminUser(subtenant.getSubtenantAdminList().get(0));
+        if (subtenant.getSubtenantAdminList().size() > 0)
+            checkAdminUser(subtenant.getSubtenantAdminList().get(0));
     }
 
     private void checkAdminUser(AdminUser adminUser) {

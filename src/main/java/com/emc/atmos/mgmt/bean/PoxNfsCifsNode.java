@@ -30,16 +30,59 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.GetTenantInfoResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import javax.xml.bind.annotation.XmlElement;
 
-public interface TenantMgmtApi {
-    GetTenantInfoResponse getTenantInfo();
+public class PoxNfsCifsNode {
+    private String name;
+    private String id;
+    private Type type;
+    private String publicIp;
+    private String status;
 
-    ListSubtenantsResponse listSubtenants();
+    public String getName() {
+        return name;
+    }
 
-    GetSubtenantResponse getSubtenant(String subtenantName);
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
+    }
+
+    @XmlElement(name = "public_ip")
+    public String getPublicIp() {
+        return publicIp;
+    }
+
+    public void setPublicIp(String publicIp) {
+        this.publicIp = publicIp;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public enum Type {
+        nfs, cifs
+    }
 }

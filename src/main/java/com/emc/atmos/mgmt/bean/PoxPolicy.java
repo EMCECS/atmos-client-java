@@ -30,16 +30,69 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.GetTenantInfoResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import java.util.ArrayList;
+import java.util.List;
 
-public interface TenantMgmtApi {
-    GetTenantInfoResponse getTenantInfo();
+public class PoxPolicy {
+    private String name;
+    private String expression;
+    private String policyId;
+    private List<PoxReplica> replicaList = new ArrayList<PoxReplica>();
+    private PoxRetention retention;
+    private String deletion;
 
-    ListSubtenantsResponse listSubtenants();
+    public String getName() {
+        return name;
+    }
 
-    GetSubtenantResponse getSubtenant(String subtenantName);
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getExpression() {
+        return expression;
+    }
+
+    public void setExpression(String expression) {
+        this.expression = expression;
+    }
+
+    @XmlElement(name = "policy_id")
+    public String getPolicyId() {
+        return policyId;
+    }
+
+    public void setPolicyId(String policyId) {
+        this.policyId = policyId;
+    }
+
+    @XmlElementWrapper(name = "replica_list")
+    @XmlElement(name = "replica")
+    public List<PoxReplica> getReplicaList() {
+        return replicaList;
+    }
+
+    public void setReplicaList(List<PoxReplica> replicaList) {
+        this.replicaList = replicaList;
+    }
+
+    public PoxRetention getRetention() {
+        return retention;
+    }
+
+    public void setRetention(PoxRetention retention) {
+        this.retention = retention;
+    }
+
+    public String getDeletion() {
+        return deletion;
+    }
+
+    public void setDeletion(String deletion) {
+        this.deletion = deletion;
+    }
 }

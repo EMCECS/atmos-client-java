@@ -33,7 +33,6 @@ import com.emc.util.SslUtil;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.api.client.filter.LoggingFilter;
 import com.sun.jersey.client.urlconnection.HTTPSProperties;
 
 public class JerseyUtil {
@@ -62,8 +61,6 @@ public class JerseyUtil {
      * responsible for configuring the client with any proxy, ssl or other options prior to calling this constructor.
      */
     public static void configureClient(Client client, AbstractMgmtConfig config) {
-        // uncomment for header logs
-//        client.addFilter( new LoggingFilter( System.out ) );
         client.addFilter( new ErrorFilter() );
         client.addFilter( new AuthFilter( config ) );
     }

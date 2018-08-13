@@ -30,16 +30,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.GetTenantInfoResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import com.emc.util.BasicResponse;
 
-public interface TenantMgmtApi {
-    GetTenantInfoResponse getTenantInfo();
+public class GetTenantInfoResponse extends BasicResponse {
+    private PoxTenant tenant;
 
-    ListSubtenantsResponse listSubtenants();
+    public PoxTenant getTenant() {
+        return tenant;
+    }
 
-    GetSubtenantResponse getSubtenant(String subtenantName);
+    public void setTenant(PoxTenant tenant) {
+        this.tenant = tenant;
+    }
 }

@@ -75,8 +75,8 @@ public abstract class AbstractJerseyClient<C extends AbstractConfig> {
         return response;
     }
 
-    protected <R extends BasicResponse> R executeAndClose(String pathWithinContext, String query, Class<R> responseType) {
-        ClientResponse response = execute(pathWithinContext, query);
+    protected <R extends BasicResponse> R executeAndClose(WebResource.Builder builder, Class<R> responseType) {
+        ClientResponse response = builder.get(ClientResponse.class);
 
         R ret = response.getEntity(responseType);
 
@@ -85,11 +85,9 @@ public abstract class AbstractJerseyClient<C extends AbstractConfig> {
         return fillResponse(ret, response);
     }
 
-    protected ClientResponse execute(String pathWithinContext, String query) {
-        URI uri = config.resolvePath(pathWithinContext, query);
+    protected WebResource.Builder buildRequest(String pathWithinContext, String query) {
+        URI uri = config.resolveHostAndPath(pathWithinContext, query);
 
-        WebResource.Builder builder = client.resource(uri).getRequestBuilder();
-
-        return builder.get(ClientResponse.class);
+        return client.resource(uri).getRequestBuilder();
     }
 }

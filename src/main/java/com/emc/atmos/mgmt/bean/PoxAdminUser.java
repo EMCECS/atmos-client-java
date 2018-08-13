@@ -30,16 +30,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.GetTenantInfoResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import javax.xml.bind.annotation.XmlElement;
 
-public interface TenantMgmtApi {
-    GetTenantInfoResponse getTenantInfo();
+public class PoxAdminUser extends AdminUser {
+    @XmlElement(name = "authentication_source")
+    public AuthenticationSource getAuthenticationSource() {
+        return super.getAuthenticationSource();
+    }
 
-    ListSubtenantsResponse listSubtenants();
-
-    GetSubtenantResponse getSubtenant(String subtenantName);
+    @Override
+    public void setAuthenticationSource(AuthenticationSource authenticationSource) {
+        super.setAuthenticationSource(authenticationSource);
+    }
 }

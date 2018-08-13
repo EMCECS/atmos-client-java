@@ -32,7 +32,44 @@
  */
 package com.emc.atmos.mgmt.bean;
 
-public enum SubtenantStatus {
-    Initialized
-    // TODO: find the other possible values of this enum
+import javax.xml.bind.annotation.XmlElement;
+
+public class PoxReplica {
+    private String type;
+    private String storageMechanism;
+    private String locations;
+    private String location;
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    @XmlElement(name = "storage_mechanism")
+    public String getStorageMechanism() {
+        return storageMechanism;
+    }
+
+    public void setStorageMechanism(String storageMechanism) {
+        this.storageMechanism = storageMechanism;
+    }
+
+    public String getLocations() {
+        return locations;
+    }
+
+    public void setLocations(String locations) {
+        this.locations = locations;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
 }

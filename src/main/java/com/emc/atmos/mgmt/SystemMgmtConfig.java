@@ -29,16 +29,21 @@ package com.emc.atmos.mgmt;
 import com.sun.jersey.core.header.OutBoundHeaders;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class SystemMgmtConfig extends AbstractMgmtConfig {
+    private static final String PARAM_AUTH_TYPE = "auth_type";
+    private static final String PARAM_USERNAME = "username";
+    private static final String PARAM_PASSWORD = "password";
+
     public SystemMgmtConfig(String username, String password, URI... endpoints) {
         super(username, password, endpoints);
     }
 
     @Override
-    public Map<String, List<Object>> getAuthenticationHeaders() {
+    public Map<String, List<Object>> getRestAuthenticationHeaders() {
         OutBoundHeaders authHeaders = new OutBoundHeaders();
 
         authHeaders.putSingle(MgmtConstants.XHEADER_SYSTEM_ADMIN, getUsername());
@@ -46,5 +51,19 @@ public class SystemMgmtConfig extends AbstractMgmtConfig {
         authHeaders.putSingle(MgmtConstants.XHEADER_AUTH_TYPE, MgmtConstants.AUTHTYPE_PASSWORD);
 
         return authHeaders;
+    }
+
+    @Override
+    public String getPoxLoginPath() {
+        return "/mgmt_login/verify";
+    }
+
+    @Override
+    public Map<String, String> getPoxLoginParams() {
+        Map<String, String> loginParams = new HashMap<String, String>();
+        loginParams.put(PARAM_AUTH_TYPE, "local");
+        loginParams.put(PARAM_USERNAME, getUsername());
+        loginParams.put(PARAM_PASSWORD, getPassword());
+        return loginParams;
     }
 }
