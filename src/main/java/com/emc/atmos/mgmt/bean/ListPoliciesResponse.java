@@ -30,19 +30,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.GetTenantInfoResponse;
-import com.emc.atmos.mgmt.bean.ListPoliciesResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import com.emc.util.BasicResponse;
 
-public interface TenantMgmtApi {
-    GetTenantInfoResponse getTenantInfo();
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.util.ArrayList;
+import java.util.List;
 
-    ListSubtenantsResponse listSubtenants();
+@XmlRootElement(name = "policy_list")
+public class ListPoliciesResponse extends BasicResponse {
+    private List<PoxPolicy> policies = new ArrayList<PoxPolicy>();
 
-    GetSubtenantResponse getSubtenant(String subtenantName);
+    @XmlElement(name = "policy")
+    public List<PoxPolicy> getPolicies() {
+        return policies;
+    }
 
-    ListPoliciesResponse listPolicies();
+    public void setPolicies(List<PoxPolicy> policies) {
+        this.policies = policies;
+    }
 }

@@ -43,7 +43,6 @@ public class TenantMgmtConfig extends AbstractMgmtConfig {
     public TenantMgmtConfig(String tenant, String username, String password, URI... endpoints) {
         super(username, password, endpoints);
         this.tenant = tenant;
-        setContext(getContext() + "/tenants/" + tenant);
     }
 
     @Override

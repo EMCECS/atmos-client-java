@@ -66,12 +66,12 @@ public class TenantMgmtClient extends AbstractJerseyClient<TenantMgmtConfig> imp
 
     @Override
     public ListSubtenantsResponse listSubtenants() {
-        return executeAndClose(buildRequest("/subtenants", null), ListSubtenantsResponse.class);
+        return executeAndClose(buildRequest(tenantPrefix() + "/subtenants", null), ListSubtenantsResponse.class);
     }
 
     @Override
     public GetSubtenantResponse getSubtenant(String subtenantName) {
-        ClientResponse response = buildRequest("/subtenants/" + subtenantName, null).get(ClientResponse.class);
+        ClientResponse response = buildRequest(tenantPrefix() + "/subtenants/" + subtenantName, null).get(ClientResponse.class);
 
         GetSubtenantResponse subtenantResponse = new GetSubtenantResponse();
         subtenantResponse.setSubtenant(response.getEntity(SubtenantDetails.class));
@@ -80,5 +80,14 @@ public class TenantMgmtClient extends AbstractJerseyClient<TenantMgmtConfig> imp
         fillResponse(subtenantResponse, response);
 
         return subtenantResponse;
+    }
+
+    @Override
+    public ListPoliciesResponse listPolicies() {
+        return executeAndClose(buildRequest("/" + config.getTenant() + "/policies", null), ListPoliciesResponse.class);
+    }
+
+    protected String tenantPrefix() {
+        return "/tenants/" + config.getTenant();
     }
 }

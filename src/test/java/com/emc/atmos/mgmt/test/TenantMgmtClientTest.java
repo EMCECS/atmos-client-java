@@ -174,4 +174,31 @@ public class TenantMgmtClientTest {
         Assert.assertTrue(response.getSubtenant().getObjectUsers().size() > 0);
         checkObjectUser(response.getSubtenant().getObjectUsers().get(0));
     }
+
+    @Test
+    public void testListPolicies() {
+        ListPoliciesResponse response = client.listPolicies();
+        Assert.assertNotNull(response);
+        Assert.assertNotNull(response.getPolicies());
+        Assert.assertTrue(response.getPolicies().size() > 0);
+        checkPolicy(response.getPolicies().get(0));
+    }
+
+    private void checkPolicy(PoxPolicy policy) {
+        Assert.assertNotNull(policy);
+        Assert.assertNotNull(policy.getName());
+        Assert.assertTrue(policy.getName().trim().length() > 0);
+        if (policy.getReplicaList().size() > 0)
+            checkReplica(policy.getReplicaList().get(0));
+    }
+
+    private void checkReplica(PoxReplica replica) {
+        Assert.assertNotNull(replica);
+        Assert.assertNotNull(replica.getType());
+        Assert.assertTrue(replica.getType().trim().length() > 0);
+        Assert.assertNotNull(replica.getLocations());
+        Assert.assertTrue(replica.getLocations().trim().length() > 0);
+        Assert.assertNotNull(replica.getLocation());
+        Assert.assertTrue(replica.getLocation().trim().length() > 0);
+    }
 }
