@@ -30,24 +30,66 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.util;
+package com.emc.atmos.mgmt.bean;
 
-public final class TestConstants {
-    public static final String PROP_ATMOS_UID = "atmos.uid";
-    public static final String PROP_ATMOS_SECRET = "atmos.secret";
-    public static final String PROP_ATMOS_ENDPOINTS = "atmos.endpoints";
-    public static final String PROP_ATMOS_IS_ECS = "atmos.is_ecs";
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlValue;
 
-    public static final String PROP_MGMT_ENDPOINTS = "atmos.mgmt.endpoints";
-    public static final String PROP_MGMT_SYSADMIN_USER = "atmos.mgmt.sysadmin.user";
-    public static final String PROP_MGMT_SYSADMIN_PASS = "atmos.mgmt.sysadmin.password";
-    public static final String PROP_MGMT_TENANT = "atmos.mgmt.tenant";
-    public static final String PROP_MGMT_SUB_TENANT = "atmos.mgmt.sub_tenant";
-    public static final String PROP_MGMT_TENANTADMIN_USER = "atmos.mgmt.tenantadmin.user";
-    public static final String PROP_MGMT_TENANTADMIN_PASS = "atmos.mgmt.tenantadmin.password";
+import com.emc.util.BasicResponse;
 
-    public static final String PROP_PROXY = "http.proxyUri";
+@XmlRootElement(name="sharedSecret")
+public class SharedSecret extends BasicResponse {
 
-    private TestConstants() {
+    @XmlAttribute
+    private String keyCreateTime;
+
+    @XmlAttribute
+    private String keyExpireTime;
+
+    @XmlValue
+    private String sharedSecret;
+
+    /**
+     * @return the keyCreateTime
+     */
+    public String getKeyCreateTime() {
+        return keyCreateTime;
     }
+
+    /**
+     * @param keyCreateTime the keyCreateTime to set
+     */
+    public void setKeyCreateTime(String keyCreateTime) {
+        this.keyCreateTime = keyCreateTime;
+    }
+
+    /**
+     * @return the keyExpireTime
+     */
+    public String getKeyExpireTime() {
+        return keyExpireTime;
+    }
+
+    /**
+     * @param keyExpireTime the keyExpireTime to set
+     */
+    public void setKeyExpireTime(String keyExpireTime) {
+        this.keyExpireTime = keyExpireTime;
+    }
+
+    /**
+     * @return the sharedSecret
+     */
+    public String getSharedSecret() {
+        return sharedSecret;
+    }
+
+    /**
+     * @param sharedSecret the sharedSecret to set
+     */
+    public void setSharedSecret(String sharedSecret) {
+        this.sharedSecret = sharedSecret;
+    }
+
 }
