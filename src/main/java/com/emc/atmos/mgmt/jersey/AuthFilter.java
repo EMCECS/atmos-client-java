@@ -76,7 +76,8 @@ public class AuthFilter extends ClientFilter {
 
             // if unauthorized, try one more time after logging in
         } catch (AtmosException e) {
-            if (e.getHttpCode() == 401) {
+            // apparently Atmos returns a 302 redirect to the login page instead of a 401 when the cookie is expired
+            if (e.getHttpCode() == 302) {
                 invalidateCookie();
                 login(request);
 
