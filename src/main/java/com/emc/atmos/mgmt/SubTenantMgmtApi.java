@@ -30,24 +30,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.util;
+package com.emc.atmos.mgmt;
 
-public final class TestConstants {
-    public static final String PROP_ATMOS_UID = "atmos.uid";
-    public static final String PROP_ATMOS_SECRET = "atmos.secret";
-    public static final String PROP_ATMOS_ENDPOINTS = "atmos.endpoints";
-    public static final String PROP_ATMOS_IS_ECS = "atmos.is_ecs";
+import com.emc.atmos.mgmt.bean.SharedSecret;
+import com.emc.atmos.mgmt.bean.ListUidsResponse;
 
-    public static final String PROP_MGMT_ENDPOINTS = "atmos.mgmt.endpoints";
-    public static final String PROP_MGMT_SYSADMIN_USER = "atmos.mgmt.sysadmin.user";
-    public static final String PROP_MGMT_SYSADMIN_PASS = "atmos.mgmt.sysadmin.password";
-    public static final String PROP_MGMT_TENANT = "atmos.mgmt.tenant";
-    public static final String PROP_MGMT_SUB_TENANT = "atmos.mgmt.sub_tenant";
-    public static final String PROP_MGMT_TENANTADMIN_USER = "atmos.mgmt.tenantadmin.user";
-    public static final String PROP_MGMT_TENANTADMIN_PASS = "atmos.mgmt.tenantadmin.password";
+public interface SubTenantMgmtApi {
 
-    public static final String PROP_PROXY = "http.proxyUri";
+    ListUidsResponse listUids();
 
-    private TestConstants() {
-    }
+    SharedSecret getSharedSecret(String uid);
+
 }
