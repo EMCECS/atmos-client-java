@@ -58,6 +58,7 @@ import javax.xml.bind.DatatypeConverter;
 import java.io.*;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
@@ -2357,7 +2358,10 @@ public class AtmosApiClientTest {
 
         l4j.debug( "Sharable URL: " + u );
 
-        InputStream stream = (InputStream) u.getContent();
+        URLConnection con = u.openConnection();
+        Assert.assertEquals( disposition, con.getHeaderField( "Content-Disposition" ) );
+
+        InputStream stream = (InputStream) con.getContent();
         BufferedReader br = new BufferedReader( new InputStreamReader( stream ) );
         String content = br.readLine();
         l4j.debug( "Content: " + content );
