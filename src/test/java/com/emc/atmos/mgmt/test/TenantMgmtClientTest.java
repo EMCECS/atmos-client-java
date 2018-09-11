@@ -54,7 +54,8 @@ import java.util.Properties;
 public class TenantMgmtClientTest {
     private static final Logger l4j = Logger.getLogger(TenantMgmtClientTest.class);
 
-    protected TenantMgmtApi client;
+    private TenantMgmtApi client;
+    private String subtenant;
 
     @Before
     public void setup() {
@@ -69,6 +70,7 @@ public class TenantMgmtClientTest {
 
             String endpoints = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_ENDPOINTS);
             String tenant = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_TENANT);
+            subtenant = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_SUB_TENANT);
             String user = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_TENANTADMIN_USER);
             String password = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_TENANTADMIN_PASS);
             String proxyUrl = props.getProperty(TestConstants.PROP_PROXY);
@@ -131,10 +133,13 @@ public class TenantMgmtClientTest {
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.getSubtenants());
         Assert.assertTrue(response.getSubtenants().size() > 0);
-        checkSubtenant(response.getSubtenants().get(0));
+        for (Subtenant subtenant : response.getSubtenants()) {
+            if (this.subtenant.equals(subtenant.getName()))
+                checkSubtenant(subtenant);
+        }
     }
 
-    private void checkSubtenant(Subtenant subtenant) {
+    private void checkSubtenant(AbstractSubtenant subtenant) {
         Assert.assertNotNull(subtenant);
         Assert.assertNotNull(subtenant.getName());
         Assert.assertTrue(subtenant.getName().trim().length() > 0);
@@ -142,9 +147,17 @@ public class TenantMgmtClientTest {
         Assert.assertTrue(subtenant.getId().trim().length() > 0);
         Assert.assertNotNull(subtenant.getAuthenticationSource());
         Assert.assertNotNull(subtenant.getStatus());
-        Assert.assertNotNull(subtenant.getSubtenantAdminList());
-        if (subtenant.getSubtenantAdminList().size() > 0)
-            checkAdminUser(subtenant.getSubtenantAdminList().get(0));
+        if (subtenant instanceof Subtenant) {
+            Subtenant subt = (Subtenant) subtenant;
+            Assert.assertNotNull(subt.getSubtenantAdminNames());
+            if (subt.getSubtenantAdminNames().size() > 0)
+                Assert.assertNotNull(subt.getSubtenantAdminNames().get(0));
+        } else if (subtenant instanceof SubtenantDetails) {
+            SubtenantDetails subt = (SubtenantDetails) subtenant;
+            Assert.assertNotNull(subt.getSubtenantAdminList());
+            if (subt.getSubtenantAdminList().size() > 0)
+                checkAdminUser(subt.getSubtenantAdminList().get(0));
+        }
     }
 
     private void checkAdminUser(AdminUser adminUser) {
@@ -200,5 +213,23 @@ public class TenantMgmtClientTest {
         Assert.assertTrue(replica.getLocations().trim().length() > 0);
         Assert.assertNotNull(replica.getLocation());
         Assert.assertTrue(replica.getLocation().trim().length() > 0);
+    }
+
+    @Test
+    public void testListUids() {
+        ListUidsResponse response = client.listUids(subtenant);
+        Assert.assertNotNull(response);
+        Assert.assertNotNull(response.getUids());
+        Assert.assertTrue(response.getUids().size() > 0);
+        Assert.assertNotNull((response.getUids().get(0)));
+    }
+
+    @Test
+    public void testGetSharedSecret() {
+        ListUidsResponse listResult = client.listUids(subtenant);
+        SharedSecret response = client.getSharedSecret(subtenant, listResult.getUids().get(0));
+        Assert.assertNotNull(response);
+        Assert.assertNotNull(response.getKeyCreateTime());
+        Assert.assertNotNull(response.getSharedSecret());
     }
 }

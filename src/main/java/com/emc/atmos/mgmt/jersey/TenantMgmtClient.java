@@ -87,6 +87,16 @@ public class TenantMgmtClient extends AbstractJerseyClient<TenantMgmtConfig> imp
         return executeAndClose(buildRequest("/" + config.getTenant() + "/policies", null), ListPoliciesResponse.class);
     }
 
+    @Override
+    public ListUidsResponse listUids(String subtenantName) {
+        return executeAndClose(buildRequest(tenantPrefix() + "/subtenants/" + subtenantName + "/uids", null), ListUidsResponse.class);
+    }
+
+    @Override
+    public SharedSecret getSharedSecret(String subtenantName, String uid) {
+        return executeAndClose(buildRequest(tenantPrefix() + "/subtenants/" + subtenantName + "/uids/" + uid, null), SharedSecret.class);
+    }
+
     protected String tenantPrefix() {
         return "/tenants/" + config.getTenant();
     }

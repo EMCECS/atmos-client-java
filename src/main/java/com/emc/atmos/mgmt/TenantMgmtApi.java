@@ -32,10 +32,7 @@
  */
 package com.emc.atmos.mgmt;
 
-import com.emc.atmos.mgmt.bean.GetSubtenantResponse;
-import com.emc.atmos.mgmt.bean.GetTenantInfoResponse;
-import com.emc.atmos.mgmt.bean.ListPoliciesResponse;
-import com.emc.atmos.mgmt.bean.ListSubtenantsResponse;
+import com.emc.atmos.mgmt.bean.*;
 
 public interface TenantMgmtApi {
     GetTenantInfoResponse getTenantInfo();
@@ -45,4 +42,8 @@ public interface TenantMgmtApi {
     GetSubtenantResponse getSubtenant(String subtenantName);
 
     ListPoliciesResponse listPolicies();
+
+    ListUidsResponse listUids(String subtenantName);
+
+    SharedSecret getSharedSecret(String subtenantName, String uid);
 }

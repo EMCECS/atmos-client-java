@@ -70,8 +70,8 @@ public class SubTenantMgmtClientTest {
             String endpoints = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_ENDPOINTS);
             String tenant = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_TENANT);
             String subTenant = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_SUB_TENANT);
-            String user = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_TENANTADMIN_USER);
-            String password = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_TENANTADMIN_PASS);
+            String user = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_SUB_TENANTADMIN_USER);
+            String password = TestConfig.getPropertyNotEmpty(props, TestConstants.PROP_MGMT_SUB_TENANTADMIN_PASS);
             String proxyUrl = props.getProperty(TestConstants.PROP_PROXY);
 
             List<URI> endpointUris = new ArrayList<URI>();

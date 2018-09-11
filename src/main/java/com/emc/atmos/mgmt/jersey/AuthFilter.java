@@ -65,7 +65,7 @@ public class AuthFilter extends ClientFilter {
         if (config.getSessionCookie() == null) {
 
             // first login
-            login(request);
+            poxLogin(request);
         }
 
         attachSessionCookie(request);
@@ -79,7 +79,7 @@ public class AuthFilter extends ClientFilter {
             // apparently Atmos returns a 302 redirect to the login page instead of a 401 when the cookie is expired
             if (e.getHttpCode() == 302) {
                 invalidateCookie();
-                login(request);
+                poxLogin(request);
 
                 response = getNext().handle((request));
             } else {
@@ -98,7 +98,7 @@ public class AuthFilter extends ClientFilter {
         config.setSessionCookie(null);
     }
 
-    private synchronized void login(ClientRequest request) {
+    private synchronized void poxLogin(ClientRequest request) {
         if (config.getSessionCookie() != null) return;
 
         // hold existing request configuration (we can't create a new request here)

@@ -42,9 +42,11 @@ public final class TestConstants {
     public static final String PROP_MGMT_SYSADMIN_USER = "atmos.mgmt.sysadmin.user";
     public static final String PROP_MGMT_SYSADMIN_PASS = "atmos.mgmt.sysadmin.password";
     public static final String PROP_MGMT_TENANT = "atmos.mgmt.tenant";
-    public static final String PROP_MGMT_SUB_TENANT = "atmos.mgmt.sub_tenant";
     public static final String PROP_MGMT_TENANTADMIN_USER = "atmos.mgmt.tenantadmin.user";
     public static final String PROP_MGMT_TENANTADMIN_PASS = "atmos.mgmt.tenantadmin.password";
+    public static final String PROP_MGMT_SUB_TENANT = "atmos.mgmt.sub_tenant";
+    public static final String PROP_MGMT_SUB_TENANTADMIN_USER = "atmos.mgmt.subtenantadmin.user";
+    public static final String PROP_MGMT_SUB_TENANTADMIN_PASS = "atmos.mgmt.subtenantadmin.password";
 
     public static final String PROP_PROXY = "http.proxyUri";
 

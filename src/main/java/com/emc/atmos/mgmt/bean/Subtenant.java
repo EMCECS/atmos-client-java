@@ -37,56 +37,16 @@ import javax.xml.bind.annotation.XmlElementWrapper;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Subtenant {
-    private String name;
-    private String id;
-    private AuthenticationSource authenticationSource;
-    private Status status;
-    private List<? extends AdminUser> subtenantAdminList = new ArrayList<AdminUser>();
+public class Subtenant extends AbstractSubtenant {
+    private List<String> subtenantAdminNames = new ArrayList<String>();
 
-    @XmlElement
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    @XmlElement
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    @XmlElement
-    public AuthenticationSource getAuthenticationSource() {
-        return authenticationSource;
-    }
-
-    public void setAuthenticationSource(AuthenticationSource authenticationSource) {
-        this.authenticationSource = authenticationSource;
-    }
-
-    @XmlElement
-    public Status getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    @XmlElementWrapper
+    @XmlElementWrapper(name = "subtenantAdminList")
     @XmlElement(name = "subtenantAdmin")
-    public List<? extends AdminUser> getSubtenantAdminList() {
-        return subtenantAdminList;
+    public List<String> getSubtenantAdminNames() {
+        return subtenantAdminNames;
     }
 
-    public void setSubtenantAdminList(List<? extends AdminUser> subtenantAdminList) {
-        this.subtenantAdminList = subtenantAdminList;
+    public void setSubtenantAdminNames(List<String> subtenantAdminNames) {
+        this.subtenantAdminNames = subtenantAdminNames;
     }
 }

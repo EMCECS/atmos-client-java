@@ -29,23 +29,46 @@ package com.emc.atmos.mgmt;
 import com.sun.jersey.core.header.OutBoundHeaders;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SubTenantMgmtConfig extends AbstractMgmtConfig {
+import static com.emc.atmos.mgmt.MgmtConstants.*;
+
+public class SubTenantMgmtConfig extends TenantMgmtConfig {
+    private String subTenant;
+
     public SubTenantMgmtConfig(String tenant, String subTenant, String username, String password, URI... endpoints) {
-        super(username, password, endpoints);
-        setContext(getContext() + "/tenants/" + tenant + "/subtenants/" + subTenant);
+        super(tenant, username, password, endpoints);
+        this.subTenant = subTenant;
     }
 
     @Override
-    public Map<String, List<Object>> getAuthenticationHeaders() {
+    public Map<String, List<Object>> getRestAuthenticationHeaders() {
         OutBoundHeaders authHeaders = new OutBoundHeaders();
 
-        authHeaders.putSingle(MgmtConstants.XHEADER_TENANT_ADMIN, getUsername());
-        authHeaders.putSingle(MgmtConstants.XHEADER_TENANT_ADMIN_PASSWORD, getPassword());
+        authHeaders.putSingle(MgmtConstants.XHEADER_SUB_TENANT_ADMIN, getUsername());
+        authHeaders.putSingle(MgmtConstants.XHEADER_SUB_TENANT_ADMIN_PASSWORD, getPassword());
         authHeaders.putSingle(MgmtConstants.XHEADER_AUTH_TYPE, MgmtConstants.AUTHTYPE_PASSWORD);
 
         return authHeaders;
+    }
+
+    @Override
+    public String getPoxLoginPath() {
+        return "/user/verify";
+    }
+
+    @Override
+    public Map<String, String> getPoxLoginParams() {
+        Map<String, String> loginParams = new HashMap<String, String>();
+        loginParams.put(PARAM_SUB_TENANT_NAME, getSubTenant());
+        loginParams.put(PARAM_USERNAME, getUsername());
+        loginParams.put(PARAM_PASSWORD, getPassword());
+        return loginParams;
+    }
+
+    public String getSubTenant() {
+        return subTenant;
     }
 }

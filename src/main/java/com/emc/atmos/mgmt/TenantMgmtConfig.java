@@ -34,10 +34,6 @@ import java.util.List;
 import java.util.Map;
 
 public class TenantMgmtConfig extends AbstractMgmtConfig {
-    private static final String PARAM_TENANT_NAME = "tenant_name";
-    private static final String PARAM_USERNAME = "username";
-    private static final String PARAM_PASSWORD = "password";
-
     private String tenant;
 
     public TenantMgmtConfig(String tenant, String username, String password, URI... endpoints) {
@@ -64,9 +60,9 @@ public class TenantMgmtConfig extends AbstractMgmtConfig {
     @Override
     public Map<String, String> getPoxLoginParams() {
         Map<String, String> loginParams = new HashMap<String, String>();
-        loginParams.put(PARAM_TENANT_NAME, getTenant());
-        loginParams.put(PARAM_USERNAME, getUsername());
-        loginParams.put(PARAM_PASSWORD, getPassword());
+        loginParams.put(MgmtConstants.PARAM_TENANT_NAME, getTenant());
+        loginParams.put(MgmtConstants.PARAM_USERNAME, getUsername());
+        loginParams.put(MgmtConstants.PARAM_PASSWORD, getPassword());
         return loginParams;
     }
 

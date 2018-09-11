@@ -30,27 +30,52 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package com.emc.atmos.mgmt;
+package com.emc.atmos.mgmt.bean;
 
-public final class MgmtConstants {
-    public static final String X_PREFIX = "x-atmos-";
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import java.util.ArrayList;
+import java.util.List;
 
-    public static final String XHEADER_SYSTEM_ADMIN = X_PREFIX + "systemadmin";
-    public static final String XHEADER_SYSTEM_ADMIN_PASSWORD = X_PREFIX + "systemadminpassword";
-    public static final String XHEADER_AUTH_TYPE = X_PREFIX + "authType";
+public abstract class AbstractSubtenant {
+    private String name;
+    private String id;
+    private AuthenticationSource authenticationSource;
+    private Status status;
 
-    public static final String XHEADER_TENANT_ADMIN = X_PREFIX + "tenantadmin";
-    public static final String XHEADER_TENANT_ADMIN_PASSWORD = X_PREFIX + "tenantadminpassword";
-    public static final String XHEADER_SUB_TENANT_ADMIN = X_PREFIX + "subtenantadmin";
-    public static final String XHEADER_SUB_TENANT_ADMIN_PASSWORD = X_PREFIX + "subtenantadminpassword";
+    @XmlElement
+    public String getName() {
+        return name;
+    }
 
-    public static final String AUTHTYPE_PASSWORD = "password";
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public static final String PARAM_TENANT_NAME = "tenant_name";
-    public static final String PARAM_SUB_TENANT_NAME = "sub_tenant_name";
-    public static final String PARAM_USERNAME = "username";
-    public static final String PARAM_PASSWORD = "password";
+    @XmlElement
+    public String getId() {
+        return id;
+    }
 
-    private MgmtConstants() {
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    @XmlElement
+    public AuthenticationSource getAuthenticationSource() {
+        return authenticationSource;
+    }
+
+    public void setAuthenticationSource(AuthenticationSource authenticationSource) {
+        this.authenticationSource = authenticationSource;
+    }
+
+    @XmlElement
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
     }
 }

@@ -35,14 +35,16 @@ package com.emc.atmos.mgmt.bean;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.ArrayList;
 import java.util.List;
 
 @XmlRootElement(name = "subtenant")
-public class SubtenantDetails extends Subtenant {
+public class SubtenantDetails extends AbstractSubtenant {
     private int capacity;
     private String defaultPolicySpec;
     private List<ObjectUser> objectUsers;
     private boolean secCompliant;
+    private List<? extends AdminUser> subtenantAdminList = new ArrayList<AdminUser>();
 
     @XmlElement
     public int getCapacity() {
@@ -79,5 +81,15 @@ public class SubtenantDetails extends Subtenant {
 
     public void setSecCompliant(boolean secCompliant) {
         this.secCompliant = secCompliant;
+    }
+
+    @XmlElementWrapper
+    @XmlElement(name = "subtenantAdmin")
+    public List<? extends AdminUser> getSubtenantAdminList() {
+        return subtenantAdminList;
+    }
+
+    public void setSubtenantAdminList(List<? extends AdminUser> subtenantAdminList) {
+        this.subtenantAdminList = subtenantAdminList;
     }
 }

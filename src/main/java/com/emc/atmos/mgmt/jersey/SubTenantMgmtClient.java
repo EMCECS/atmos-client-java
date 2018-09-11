@@ -28,23 +28,30 @@ package com.emc.atmos.mgmt.jersey;
 
 import com.emc.atmos.mgmt.SubTenantMgmtApi;
 import com.emc.atmos.mgmt.SubTenantMgmtConfig;
+import com.emc.atmos.mgmt.TenantMgmtApi;
 import com.emc.atmos.mgmt.bean.ListUidsResponse;
 import com.emc.atmos.mgmt.bean.SharedSecret;
 
-public class SubTenantMgmtClient extends AbstractJerseyMgmtClient implements SubTenantMgmtApi {
+/**
+ * This class is basically a delegator to a {@link TenantMgmtClient} instance, exposing only the subtenant operations
+ * and always using the subtenant specified by the {@link SubTenantMgmtConfig}
+ */
+public class SubTenantMgmtClient implements SubTenantMgmtApi {
+    private SubTenantMgmtConfig config;
+    private TenantMgmtApi tenantClient;
 
     public SubTenantMgmtClient(SubTenantMgmtConfig config) {
-        super(config);
+        this.config = config;
+        tenantClient = new TenantMgmtClient(config);
     }
 
     @Override
     public ListUidsResponse listUids() {
-        return executeAndClose("/uids", null, ListUidsResponse.class);
+        return tenantClient.listUids(config.getSubTenant());
     }
 
     @Override
     public SharedSecret getSharedSecret(String uid) {
-        return executeAndClose("/uids/" + uid, null, SharedSecret.class);
+        return tenantClient.getSharedSecret(config.getSubTenant(), uid);
     }
-
 }
