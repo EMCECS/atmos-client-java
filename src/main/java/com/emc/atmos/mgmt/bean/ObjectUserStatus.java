@@ -33,6 +33,5 @@
 package com.emc.atmos.mgmt.bean;
 
 public enum ObjectUserStatus {
-    Operational
-    // TODO: find the other possible values of this enum
+    Operational, Disabled, Deleting, Deleted
 }
