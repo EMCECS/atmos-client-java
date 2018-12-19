@@ -81,6 +81,8 @@ public class AuthFilter extends ClientFilter {
                 invalidateCookie();
                 poxLogin(request);
 
+                attachSessionCookie(request);
+
                 response = getNext().handle((request));
             } else {
                 throw e;
