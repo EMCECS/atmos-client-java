@@ -32,23 +32,24 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-public abstract class AtmosMgmtConfig extends AbstractConfig {
+public abstract class AbstractMgmtConfig extends AbstractConfig {
     private static final String DEFAULT_CONTEXT = "/sysmgmt";
 
     private String username;
     private String password;
+    private volatile String sessionCookie;
 
-    public AtmosMgmtConfig() {
-        super( DEFAULT_CONTEXT );
-    }
-
-    public AtmosMgmtConfig( String username, String password, URI... endpoints ) {
+    public AbstractMgmtConfig(String username, String password, URI... endpoints) {
         super( DEFAULT_CONTEXT, endpoints );
         this.username = username;
         this.password = password;
     }
 
-    public abstract Map<String, List<Object>> getAuthenticationHeaders();
+    public abstract Map<String, List<Object>> getRestAuthenticationHeaders();
+
+    public abstract String getPoxLoginPath();
+
+    public abstract Map<String, String> getPoxLoginParams();
 
     public String getUsername() {
         return username;
@@ -64,5 +65,13 @@ public abstract class AtmosMgmtConfig extends AbstractConfig {
 
     public void setPassword( String password ) {
         this.password = password;
+    }
+
+    public String getSessionCookie() {
+        return sessionCookie;
+    }
+
+    public void setSessionCookie(String sessionCookie) {
+        this.sessionCookie = sessionCookie;
     }
 }

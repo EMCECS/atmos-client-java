@@ -36,6 +36,7 @@ import com.emc.atmos.api.Acl;
 import com.emc.atmos.api.ChecksumValue;
 import com.emc.atmos.api.ChecksumValueImpl;
 import com.emc.atmos.api.RestUtil;
+import com.emc.util.BasicResponse;
 
 import java.util.Map;
 import java.util.TreeMap;

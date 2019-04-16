@@ -26,6 +26,8 @@
  */
 package com.emc.atmos.api.bean;
 
+import com.emc.util.BasicResponse;
+
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;

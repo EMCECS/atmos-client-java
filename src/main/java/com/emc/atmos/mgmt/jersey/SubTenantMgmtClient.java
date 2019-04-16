@@ -24,7 +24,34 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.emc.atmos.mgmt.api;
+package com.emc.atmos.mgmt.jersey;
 
-public interface TenantMgmtApi {
+import com.emc.atmos.mgmt.SubTenantMgmtApi;
+import com.emc.atmos.mgmt.SubTenantMgmtConfig;
+import com.emc.atmos.mgmt.TenantMgmtApi;
+import com.emc.atmos.mgmt.bean.ListUidsResponse;
+import com.emc.atmos.mgmt.bean.SharedSecret;
+
+/**
+ * This class is basically a delegator to a {@link TenantMgmtClient} instance, exposing only the subtenant operations
+ * and always using the subtenant specified by the {@link SubTenantMgmtConfig}
+ */
+public class SubTenantMgmtClient implements SubTenantMgmtApi {
+    private SubTenantMgmtConfig config;
+    private TenantMgmtApi tenantClient;
+
+    public SubTenantMgmtClient(SubTenantMgmtConfig config) {
+        this.config = config;
+        tenantClient = new TenantMgmtClient(config);
+    }
+
+    @Override
+    public ListUidsResponse listUids() {
+        return tenantClient.listUids(config.getSubTenant());
+    }
+
+    @Override
+    public SharedSecret getSharedSecret(String uid) {
+        return tenantClient.getSharedSecret(config.getSubTenant(), uid);
+    }
 }

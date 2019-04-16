@@ -14,20 +14,21 @@ atmos.secret - Shared secret key for the uid
 atmos.endpoints - Comma separated list of endpoint URIs (more than one is optional)
 
 ACDP:
-acdp.admin.endpoint - ACDP admin endpoint, usually http://admin_node:8080/
+acdp.admin.endpoint - ACDP admin endpoint, usually http://admin_node:8080
 acdp.admin.username - ACDP administrator username
 acdp.admin.password - ACDP administrator password
-acdp.mgmt.endpoint - ACDP management endpoint, usually http://portal_node:8080/
+acdp.mgmt.endpoint - ACDP management endpoint, usually http://portal_node:8080
 acdp.mgmt.username - ACDP management user (account user)
 acdp.mgmt.password - ACDP management password
 
-Atmos System Management:
-atmos.sysmgmt.proto - System management protocol (usually https)
-atmos.sysmgmt.host - System management host (primary or secondary node in RMG)
-atmos.sysmgmt.port - System management port (usually 443)
-atmos.sysmgmt.username - System management user
-atmos.sysmgmt.password - System management password
-    
+Atmos Management API:
+atmos.mgmt.endpoints - Management REST API endpoints, usually https://<primary-or-secondary-node>:443 (multiple optional)
+atmos.mgmt.sysadmin.user - System admin user
+atmos.mgmt.sysadmin.password - System admin password
+atmos.mgmt.tenant - Existing tenant for testing
+atmos.mgmt.tenantadmin.user - Tenant admin user
+atmos.mgmt.tenantadmin.password - Tenant admin password
+
 If a particular configuration key is missing, that test group will be skipped.
 
  

@@ -28,6 +28,7 @@ package com.emc.atmos.api;
 
 import com.emc.atmos.api.bean.*;
 import com.emc.atmos.api.request.*;
+import com.emc.util.BasicResponse;
 
 import java.io.IOException;
 import java.io.InputStream;

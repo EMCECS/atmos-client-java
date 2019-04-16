@@ -26,6 +26,8 @@
  */
 package com.emc.atmos.api.bean;
 
+import com.emc.util.BasicResponse;
+
 import java.net.URL;
 
 public class CreateAccessTokenResponse extends BasicResponse {

@@ -30,6 +30,7 @@ import com.emc.atmos.AtmosException;
 import com.emc.atmos.StickyThreadAlgorithm;
 import com.emc.atmos.api.*;
 import com.emc.atmos.api.bean.*;
+import com.emc.atmos.api.bean.adapter.Iso8601Adapter;
 import com.emc.atmos.api.jersey.AtmosApiBasicClient;
 import com.emc.atmos.api.jersey.AtmosApiClient;
 import com.emc.atmos.api.multipart.MultipartEntity;
@@ -1681,6 +1682,154 @@ public class AtmosApiClientTest {
             Assert.assertEquals("Retention policy doesn't match", retentionPolicy, response1.getMetadata().getRetentionPolicy());
         } finally {
             Thread.sleep(10000); // let retention expire
+        }
+    }
+
+    @Test
+    public void testCreateExpiration() throws Exception {
+        Assume.assumeTrue(isEcs);
+        byte[] data = "hello create-expiration".getBytes("UTF-8");
+
+        Calendar exp = Calendar.getInstance();
+        exp.add(Calendar.SECOND, 5);
+
+        CreateObjectRequest request = new CreateObjectRequest().content(data).contentType("text/plain");
+        request.userMetadata(new Metadata(RestUtil.METADATA_KEY_EXPIRATION_ENABLE, "true", false),
+                new Metadata(RestUtil.METADATA_KEY_EXPIRATION_END, Iso8601Adapter.getFormat().format(exp.getTime()), false));
+
+        CreateObjectResponse response = this.api.createObject(request);
+        cleanup.add(response.getObjectId());
+
+        ReadObjectResponse response1 = this.api.readObject(new ReadObjectRequest().identifier(response.getObjectId()),
+                byte[].class);
+        Assert.assertNotNull("Null object returned", response1.getObject());
+        Map<String, Metadata> metadata = response1.getMetadata().getMetadata();
+        Assert.assertEquals("Expiration not enabled", "true",
+                metadata.get(RestUtil.METADATA_KEY_EXPIRATION_ENABLE).getValue());
+        Assert.assertNotNull("Expiration not set", metadata.get(RestUtil.METADATA_KEY_EXPIRATION_END));
+        Date expEnd = Iso8601Adapter.getFormat().parse(metadata.get(RestUtil.METADATA_KEY_EXPIRATION_END).getValue());
+
+        // wait for object to expire
+        Thread.sleep(expEnd.getTime() - System.currentTimeMillis() + 1000); // add a second in case of skew
+        Assert.assertFalse(this.api.objectExists(response.getObjectId()));
+    }
+
+    @Test
+    public void testSetExpiration() throws Exception {
+        Assume.assumeTrue(isEcs);
+        byte[] data = "hello expiration".getBytes("UTF-8");
+
+        ObjectId objectId = this.api.createObject(data, "text/plain");
+        cleanup.add(objectId);
+        Map<String, Metadata> metadata = this.api.getUserMetadata(objectId);
+        Assert.assertNull("Expiration already enabled", metadata.get(RestUtil.METADATA_KEY_EXPIRATION_ENABLE));
+        Assert.assertNull("Expiration already enabled", metadata.get(RestUtil.METADATA_KEY_EXPIRATION_END));
+
+        Calendar exp = Calendar.getInstance();
+        exp.add(Calendar.SECOND, 5);
+
+        this.api.setUserMetadata(objectId, new Metadata(RestUtil.METADATA_KEY_EXPIRATION_ENABLE, "true", false),
+                new Metadata(RestUtil.METADATA_KEY_EXPIRATION_END, Iso8601Adapter.getFormat().format(exp.getTime()), false));
+
+        ReadObjectResponse response = this.api.readObject(new ReadObjectRequest().identifier(objectId),
+                byte[].class);
+        Assert.assertNotNull("Null object returned", response.getObject());
+        metadata = response.getMetadata().getMetadata();
+        Assert.assertEquals("Expiration not enabled", "true",
+                metadata.get(RestUtil.METADATA_KEY_EXPIRATION_ENABLE).getValue());
+        Assert.assertNotNull("Expiration not set", metadata.get(RestUtil.METADATA_KEY_EXPIRATION_END));
+        Date expEnd = Iso8601Adapter.getFormat().parse(metadata.get(RestUtil.METADATA_KEY_EXPIRATION_END).getValue());
+
+        // wait for object to expire
+        Thread.sleep(expEnd.getTime() - System.currentTimeMillis() + 1000); // add a second in case of skew
+        Assert.assertFalse(this.api.objectExists(objectId));
+    }
+
+    @Test
+    public void testCreateRetentionExpiration() throws Exception {
+        Assume.assumeTrue(isEcs);
+
+        byte[] data = "hello retention expiration".getBytes("UTF-8");
+        Long retentionPeriod = 4L;
+        Calendar exp = Calendar.getInstance();
+        exp.add(Calendar.SECOND, 5);
+        boolean waited = false;
+
+        try {
+            CreateObjectRequest request = new CreateObjectRequest().content(data).contentType("text/plain");
+            request.retentionPeriod(retentionPeriod);
+            request.userMetadata(new Metadata(RestUtil.METADATA_KEY_EXPIRATION_ENABLE, "true", false),
+                    new Metadata(RestUtil.METADATA_KEY_EXPIRATION_END, Iso8601Adapter.getFormat().format(exp.getTime()), false));
+
+            ObjectId objectId = this.api.createObject(request).getObjectId();
+            cleanup.add(objectId);
+
+            ReadObjectResponse response = this.api.readObject(new ReadObjectRequest().identifier(objectId),
+                    byte[].class);
+            Assert.assertNotNull("Null object returned", response.getObject());
+            Map<String, Metadata> metadata = response.getMetadata().getMetadata();
+            Assert.assertEquals("Retention period doesn't match", retentionPeriod, response.getMetadata().getRetentionPeriod());
+            Assert.assertEquals("Expiration not enabled", "true",
+                    metadata.get(RestUtil.METADATA_KEY_EXPIRATION_ENABLE).getValue());
+            Assert.assertNotNull("Expiration not set", metadata.get(RestUtil.METADATA_KEY_EXPIRATION_END));
+            Date expEnd = Iso8601Adapter.getFormat().parse(metadata.get(RestUtil.METADATA_KEY_EXPIRATION_END).getValue());
+
+            // wait for object to expire
+            Thread.sleep(expEnd.getTime() - System.currentTimeMillis() + 1000); // add a second in case of skew
+            waited = true;
+            Assert.assertFalse(this.api.objectExists(objectId));
+        } finally {
+            if (!waited) Thread.sleep(retentionPeriod * 1000); // let retention expire
+        }
+    }
+
+    @Test
+    public void testRetentionExpirationUMD() throws Exception {
+        Assume.assumeTrue(isEcs);
+
+        byte[] data = "hello retention expiration umd".getBytes("UTF-8");
+        Calendar ret = Calendar.getInstance();
+        ret.add(Calendar.SECOND, 4);
+        Calendar exp = Calendar.getInstance();
+        exp.add(Calendar.SECOND, 5);
+        boolean waited = false;
+
+        try {
+            CreateObjectRequest request = new CreateObjectRequest().content(data).contentType("text/plain");
+            request.userMetadata(new Metadata(RestUtil.METADATA_KEY_RETENTION_ENABLE, "true", false),
+                    new Metadata(RestUtil.METADATA_KEY_RETENTION_END, Iso8601Adapter.getFormat().format(ret.getTime()), false),
+                    new Metadata(RestUtil.METADATA_KEY_EXPIRATION_ENABLE, "true", false),
+                    new Metadata(RestUtil.METADATA_KEY_EXPIRATION_END, Iso8601Adapter.getFormat().format(exp.getTime()), false));
+
+            ObjectId objectId = this.api.createObject(request).getObjectId();
+            cleanup.add(objectId);
+
+            ReadObjectResponse response = this.api.readObject(new ReadObjectRequest().identifier(objectId),
+                    byte[].class);
+            Assert.assertNotNull("Null object returned", response.getObject());
+            Map<String, Metadata> metadata = response.getMetadata().getMetadata();
+            Assert.assertEquals("Retention not enabled", "true",
+                    metadata.get(RestUtil.METADATA_KEY_RETENTION_ENABLE).getValue());
+            Assert.assertNotNull("Retention not set", metadata.get(RestUtil.METADATA_KEY_RETENTION_END));
+            Assert.assertEquals("Expiration not enabled", "true",
+                    metadata.get(RestUtil.METADATA_KEY_EXPIRATION_ENABLE).getValue());
+            Assert.assertNotNull("Expiration not set", metadata.get(RestUtil.METADATA_KEY_EXPIRATION_END));
+            Date expEnd = Iso8601Adapter.getFormat().parse(metadata.get(RestUtil.METADATA_KEY_EXPIRATION_END).getValue());
+
+            // try to overwrite (should fail)
+            try {
+                this.api.updateObject(objectId, "updated during retention");
+                Assert.fail("Update allowed during retention period");
+            } catch (AtmosException e) {
+                Assert.assertEquals("Wrong error code from update during retention", 2003, e.getErrorCode());
+            }
+
+            // wait for object to expire
+            Thread.sleep(expEnd.getTime() - System.currentTimeMillis() + 1000); // add a second in case of skew
+            waited = true;
+            Assert.assertFalse(this.api.objectExists(objectId));
+        } finally {
+            if (!waited) Thread.sleep(4 * 1000); // let retention expire
         }
     }
 

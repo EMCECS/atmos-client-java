@@ -28,11 +28,11 @@ package com.emc.atmos.api.request;
 
 import com.emc.atmos.api.Range;
 import com.emc.atmos.api.RestUtil;
+import com.emc.util.HttpUtil;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Represents an Atmos read-object request.
@@ -57,7 +57,7 @@ public class ReadObjectRequest extends ObjectRequest<ReadObjectRequest> {
         if ( encodeUtf8 ) RestUtil.addValue( headers, RestUtil.XHEADER_UTF8, "true" );
 
         if ( ranges != null && !ranges.isEmpty() )
-            RestUtil.addValue( headers, RestUtil.HEADER_RANGE, "bytes=" + RestUtil.join( ranges, "," ) );
+            RestUtil.addValue( headers, HttpUtil.HEADER_RANGE, "bytes=" + RestUtil.join( ranges, "," ) );
 
         return headers;
     }

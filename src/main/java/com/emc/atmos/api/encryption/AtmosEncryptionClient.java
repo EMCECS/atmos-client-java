@@ -36,6 +36,7 @@ import com.emc.atmos.AtmosException;
 import com.emc.atmos.api.*;
 import com.emc.atmos.api.bean.*;
 import com.emc.atmos.api.request.*;
+import com.emc.util.BasicResponse;
 import com.emc.vipr.transform.*;
 import com.emc.vipr.transform.encryption.DoesNotNeedRekeyException;
 import com.emc.vipr.transform.encryption.EncryptionTransformFactory;

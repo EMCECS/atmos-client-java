@@ -26,6 +26,7 @@
  */
 package com.emc.atmos.api;
 
+import com.emc.atmos.AbstractJerseyClient;
 import com.emc.atmos.api.bean.GetAccessTokenResponse;
 import com.emc.atmos.api.request.*;
 import com.emc.util.HttpUtil;
@@ -39,13 +40,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-public abstract class AbstractAtmosApi implements AtmosApi {
+public abstract class AbstractAtmosApi extends AbstractJerseyClient<AtmosConfig> implements AtmosApi {
     public static final String DEFAULT_CONTENT_TYPE = "application/octet-stream";
 
-    protected AtmosConfig config;
-
     public AbstractAtmosApi( AtmosConfig config ) {
-        this.config = config;
+        super( config );
     }
 
     @Override
@@ -91,7 +90,7 @@ public abstract class AbstractAtmosApi implements AtmosApi {
         if ( identifier instanceof ObjectKey )
             throw new IllegalArgumentException( "You cannot create shareable URLs using a key; try using the object ID" );
 
-        URI uri = config.resolvePath( identifier.getRelativeResourcePath(), null );
+        URI uri = config.resolveHostAndPath( identifier.getRelativeResourcePath(), null );
         String path = uri.getPath().toLowerCase();
         long expiresTime = expirationDate.getTime() / 1000;
 
@@ -125,7 +124,7 @@ public abstract class AbstractAtmosApi implements AtmosApi {
 
     @Override
     public PreSignedRequest preSignRequest( Request request, Date expiration ) throws MalformedURLException {
-        URI uri = config.resolvePath( request.getServiceRelativePath(), request.getQuery() );
+        URI uri = config.resolveHostAndPath( request.getServiceRelativePath(), request.getQuery() );
         Map<String, List<Object>> headers = request.generateHeaders( config.isEncodeUtf8() );
 
         String contentType = null;
