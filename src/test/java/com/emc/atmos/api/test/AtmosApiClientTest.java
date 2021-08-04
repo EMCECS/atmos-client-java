@@ -601,6 +601,41 @@ public class AtmosApiClientTest {
 
     }
 
+
+    @Test
+    public void testAclOnDirectory() {
+        ObjectPath op = new ObjectPath( "/" + rand8char() + "/" );
+
+        // create an object with an ACL
+        Acl acl = new Acl();
+        acl.addUserGrant( stripUid( config.getTokenId() ), Permission.FULL_CONTROL );
+        acl.addGroupGrant( Acl.GROUP_OTHER, Permission.NONE );
+        this.api.createDirectory( op, acl );
+        cleanupDirs.add( op );
+
+        // read back the ACL and make sure it matches
+        Acl newacl = this.api.getAcl( op );
+        Assert.assertEquals( acl, newacl );
+
+        // also read back through HEAD
+        newacl = this.api.getObjectMetadata( op ).getAcl();
+        Assert.assertEquals( acl, newacl );
+
+        // update ACL
+        acl = new Acl();
+        acl.addUserGrant( stripUid( config.getTokenId() ), Permission.FULL_CONTROL );
+        acl.addGroupGrant( Acl.GROUP_OTHER, Permission.READ );
+        this.api.setAcl( op, acl );
+
+        // read back the updated ACL and make sure it matches
+        newacl = this.api.getAcl( op );
+        Assert.assertEquals( acl, newacl );
+
+        // also read back through HEAD
+        newacl = this.api.getObjectMetadata( op ).getAcl();
+        Assert.assertEquals( acl, newacl );
+    }
+
     /**
      * Test reading back user metadata
      */
