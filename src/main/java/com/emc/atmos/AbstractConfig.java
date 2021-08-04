@@ -26,7 +26,8 @@
  */
 package com.emc.atmos;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,7 +39,7 @@ import java.net.URISyntaxException;
  * be assigned its own endpoint to avoid MDS sync issues.
  */
 public class AbstractConfig {
-    private static final Logger l4j = Logger.getLogger( AbstractConfig.class );
+    private static final Logger l4j = LoggerFactory.getLogger( AbstractConfig.class );
 
     private String context;
     private URI[] endpoints;
@@ -70,6 +71,16 @@ public class AbstractConfig {
 
         // don't add the context if it's already there
         if (!path.startsWith(context)) path = context + path;
+
+        // normalize double-slashes *before* signing
+        // previously, older versions of apache httpclient would not normalize these - they would get signed,
+        // sent over the wire as-is, and ECS/Atmos would normalize the path on the other side (so foo/ and foo//
+        // normalize to the same directory)
+        // recent versions of httpclient will normalize double-slash, so the path sent over the wire is different from
+        // the path that was signed (which invalidates the signature and causes a 403)
+        // this change is necessary to keep the behavior consistent, since we did not previously reject
+        // double-slashes (that would be the appropriate behavior)
+        path = path.replaceAll("//", "/");
 
         return resolveHost(path, query);
     }

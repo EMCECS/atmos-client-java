@@ -43,7 +43,8 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.filter.ClientFilter;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
@@ -122,7 +123,7 @@ import java.util.*;
  * </pre>
  */
 public class AtmosApiClient extends AbstractAtmosApi {
-    private static final Logger l4j = Logger.getLogger( AtmosApiClient.class );
+    private static final Logger l4j = LoggerFactory.getLogger( AtmosApiClient.class );
 
     protected Client client;
     protected Client client100;

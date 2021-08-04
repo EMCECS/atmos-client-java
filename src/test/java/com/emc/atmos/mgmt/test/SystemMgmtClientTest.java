@@ -39,11 +39,12 @@ import com.emc.atmos.mgmt.bean.ListRmgsResponse;
 import com.emc.atmos.mgmt.jersey.SystemMgmtClient;
 import com.emc.util.TestConfig;
 import com.emc.util.TestConstants;
-import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -53,7 +54,7 @@ import java.util.List;
 import java.util.Properties;
 
 public class SystemMgmtClientTest {
-    private static final Logger l4j = Logger.getLogger(SystemMgmtClientTest.class);
+    private static final Logger l4j = LoggerFactory.getLogger(SystemMgmtClientTest.class);
 
     protected SystemMgmtApi client;
 

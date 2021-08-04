@@ -33,7 +33,8 @@
 package com.emc.util;
 
 import com.sun.jersey.core.header.HttpDateFormat;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -46,7 +47,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 public final class HttpUtil {
-    private static final Logger log = Logger.getLogger( HttpUtil.class );
+    private static final Logger log = LoggerFactory.getLogger( HttpUtil.class );
 
     public static final String HEADER_CONTENT_TYPE = "Content-Type";
     public static final String HEADER_DATE = "Date";

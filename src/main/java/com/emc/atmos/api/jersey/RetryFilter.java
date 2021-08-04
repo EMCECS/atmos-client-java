@@ -33,7 +33,8 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.filter.ClientFilter;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +42,7 @@ import java.io.InputStream;
 public class RetryFilter extends ClientFilter {
     private static final int ATMOS_1040_DELAY_MS = 300;
 
-    private static final Logger log = Logger.getLogger( RetryFilter.class );
+    private static final Logger log = LoggerFactory.getLogger( RetryFilter.class );
 
     private AtmosConfig config;
 

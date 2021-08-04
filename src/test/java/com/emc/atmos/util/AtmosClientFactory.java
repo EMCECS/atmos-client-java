@@ -31,7 +31,8 @@ import com.emc.atmos.api.AtmosConfig;
 import com.emc.atmos.api.jersey.AtmosApiClient;
 import com.emc.util.TestConfig;
 import com.emc.util.TestConstants;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -53,7 +54,7 @@ import java.util.Properties;
  * @author cwikj
  */
 public class AtmosClientFactory {
-    private static final Logger l4j = Logger.getLogger(AtmosClientFactory.class);
+    private static final Logger l4j = LoggerFactory.getLogger(AtmosClientFactory.class);
 
     public static AtmosApi getAtmosClient() {
         AtmosConfig config = getAtmosConfig();
