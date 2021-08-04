@@ -29,15 +29,16 @@ package com.emc.acdp.api.test;
 import com.emc.acdp.api.AcdpAdminConfig;
 import com.emc.acdp.api.AcdpMgmtConfig;
 import com.emc.util.TestConfig;
-import org.apache.log4j.Logger;
 import org.junit.Assume;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Properties;
 
 public class AcdpTestUtil {
-    private static final Logger l4j = Logger.getLogger( AcdpTestUtil.class );
+    private static final Logger l4j = LoggerFactory.getLogger( AcdpTestUtil.class );
 
     public static final String PROP_ACDP_ADMIN_ENDPOINT = "acdp.admin.endpoint";
     public static final String PROP_ACDP_ADMIN_USERNAME = "acdp.admin.username";

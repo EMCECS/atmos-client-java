@@ -6,15 +6,16 @@
 		  <param name="conversionPattern" value="%d{HH:mm:ss,SSS} %-5p [%t] %C{1}: %m%n"/>
 		</layout>
 	</appender>
- 
- 	<logger name="org.apache">
- 		<level value="WARN"></level>
- 	</logger>
-    <!--
-    <logger name="org.apache.http.wire">
-        <level value="DEBUG"></level>
+
+	<logger name="com.emc.atmos.api.RestUtil">
+		<level value="INFO" /> <!-- set to DEBUG to debug signatures -->
     </logger>
-    -->
+	<logger name="org.apache.http.headers">
+		<level value="INFO" /> <!-- set to DEBUG to see headers -->
+	</logger>
+    <logger name="org.apache.http.wire">
+        <level value="INFO" /> <!-- set to DEBUG to see data on the wire (hex-encoded) -->
+    </logger>
 
 	<root>
 		<priority value="WARN" />

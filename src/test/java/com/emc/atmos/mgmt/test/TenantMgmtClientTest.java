@@ -38,11 +38,12 @@ import com.emc.atmos.mgmt.bean.*;
 import com.emc.atmos.mgmt.jersey.TenantMgmtClient;
 import com.emc.util.TestConfig;
 import com.emc.util.TestConstants;
-import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -52,7 +53,7 @@ import java.util.List;
 import java.util.Properties;
 
 public class TenantMgmtClientTest {
-    private static final Logger l4j = Logger.getLogger(TenantMgmtClientTest.class);
+    private static final Logger l4j = LoggerFactory.getLogger(TenantMgmtClientTest.class);
 
     private TenantMgmtApi client;
     private String subtenant;

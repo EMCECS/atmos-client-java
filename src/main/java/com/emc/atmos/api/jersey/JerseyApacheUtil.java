@@ -41,11 +41,9 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.AbstractHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.ProxySelectorRoutePlanner;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.SyncBasicHttpParams;
-import sun.net.spi.DefaultProxySelector;
 
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
@@ -72,7 +70,9 @@ public class JerseyApacheUtil {
             ClientConfig clientConfig = new DefaultApacheHttpClient4Config();
 
             // make sure the apache client is thread-safe
-            PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
+            // TODO: find a non-deprecated connection manager that works (swapping out with
+            //       PoolingHttpClientConnectionManager will break threading)
+            org.apache.http.impl.conn.PoolingClientConnectionManager connectionManager = new org.apache.http.impl.conn.PoolingClientConnectionManager();
             // Increase max total connection to 200
             connectionManager.setMaxTotal(200);
             // Increase default max connection per route to 200
@@ -96,7 +96,7 @@ public class JerseyApacheUtil {
                 proxySelector = new ConfigProxySelector(config);
             } else {
                 // if no proxy in config, use system property sniffing selector
-                proxySelector = new DefaultProxySelector();
+                proxySelector = ProxySelector.getDefault();
 
                 // and see if a proxy is set
                 String host = System.getProperty("http.proxyHost");

@@ -30,10 +30,11 @@ package com.emc.acdp.api.test;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.emc.acdp.api.AcdpAdminApi;
 import com.emc.acdp.api.AcdpAdminConfig;
@@ -46,7 +47,7 @@ import com.emc.cdp.services.rest.model.ObjectFactory;
  * @author cwikj
  */
 public class AccountTest {
-    private static final Logger l4j = Logger.getLogger( AccountTest.class );
+    private static final Logger l4j = LoggerFactory.getLogger( AccountTest.class );
 
     AcdpAdminApi acdp;
     AcdpAdminConfig config;

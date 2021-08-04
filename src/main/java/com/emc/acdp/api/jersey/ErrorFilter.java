@@ -31,13 +31,15 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.filter.ClientFilter;
-import org.apache.log4j.Logger;
-import org.jdom2.Document;
-import org.jdom2.Namespace;
-import org.jdom2.input.SAXBuilder;
+import org.dom4j.Document;
+import org.dom4j.io.SAXReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.InputStreamReader;
 
 public class ErrorFilter extends ClientFilter {
-    private static final Logger log = Logger.getLogger( ErrorFilter.class );
+    private static final Logger log = LoggerFactory.getLogger( ErrorFilter.class );
 
     @Override
     public ClientResponse handle( ClientRequest clientRequest ) throws ClientHandlerException {
@@ -47,24 +49,18 @@ public class ErrorFilter extends ClientFilter {
 
             // JAXB will expect a namespace if we try to unmarshall, but some error responses don't include
             // a namespace. In lieu of writing a SAXFilter to apply a default namespace in-line, this works just as well.
-            SAXBuilder sb = new SAXBuilder();
+            SAXReader saxReader = new SAXReader();
 
             Document d;
             try {
-                d = sb.build( response.getEntityInputStream() );
+                d = saxReader.read( new InputStreamReader( response.getEntityInputStream() ) );
             } catch ( Exception e ) {
                 throw new AcdpException( response.getStatusInfo().getReasonPhrase(), response.getStatus() );
             }
 
-            String code = d.getRootElement().getChildText( "code" );
-            if ( code == null )
-                code = d.getRootElement()
-                        .getChildText( "code", Namespace.getNamespace( "http://cdp.emc.com/services/rest/model" ) );
-            String message = d.getRootElement().getChildText( "message" );
-            if ( message == null )
-                message = d.getRootElement()
-                           .getChildText( "message",
-                                          Namespace.getNamespace( "http://cdp.emc.com/services/rest/model" ) );
+            String code = d.getRootElement().elementText( "code" );
+
+            String message = d.getRootElement().elementText( "message" );
 
             if ( code == null && message == null ) {
                 // not an error from CDP

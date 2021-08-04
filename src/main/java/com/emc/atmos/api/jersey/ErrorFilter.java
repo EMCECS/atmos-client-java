@@ -31,13 +31,15 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.filter.ClientFilter;
-import org.apache.log4j.Logger;
-import org.jdom2.Document;
-import org.jdom2.Namespace;
-import org.jdom2.input.SAXBuilder;
+import org.dom4j.Document;
+import org.dom4j.io.SAXReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.InputStreamReader;
 
 public class ErrorFilter extends ClientFilter {
-    private static final Logger log = Logger.getLogger( ErrorFilter.class );
+    private static final Logger log = LoggerFactory.getLogger( ErrorFilter.class );
 
     public static final String NO_EXCEPTIONS = "ErrorFilter.noExceptions";
 
@@ -49,22 +51,18 @@ public class ErrorFilter extends ClientFilter {
 
             // JAXB will expect a namespace if we try to unmarshall, but some error responses don't include
             // a namespace. In lieu of writing a SAXFilter to apply a default namespace in-line, this works just as well.
-            SAXBuilder sb = new SAXBuilder();
+            SAXReader saxReader = new SAXReader();
 
             Document d;
             try {
-                d = sb.build( response.getEntityInputStream() );
+                d = saxReader.read( new InputStreamReader( response.getEntityInputStream() ) );
             } catch ( Throwable t ) {
                 throw new AtmosException( response.getStatusInfo().getReasonPhrase(), response.getStatus() );
             }
 
-            String code = d.getRootElement().getChildText( "Code" );
-            if ( code == null )
-                code = d.getRootElement().getChildText( "Code", Namespace.getNamespace( "http://www.emc.com/cos/" ) );
-            String message = d.getRootElement().getChildText( "Message" );
-            if ( message == null )
-                message = d.getRootElement().getChildText( "Message",
-                                                           Namespace.getNamespace( "http://www.emc.com/cos/" ) );
+            String code = d.getRootElement().elementText( "Code" );
+
+            String message = d.getRootElement().elementText( "Message" );
 
             if ( code == null && message == null ) {
                 // not an error from Atmos
@@ -72,7 +70,7 @@ public class ErrorFilter extends ClientFilter {
             }
 
             log.debug( "Error: " + code + " message: " + message );
-            throw new AtmosException( message, response.getStatus(), Integer.parseInt( code ) );
+            throw new AtmosException( message, response.getStatus(), code == null ? 0 : Integer.parseInt( code ) );
         }
 
         return response;

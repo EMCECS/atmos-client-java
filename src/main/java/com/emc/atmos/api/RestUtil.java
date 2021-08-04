@@ -36,7 +36,8 @@ import com.emc.atmos.AtmosException;
 import com.emc.atmos.api.bean.Metadata;
 import com.emc.atmos.api.bean.Permission;
 import com.emc.util.HttpUtil;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -97,7 +98,7 @@ public final class RestUtil {
 
     public static final String PROP_ENABLE_EXPECT_100_CONTINUE = "com.emc.atmos.api.expect100Continue";
 
-    private static final Logger l4j = Logger.getLogger( RestUtil.class );
+    private static final Logger l4j = LoggerFactory.getLogger( RestUtil.class );
 
     private static final Pattern OBJECTID_PATTERN = Pattern.compile( "/\\w+/objects/([0-9a-f-]{44,})" );
 

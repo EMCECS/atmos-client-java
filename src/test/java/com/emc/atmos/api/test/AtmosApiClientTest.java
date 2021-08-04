@@ -48,9 +48,10 @@ import com.sun.jersey.api.client.filter.ClientFilter;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.BodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
-import org.apache.log4j.Logger;
 import org.junit.*;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -71,7 +72,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(ConcurrentJunitRunner.class)
 public class AtmosApiClientTest {
-    private static final Logger l4j = Logger.getLogger( AtmosApiClientTest.class );
+    private static final Logger l4j = LoggerFactory.getLogger( AtmosApiClientTest.class );
 
     /**
      * Use this as a prefix for namespace object paths and you won't have to clean up after yourself.
@@ -598,6 +599,41 @@ public class AtmosApiClientTest {
 
         Assert.assertEquals( "ACLs don't match", acl, newacl );
 
+    }
+
+
+    @Test
+    public void testAclOnDirectory() {
+        ObjectPath op = new ObjectPath( "/" + rand8char() + "/" );
+
+        // create an object with an ACL
+        Acl acl = new Acl();
+        acl.addUserGrant( stripUid( config.getTokenId() ), Permission.FULL_CONTROL );
+        acl.addGroupGrant( Acl.GROUP_OTHER, Permission.NONE );
+        this.api.createDirectory( op, acl );
+        cleanupDirs.add( op );
+
+        // read back the ACL and make sure it matches
+        Acl newacl = this.api.getAcl( op );
+        Assert.assertEquals( acl, newacl );
+
+        // also read back through HEAD
+        newacl = this.api.getObjectMetadata( op ).getAcl();
+        Assert.assertEquals( acl, newacl );
+
+        // update ACL
+        acl = new Acl();
+        acl.addUserGrant( stripUid( config.getTokenId() ), Permission.FULL_CONTROL );
+        acl.addGroupGrant( Acl.GROUP_OTHER, Permission.READ );
+        this.api.setAcl( op, acl );
+
+        // read back the updated ACL and make sure it matches
+        newacl = this.api.getAcl( op );
+        Assert.assertEquals( acl, newacl );
+
+        // also read back through HEAD
+        newacl = this.api.getObjectMetadata( op ).getAcl();
+        Assert.assertEquals( acl, newacl );
     }
 
     /**
@@ -3245,6 +3281,31 @@ public class AtmosApiClientTest {
         Assert.assertEquals( "'list\\able' is not listable", true, meta.get( "list\\able" ).isListable() );
         Assert.assertEquals( "'listable/3' is not listable", true, meta.get( "listable/3" ).isListable() );
         Assert.assertEquals( "'un\\listØable' is listable", false, meta.get( "un\\listØable" ).isListable() );
+    }
+
+    @Test
+    public void testDoubleSlash() throws Exception {
+        ObjectPath doubleSlashDirNormalized = new ObjectPath( "double-slash/" );
+        ObjectPath doubleSlashDirPath = new ObjectPath( "double-slash//" );
+        ObjectPath doubleSlashObjPath = new ObjectPath( "double-slash//object" );
+        String content = "dummy content";
+
+        api.createDirectory( doubleSlashDirPath );
+        Assert.assertNotNull( api.getObjectInfo( doubleSlashDirPath ) );
+        cleanupDirs.add( doubleSlashDirNormalized );
+
+        api.createObject( doubleSlashObjPath, content, "text/plain");
+        Assert.assertEquals( content, api.readObject( doubleSlashObjPath, String.class ) );
+
+        List<DirectoryEntry> entries = api.listDirectory( new ListDirectoryRequest().path( doubleSlashDirPath ) ).getEntries();
+        Assert.assertEquals( 1, entries.size() );
+        Assert.assertEquals( doubleSlashObjPath.getFilename(), entries.get( 0 ).getFilename() );
+
+        // the double-slash and single-slash are the same (the path should normalize to this same directory)
+        entries = api.listDirectory( new ListDirectoryRequest().path( doubleSlashDirNormalized ) ).getEntries();
+        Assert.assertEquals( 1, entries.size() );
+        Assert.assertFalse( entries.get( 0 ).isDirectory() );
+        Assert.assertEquals( doubleSlashObjPath.getFilename(), entries.get( 0 ).getFilename() );
     }
 
     private String rand8char() {

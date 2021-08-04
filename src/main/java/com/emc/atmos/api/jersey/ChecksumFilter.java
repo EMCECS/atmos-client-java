@@ -35,13 +35,14 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.filter.ClientFilter;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.HttpMethod;
 import java.security.NoSuchAlgorithmException;
 
 public class ChecksumFilter extends ClientFilter {
-    private static final Logger l4j = Logger.getLogger(ChecksumFilter.class);
+    private static final Logger l4j = LoggerFactory.getLogger(ChecksumFilter.class);
 
     public ClientResponse handle(ClientRequest request) throws ClientHandlerException {
         try {
